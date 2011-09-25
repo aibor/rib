@@ -1,0 +1,117 @@
+#!/usr/bin/ruby
+# coding: utf-8
+#
+# Ruby IRC bot
+#
+# Usage: IRCbot server nickname channel
+# Example: "IRCbot irc.example.org RubyBot \#botcha"
+#   or
+# Put login data into the configuration hash below and start without arguments.
+#
+# Specify some stuff:
+
+conf = Hash[    #------ DON'T BREAK THE HASH-LAYOUT!! [ Key, Value, ] ---------
+
+  "irc", "irc.freenode.org",         # IRC-Server to join? Example: irc.freenode.org
+  "nick", "rubybot",                 # Which nick to use?
+  "channel", "#mychannel",           # Which channel to join?
+  "tc", "!",                         # Character which triggers the bot to do something
+  "qcmd", "quit",                    # Command for disconnecting the bot via IRC message
+  "qmsg", "Bye!",                    # Message when bot leaves
+  "most", 2,                         # How many words shown by most? Max 10! NO " HERE!
+  "title", true,                     # Print HTML-title of a posted url if set to "1". Else "0".
+  "pony", false,                     # Appreciate ponies
+  "daemon", false,                   # Run as daemon?
+
+  "reps", Hash[                      # The bot answers to this triggers. Mind the ","!
+    "hi", "Moin!",                   # Example: trigger: !hi   answer: "Hello there!"
+    "bye", "nein?",                  # Syntax: <trigger>, <answer>,
+  ],
+]  
+
+# --- Don't change anything below this unless you are sure about it. ---
+
+require File.expand_path('../lib/irc.rb', __FILE__)
+require File.expand_path('../lib/myfuncs.rb', __FILE__)
+require 'logger'
+require 'optparse'
+
+conf = readconf(File.expand_path("../rib.conf", __FILE__), conf)
+
+OptionParser.new do |opts|
+  opts.banner = "Usage: #{File.basename($0)} [options]"
+
+  opts.on("-i", "--irc-server [HOSTNAME]", "IRC Server to connect to") do |irc|
+    conf["irc"] = irc
+  end
+  opts.on("-n", "--nick [NICKNAME]", "Your nickname") do |n|
+    conf["nick"] = n
+  end
+  opts.on("-c", "--channel [CHANNEL]", String, "which channel to join") do |c|
+    c.gsub!(/\A([^\#].*)/, '#\0')
+    conf["channel"] = c
+  end
+  opts.on("-d", "--[no-]daemon", "Run as daemon") do |d|
+    conf["daemon"] = d
+  end
+  # No argument, shows at tail.  This will print an options summary.
+  # Try it and see!
+  opts.on_tail("-h", "--help", "Show this message") do
+    puts opts
+    exit
+  end
+end.parse!
+
+# 10 last words are enough!
+conf["most"] = 10 if conf["most"] > 10
+
+# Logfile for the Programm. NOT IRC log! Look into lib/irc.rb therefore.
+logfile = File.expand_path("../log/#{File.basename($0)}_#{conf["irc"]}_#{conf["channel"]}.log", __FILE__)
+log = Logger.new(logfile)
+log.level = Logger::INFO
+
+# Start IRC Connection
+begin
+  log.info("Server starts")
+  server = IRC::Connection.new(conf["irc"], conf["channel"])
+  server.login(conf["nick"], "hostname", "servername", "\"#{conf["nick"]}\" Rigged Bot")
+  if ! conf["auth"].empty?
+    server.privmsg(conf["auth"][0], conf["auth"][1])
+    server.mode("#{conf["nick"]} +x", " ")
+  end
+  server.join_channel
+  log.info("Connected to #{conf["irc"]} as #{conf["nick"]} in #{conf["channel"]}")
+
+  # Daemonizing
+  if conf["daemon"] == true
+    puts "Connection established!\nDaemonizing now!"
+    Process.daemon("/udd/a/aibo/", nil)
+    log.info("Running as daemon now!")
+  end
+
+  # After successful connection start with server response loop.
+  while cmd = server.recv
+
+    # If a message is received check for triggers and response properly.
+    if cmd.command == "PRIVMSG"
+	    output = nil
+      case cmd.last_param 
+      # several triggers and their  response algorithms
+      when /\A#{conf["tc"]}(.*)\Z/ then output = trigger($1, conf, server, log)
+      when /(http[s]?:\/\/)(\S*)/x then output = title($&, log) if conf["title"] == true
+      when /([p][o][n]{1,2}[yi][e]?s*)/i then output = "#{$1} yay." if conf["pony"] == true && rand(2).zero?
+      end # case
+
+      # If useful response message was created: send it!
+      next if output.nil?
+      output = output.scan(/.+/)
+      output.each {|o| server.privmsg(conf["channel"], o)}
+    end # if cmd.command
+  end # while
+
+rescue
+  log.fatal($!)
+ensure
+  log.info("EXITING")
+  log.close
+end # begin
