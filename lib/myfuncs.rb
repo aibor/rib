@@ -1,4 +1,5 @@
 # coding: utf-8
+
 require "cgi"
 require "net/http"
 require "uri"
@@ -173,7 +174,7 @@ def trigger( arg, conf, server, log = nil)
     output = gsearch($1, log)
     output << "\n" << title(output, log)
 
-  when /\A(\S*)/ then output = conf["reps"][$1] if conf["reps"].has_key?($1)
+  when /\A(\S*)/ then output = conf["resp"][$1].sample if conf["resp"].has_key?($1)
   else output = nil
   end # case
   return output
@@ -181,19 +182,31 @@ rescue
   return nil
 end
 
-def readconf(cfile, conf)
+def readconf(cfile)
+  conf = Hash.new
+  conf["resp"] = Hash.new
   if File.exist?(cfile)
     file = File.open(cfile, File::RDONLY | File::NONBLOCK)
     file.each do |line|
-      next if line =~ /\A#/
-      line =~ /\A\s*(\w+)\s*(=\s*(.*?)\s*\Z)?/
+      line =~ /\A\s*(\w+)\s*(=\s*(.*?)\s*)?\Z/
       key, val = $1, $3
-      conf[key] = true; next if $2.nil?
-      conf[key] = val.to_i; next if key == "most" 
+      next if key == "#" || key.nil?
+      if $2.nil?
+        conf[key] = true
+        next
+      end
+      if key == "most"
+        conf[key] = val.to_i
+        next 
+      end
       if val.include? '"'
         val = val.scan(/".*?"/)
         val.each {|v| v.gsub!(/\A"(.*)"\Z/, '\1')}
         val = val[0] if val.length == 1
+      end
+      if key == "resp"
+        conf[key][val.shift] = val
+        next
       end
       conf[key] = val
     end

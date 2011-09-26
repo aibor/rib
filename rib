@@ -3,31 +3,29 @@
 #
 # Ruby IRC bot
 #
-# Usage: IRCbot server nickname channel
-# Example: "IRCbot irc.example.org RubyBot \#botcha"
-#   or
-# Put login data into the configuration hash below and start without arguments.
-#
-# Specify some stuff:
+# This program is free software. It comes without any warranty, to
+# the extent permitted by applicable law. You can redistribute it
+# and/or modify it under the terms of the Do What The Fuck You Want
+# To Public License, Version 2, as published by Sam Hocevar. See
+# http://sam.zoy.org/wtfpl/COPYING for more details. 
 
-conf = Hash[    #------ DON'T BREAK THE HASH-LAYOUT!! [ Key, Value, ] ---------
+#conf = Hash[
+  #"irc", "irc.freenode.org",         # IRC-Server to join? Example: irc.freenode.org
+  #"nick", "rubybot",                 # Which nick to use?
+  #"channel", "#mychannel",           # Which channel to join?
+  #"tc", "!",                         # Character which triggers the bot to do something
+  #"qcmd", "quit",                    # Command for disconnecting the bot via IRC message
+  #"qmsg", "Bye!",                    # Message when bot leaves
+  #"most", 2,                         # How many words shown by most? Max 10! NO " HERE!
+  #"title", true,                     # Print HTML-title of a posted url if set to "1". Else "0".
+  #"pony", false,                     # Appreciate ponies
+  #"daemon", false,                   # Run as daemon?
 
-  "irc", "irc.freenode.org",         # IRC-Server to join? Example: irc.freenode.org
-  "nick", "rubybot",                 # Which nick to use?
-  "channel", "#mychannel",           # Which channel to join?
-  "tc", "!",                         # Character which triggers the bot to do something
-  "qcmd", "quit",                    # Command for disconnecting the bot via IRC message
-  "qmsg", "Bye!",                    # Message when bot leaves
-  "most", 2,                         # How many words shown by most? Max 10! NO " HERE!
-  "title", true,                     # Print HTML-title of a posted url if set to "1". Else "0".
-  "pony", false,                     # Appreciate ponies
-  "daemon", false,                   # Run as daemon?
-
-  "reps", Hash[                      # The bot answers to this triggers. Mind the ","!
-    "hi", "Moin!",                   # Example: trigger: !hi   answer: "Hello there!"
-    "bye", "nein?",                  # Syntax: <trigger>, <answer>,
-  ],
-]  
+  #"reps", Hash[                      # The bot answers to this triggers. Mind the ","!
+    #"hi", "Moin!",                   # Example: trigger: !hi   answer: "Hello there!"
+    #"bye", "nein?",                  # Syntax: <trigger>, <answer>,
+  #],
+#]  
 
 # --- Don't change anything below this unless you are sure about it. ---
 
@@ -36,12 +34,13 @@ require File.expand_path('../lib/myfuncs.rb', __FILE__)
 require 'logger'
 require 'optparse'
 
-conf = readconf(File.expand_path("../rib.conf", __FILE__), conf)
+conf = Hash.new
+conf = readconf(File.expand_path("../config", __FILE__))
 
 OptionParser.new do |opts|
   opts.banner = "Usage: #{File.basename($0)} [options]"
 
-  opts.on("-i", "--irc-server [HOSTNAME]", "IRC Server to connect to") do |irc|
+  opts.on("-i", "--irc [HOSTNAME]", "IRC Server to connect to") do |irc|
     conf["irc"] = irc
   end
   opts.on("-n", "--nick [NICKNAME]", "Your nickname") do |n|
@@ -54,6 +53,9 @@ OptionParser.new do |opts|
   opts.on("-d", "--[no-]daemon", "Run as daemon") do |d|
     conf["daemon"] = d
   end
+  opts.on("-f", "--file [CONFFILE]", "read configuration from this file") do |f|
+    conf = readconf(File.expand_path("../#{f}", __FILE__))
+  end
   # No argument, shows at tail.  This will print an options summary.
   # Try it and see!
   opts.on_tail("-h", "--help", "Show this message") do
@@ -61,6 +63,13 @@ OptionParser.new do |opts|
     exit
   end
 end.parse!
+
+["irc", "channel", "nick"].each do |t|
+  if conf[t].nil? or conf[t].empty?
+    puts "No #{t} specified!", "Use #{File.basename($0)} -h for help"
+    exit
+  end
+end
 
 # 10 last words are enough!
 conf["most"] = 10 if conf["most"] > 10
@@ -75,9 +84,11 @@ begin
   log.info("Server starts")
   server = IRC::Connection.new(conf["irc"], conf["channel"])
   server.login(conf["nick"], "hostname", "servername", "\"#{conf["nick"]}\" Rigged Bot")
+  if ! conf["auth"].nil?
   if ! conf["auth"].empty?
     server.privmsg(conf["auth"][0], conf["auth"][1])
     server.mode("#{conf["nick"]} +x", " ")
+  end
   end
   server.join_channel
   log.info("Connected to #{conf["irc"]} as #{conf["nick"]} in #{conf["channel"]}")

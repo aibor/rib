@@ -1,3 +1,4 @@
+# coding: utf-8
 
 require "socket"
 require "logger"
@@ -53,7 +54,7 @@ module IRC
                   ([A-Za-z]+|\d{3})        # command
                   ((?:\040[^:][^\040]+)*)  # params, minus last
                   (?:\040:?(.*))?          # last param
-                  \Z /x or raise "Malformed IRC command."
+                  \Z /x or raise "Malformed IRC command: #{cmd}"
 
       params = $3.split + ($4.nil? ? Array.new : [$4])
       Command.new($1, $2, params, params.last)
