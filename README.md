@@ -25,6 +25,7 @@ There are two ways to pass the needed parameters to the bot:
 1. Pass it as arguments at the start of the bot. See **Start** for additional information.
 
 The essential options are:
+
 * irc
 * channel
 * nick
@@ -33,9 +34,11 @@ The essential options are:
 ### Start
 
 Start the bot with
+
     rib [options]
 
 If you have a proper `config` file you need no furter options. Otherwise the following options can be used:
+
         -i, --irc [HOSTNAME]             IRC Server to connect to
         -n, --nick [NICKNAME]            nickname for the bot
         -c, --channel [CHANNEL]          which channel to join
