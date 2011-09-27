@@ -15,7 +15,6 @@ module IRC
     def initialize( host, channel, options = Hash.new )
       options = DEFAULT_OPTIONS.merge(options)
 
-      #@host, @port ,@channel = host, options[:port], channel
       port ,@channel = options[:port], channel
       @irc_server  = options[:socket_class].new(host, port)
       @cmd_buffer = Array.new
@@ -33,6 +32,15 @@ module IRC
       if rpl.nil? or rpl.command != "001"
         raise "Login error:  #{rpl.last_param}."
       end
+    end
+
+    def auth_nick( authdata, nick )
+      raise "Auth error: #{authdata.to_s} not valid" if authdata.nil? or ! authdata.is_a? Array or authdata.length != 2
+      privmsg(authdata[0], authdata[1])
+      mode("#{nick} +x", " ")
+      "auth sent"
+    rescue
+      $! 
     end
 
     def join_channel

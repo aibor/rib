@@ -1,89 +1,29 @@
 # coding: utf-8
 
-require "cgi"
 require "net/http"
 require "uri"
 
-# Unescape a string that has been HTML-escaped
-#   CGI::unescapeHTML("Usage: foo &quot;bar&quot; &lt;baz&gt;")
-#      # => "Usage: foo \"bar\" <baz>"
-def CGI::unescapeHTML(string)
-  enc = string.encoding
-  if [Encoding::UTF_16BE, Encoding::UTF_16LE, Encoding::UTF_32BE, Encoding::UTF_32LE].include?(enc)
-    return string.gsub(Regexp.new('/&(amp|quot|gt|lt|euro|copy|[lr]aquo|reg|sup[2-3]|[aou]uml|szlig|oslash|#[0-9]+|#x[0-9A-Fa-f]+);/i'.encode(enc))) do
-      case $1.encode("US-ASCII")
-      when /amp/i                 then '&'.encode(enc)
-      when /quot/i                then '"'.encode(enc)
-      when /gt/i                  then '>'.encode(enc)
-      when /lt/i                  then '<'.encode(enc)
-      when /euro/i                then '€'.encode(enc)
-      when /copy/i                then '©'.encode(enc)
-      when /laquo/i               then '«'.encode(enc)
-      when /raquo/i               then '»'.encode(enc)
-      when /reg/i                 then '®'.encode(enc)
-      when /sup2/i                then '²'.encode(enc)
-      when /sup3/i                then '³'.encode(enc)
-      when /a[uU][mM][lL]/        then 'ä'.encode(enc)
-      when /o[uU][mM][lL]/        then 'ö'.encode(enc)
-      when /u[uU][mM][lL]/        then 'ü'.encode(enc)
-      when /A[uU][mM][lL]/        then 'Ä'.encode(enc)
-      when /O[uU][mM][lL]/        then 'Ö'.encode(enc)
-      when /U[uU][mM][lL]/        then 'Ü'.encode(enc)
-      when /szlig/i               then 'ß'.encode(enc)
-      when /oslash/i              then 'ø'.encode(enc)
-      when /\A#0*(\d+)\z/        then $1.to_i.chr(enc)
-      when /\A#x([0-9a-f]+)\z/i  then $1.hex.chr(enc)
-      end
-    end
-  end
-  asciicompat = Encoding.compatible?(string, "a")
-  string.gsub(/&(amp|quot|gt|lt|euro|copy|[lr]aquo|reg|sup[2-3]|[aou]uml|szlig|oslash|\#[0-9]+|\#x[0-9A-Fa-f]+);/i) do
-    match = $1.dup
-    case match
-    when /amp/i                 then '&'
-    when /quot/i                then '"'
-    when /gt/i                  then '>'
-    when /lt/i                  then '<'
-    when /euro/i                then '€'
-    when /copy/i                then '©'
-    when /laquo/i               then '«'
-    when /raquo/i               then '»'
-    when /reg/i                 then '®'
-    when /sup2/i                then '²'
-    when /sup3/i                then '³'
-    when /a[uU][mM][lL]/        then 'ä'
-    when /o[uU][mM][lL]/        then 'ö'
-    when /u[uU][mM][lL]/        then 'ü'
-    when /A[uU][mM][lL]/        then 'Ä'
-    when /O[uU][mM][lL]/        then 'Ö'
-    when /U[uU][mM][lL]/        then 'Ü'
-    when /szlig/i               then 'ß'
-    when /oslash/i              then 'ø'
-    when /\A#0*(\d+)\z/
-      n = $1.to_i
-      if enc == Encoding::UTF_8 or
-        enc == Encoding::ISO_8859_1 && n < 256 or
-        asciicompat && n < 128
-        n.chr(enc)
-      else
-        "&##{$1};"
-      end
-    when /\A#x([0-9a-f]+)\z/i
-      n = $1.hex
-      if enc == Encoding::UTF_8 or
-        enc == Encoding::ISO_8859_1 && n < 256 or
-        asciicompat && n < 128
-        n.chr(enc)
-      else
-        "&#x#{$1};"
-      end
+def unentit( string, enc = "iso-8859-1" )
+  require File.expand_path('../entities.rb', __FILE__)
+  #string.encode!("utf-8", enc)
+  string.encode("utf-8", enc).gsub(/&(.*?);/) do
+    ent = $1
+    return nil if ent.nil?
+    if ent =~ /\A#x([0-9a-f]+)\Z/i
+      $1.hex.chr("utf-8")
+    elsif ent =~ /\A#0*(\d+)\Z/
+      $1.to_i.chr("utf-8")
+    elsif ENTITIES.has_key?(ent)
+      ENTITIES[ent].chr("utf-8")
     else
-      "&#{match};"
+      "&#{ent};"
     end
   end
+rescue
+  string
 end
 
-def fetch(url, log = nil, limit = 10)
+def fetch( url, limit = 10 )
   raise ArgumentError,'HTTP redirect too deep' if limit == 0
   uri = URI.parse(url)
   http = Net::HTTP.new(uri.host)
@@ -93,58 +33,46 @@ def fetch(url, log = nil, limit = 10)
     else
       res.instance_eval {@body_exist = false}
     end
-  end
+  end # request_get
   case resp
   when Net::HTTPRedirection then 
-    fetch(resp['location'], log, limit - 1)
+    fetch(resp['location'], limit - 1)
   when Net::HTTPSuccess then resp 
-  else raise "Header failure"
+  else raise "HTTP-Header failure"
   end # case resp
-rescue 
-  if ! log.nil?
-    log.error("fetch()")
-    log.error($!)
-  end
-  return nil
 end
 
-def title(url, log = nil)
-  resp = fetch(url, nil, log)
+def title( url )
+  resp = fetch(url)
   raise "No title can be found" if resp.nil?
+  enc = $1 if resp.body =~ /charset=([-\w\d]+)/
   resp.body =~ /\<title\>\s*([^<]*)\s*\<\/title\>/mi 
-  title = CGI::unescapeHTML($1).gsub(/(&#x202a;|&#x202c;&rlm;.*|)/, '').gsub(/(\r|\n)/, " ").gsub(/(\s{2,})/, " ")
+  title = unentit($1, enc).gsub(/(\r|\n)/, " ").gsub(/(\s{2,})/, " ")
   case title 
   when /(\s+- YouTube\s*\Z)/ then return "1,0You0,4Tube #{title.sub(/#{$1}/, "")}"
   when /(\Axkcd:\s)/ then return "xkcd: #{title.sub(/#{$1}/, "")}"
   when /(\son\sdeviantART\Z)/ then return "0,10deviantART #{title.sub(/#{$1}/, "")}"
   else return "Title: #{title}"
   end # case title
-rescue 
-  if ! log.nil?
-    log.error("title()")
-    log.error($!)
-  end
-  return nil
 end
 
-def gsearch( key, log = nil )
-  key.encode!("utf-8", "iso-8859-1")
-  resp = fetch(URI.escape("http://www.google.com/search?hl=de&q=#{key.gsub(/\s/, "+")}&ie=utf-8&oe=utf-8"), nil, log)
-  raise "Nothing found" if resp.nil?
+def gsearch( key )
+  key.encode!("utf-8", "iso-8859-1") if key.encoding != "UTF-8"
+  resp = fetch(URI.escape("http://www.google.com/search?hl=de&q=#{key.gsub(/\s/, "+")}&ie=utf-8&oe=utf-8"))
+  raise "Nothing found with gsearch()" if resp.nil?
   resp.body =~ /<li class=g.*?<a href="(.*?)"/
   output = $1
-rescue
-  if ! log.nil?
-    log.error("gsearch()")
-    log.error($!)
-  end
-  return nil
 end
 
-def trigger( arg, conf, server, log = nil)
+def trigger( arg, conf, server, log = nil )
   case arg
   when /\Ahelp/ then
-    output ="\"#{conf["tc"]}g SUCHE DAS\" sucht bei Google danach.\n\"#{conf["tc"]}most\" zeigt die #{conf["most"]} meistbenutzten Wörter an.\n\"#{conf["tc"]}stats BENUTZERNAME\" für Statistiken zu diesem Benutzer.\n\"#{conf["tc"]}set title=0/1\" um Anzeige der HTML-Titel aus/an zu schalten.\n\"#{conf["tc"]}set pony=0/1\" um Ponyliebe zu verbergen/zeigen."
+    output = 
+    "\"#{conf["tc"]}g SUCH\"     sucht bei Google danach\n" <<
+    "\"#{conf["tc"]}most\"     zeigt die #{conf["most"]} häufigsten Wörter\n" <<
+    "\"#{conf["tc"]}stats USER\"     Statistiken zu diesem Benutzer\n" <<
+    "\"#{conf["tc"]}set title=0/1\"     HTML-Titel verbergen/anzeigen\n" <<
+    "\"#{conf["tc"]}set pony=0/1\"     Ponyliebe verbergen/zeigen"
 
   when /\A#{conf["qcmd"]}/ then 
     server.quit("[#{conf["qmsg"]}]")
@@ -154,35 +82,37 @@ def trigger( arg, conf, server, log = nil)
 
   when /\Aset (title|pony)=([0-1])/ then 
     conf[$1] = ! $2.to_i.zero?
-    output = $1+" = "+$2
+    output = $1 + " = " + $2
     log.info("Configuration set: #{$1} = #{conf[$1]}") if ! log.nil?
 
   when /\Amost/ then 
     most = $Stats.most(conf["most"])
-    exit if most.nil?
+    raise if most.nil?
     output = "Die #{conf["most"]} meistbenutzen Wörter seit dem #{most[0]}:\n" 
     i = 1
-    most[1..conf["most"]].each {|c| output << i.to_s << ".:\t\t" << c[1].to_s << "x\t\t" << c[0] << "\n"; i += 1}
+    most[1..conf["most"]].each do |c|
+      output << i.to_s << ".:\t\t" << c[1].to_s << "x\t\t" << c[0] << "\n"
+      i += 1
+    end
 
   when /\Astats (\w*)/ then 
     stats = $Stats.user($1)
-    if ! stats.nil?
-      output = "#{$1} kam seit dem #{stats[0]} bisher #{stats[1]} mal zu Wort und füllte das Log mit #{stats[2]} zusätzlichen Wörtern."
-    end
+    raise if stats.nil?
+    output = "#{$1} kam seit dem #{stats[0]} bisher #{stats[1]} mal zu Wort und füllte das Log mit #{stats[2]} zusätzlichen Wörtern."
 
   when /\Ag (.*)\Z/ then 
-    output = gsearch($1, log)
-    output << "\n" << title(output, log)
+    output = gsearch($1)
+    output << "\n" << title(output)
 
   when /\A(\S*)/ then output = conf["resp"][$1].sample if conf["resp"].has_key?($1)
+
   else output = nil
   end # case
   return output
-rescue
-  return nil
 end
 
 def readconf(cfile)
+  cfile = File.expand_path("../../#{cfile}", __FILE__)
   conf = Hash.new
   conf["resp"] = Hash.new
   if File.exist?(cfile)
@@ -196,7 +126,9 @@ def readconf(cfile)
         next
       end
       if key == "most"
-        conf[key] = val.to_i
+        val = val.to_i
+        val = 7 if val > 7
+        conf[key] = val
         next 
       end
       if val.include? '"'
