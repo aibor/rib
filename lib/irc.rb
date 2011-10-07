@@ -94,6 +94,7 @@ module IRC
 
     def recv_command
       cmd = @irc_server.gets
+			raise cmd if cmd =~ /\ERROR:.*/
       if not cmd.nil?
         if cmd =~ /:(\S+)!(?:\S+)\s(\w+)\s#{@channel}\s:(.*)/ and COMMAND_METHODS.include? $2.downcase.intern
           $Stats.update($1, $2, $3)
@@ -129,8 +130,11 @@ module IRC
       analyze_log(channel, irclogfile) if File.exist?(irclogfile)
     end
 
-    def most( c )
-      @since.scan(/.+/) + @wordsh.sort {|a, b| b[1]<=>a[1]}[0..c] 
+    def most( c, l )
+      l = 0 if l.nil?
+      most = @wordsh.reject {|k, v| k.length < l}.sort {|a, b| b[1]<=>a[1]}[0..c-1] 
+      return nil if most.empty?
+      @since.scan(/.+/) + most
     end
 
     def user( key )
@@ -161,7 +165,8 @@ module IRC
 
     private
 
-    def local_date (dt = Date.today().to_s)
+    def local_date ( dt = nil )
+		 dt = Date.today().to_s if dt.nil?
       dt.sub(/(\d{4})-(\d{2})-(\d{2})/, '\3.\2.\1')
     end
 
@@ -170,7 +175,7 @@ module IRC
       file.gets =~ /\A(?:# Logfile created on |., \[)(\d{4}-\d{2}-\d{2}).*\Z/
       @since, file.pos = local_date($1), 0
       file.each do |line|
-        next if ! line.force_encoding("UTF-8").ascii_only?
+        next if RUBY_VERSION > '1.9' and ! line.force_encoding("UTF-8").ascii_only?
         if line =~ /:(\S+)!(?:\S+)\s(\w+)\s#{channel}\s:(.*)/ and LOG_CMDS.include? $2.downcase.intern
           update($1, $2, $3, @since)
         end

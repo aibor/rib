@@ -6,7 +6,7 @@ Simple IRCbot written for ruby 1.9
 
 ## Requirements
 
-* ruby 1.9 (may run with other versions too)
+* ruby (tested with 1.9.2 and 1.8.5 - may run with other versions too)
 
 
 ## Installation

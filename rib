@@ -65,10 +65,12 @@ begin
   log.info("Connected to #{conf["irc"]} as #{conf["nick"]} in #{conf["channel"]}")
 
   # Daemonizing
-  if conf["daemon"] == true
-    puts "Connection established!\nDaemonizing now!"
-    Process.daemon()
-    log.info("Running as daemon now!")
+  if RUBY_VERSION > '1.9'
+    if conf["daemon"] == true
+      puts "Connection established!\nDaemonizing now!"
+      Process.daemon()
+      log.info("Running as daemon now!")
+    end
   end
 
   # After successful connection start with server response loop.
