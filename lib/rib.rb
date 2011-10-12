@@ -3,67 +3,10 @@
 require "net/http"
 require "uri"
 require "iconv" if RUBY_VERSION < '1.9'
-
-def unentit( string, enc )
-  require File.expand_path('../entities.rb', __FILE__)
-  if RUBY_VERSION > '1.9'
-    string.encode!("utf-8", enc)
-  else
-    string = Iconv.iconv("utf-8", enc, string).to_s
-  end
-  string.gsub(/&(.*?);/) do
-    ent = $1
-    return nil if ent.nil?
-    if ent =~ /\A#x([0-9a-f]+)\Z/i
-      out = $1.hex
-    elsif ent =~ /\A#0*(\d+)\Z/
-      out = $1.to_i
-    elsif ENTITIES.has_key?(ent)
-      out = ENTITIES[ent]
-    elsif ENTITIES.has_key?(ent.downcase)
-      out = ENTITIES[ent.downcase]
-    else
-      return string
-    end
-    if RUBY_VERSION > '1.9'
-      out.chr("utf-8")
-    else
-      out.chr
-    end
-  end
-end
-
-def fetch( url, limit )
-  raise ArgumentError,'HTTP redirect too deep' if limit == 0
-  uri = URI.parse(url)
-  http = Net::HTTP.new(uri.host)
-  resp = http.request_get(uri.request_uri) do |res|
-    if res.content_type == 'text/html'
-      res.read_body
-    else
-      res.instance_eval {@body_exist = false}
-    end
-  end # request_get
-  case resp
-  when Net::HTTPRedirection then 
-    fetch(resp['location'], limit - 1)
-  when Net::HTTPSuccess then resp 
-  else raise resp.error! #"HTTP-Header failure"
-  end # case resp
-end
-
-def title( url )
-  resp = fetch(url, 10)
-  raise "No title can be found" if resp.nil?
-  enc = "utf-8"
-  enc = $1 if resp.body =~ /charset=([-\w\d]+)/
-  resp.body =~ /\<title\>\s*([^<]*)\s*\<\/title\>/mi 
-  raise "No title can be found" if $1.nil?
-  unentit($1, enc).gsub(/(\r|\n)/, " ").gsub(/(\s{2,})/, " ")
-end
+load File.expand_path('../html/html.rb', __FILE__)
 
 def ftitle( url )
-  title = title(url)
+  title = HTML.title(url)
   case title 
   when /(\s+- YouTube\s*\Z)/ then return "1,0You0,4Tube #{title.sub(/#{$1}/, "")}"
   when /(\Axkcd:\s)/ then return "xkcd: #{title.sub(/#{$1}/, "")}"
@@ -78,14 +21,14 @@ def gsearch( key )
   else
     key = Iconv.iconv("utf-8", "iso-8859-1", key).to_s
   end
-  resp = fetch(URI.escape("http://www.google.com/search?hl=de&q=#{key.gsub(/\s/, "+")}&ie=utf-8&oe=utf-8"), 10)
+  resp = HTML.fetch(URI.escape("http://www.google.com/search?hl=de&q=#{key.gsub(/\s/, "+")}&ie=utf-8&oe=utf-8"), 10)
   raise "Nothing found with gsearch()" if resp.nil?
   resp.body =~ /<li class=g[>|\s].*?<a href="(.*?)"/
-  output = $1
+  $1
 end
 
 def floodprot
-  raise "flood protection" if ! @last.nil? and ( Time.new.to_i < (@last + 20).to_i )
+  raise "flood protection" if ! @last.nil? and ( Time.new.to_i < (@last + 11).to_i )
   @last = Time.new.to_i
 end
 
