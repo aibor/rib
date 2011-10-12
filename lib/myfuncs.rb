@@ -20,8 +20,10 @@ def unentit( string, enc )
       out = $1.to_i
     elsif ENTITIES.has_key?(ent)
       out = ENTITIES[ent]
+    elsif ENTITIES.has_key?(ent.downcase)
+      out = ENTITIES[ent.downcase]
     else
-      return "&#{ent};"
+      return string
     end
     if RUBY_VERSION > '1.9'
       out.chr("utf-8")
@@ -46,7 +48,7 @@ def fetch( url, limit )
   when Net::HTTPRedirection then 
     fetch(resp['location'], limit - 1)
   when Net::HTTPSuccess then resp 
-  else raise "HTTP-Header failure"
+  else raise resp.error! #"HTTP-Header failure"
   end # case resp
 end
 
@@ -57,7 +59,11 @@ def title( url )
   enc = $1 if resp.body =~ /charset=([-\w\d]+)/
   resp.body =~ /\<title\>\s*([^<]*)\s*\<\/title\>/mi 
   raise "No title can be found" if $1.nil?
-  title = unentit($1, enc).gsub(/(\r|\n)/, " ").gsub(/(\s{2,})/, " ")
+  unentit($1, enc).gsub(/(\r|\n)/, " ").gsub(/(\s{2,})/, " ")
+end
+
+def ftitle( url )
+  title = title(url)
   case title 
   when /(\s+- YouTube\s*\Z)/ then return "1,0You0,4Tube #{title.sub(/#{$1}/, "")}"
   when /(\Axkcd:\s)/ then return "xkcd: #{title.sub(/#{$1}/, "")}"
@@ -83,16 +89,35 @@ def floodprot
   @last = Time.new.to_i
 end
 
+def timediff( start )
+  raise if ! start.is_a?(Time)
+  diff = (Time.now - start).to_i
+  s = diff.modulo(60)
+  m = diff.modulo(3600)/60
+  h = diff.modulo(3600*24)/3600
+  d = diff/(3600*24)
+
+  uptime = String.new
+  uptime << d.to_s + "d " if d > 0
+  uptime << h.to_s + "h " if h > 0
+  uptime << m.to_s + "m " if m > 0
+  uptime << s.to_s + "s"
+end
+
 def trigger( arg, conf, server, log = nil )
   case arg
-  when /\Ahelp/ then
+  when /\Ahelp/i then
     floodprot
     output = 
-    "\"#{conf["tc"]}g SUCH\"     sucht bei Google danach\n" <<
-    "\"#{conf["tc"]}most\"     zeigt die #{conf["most"]} häufigsten Wörter\n" <<
-    "\"#{conf["tc"]}stats USER\"     Statistiken zu diesem Benutzer\n" <<
-    "\"#{conf["tc"]}set title=0/1\"     HTML-Titel verbergen/anzeigen\n" <<
-    "\"#{conf["tc"]}set pony=0/1\"     Ponyliebe verbergen/zeigen"
+    "#{conf["tc"]}g SUCH        sucht bei Google danach\n" <<
+    "#{conf["tc"]}most          zeigt die #{conf["most"]} häufigsten Wörter\n" <<
+    "#{conf["tc"]}stats USER     Statistiken zu diesem Benutzer\n" <<
+    "#{conf["tc"]}set title=0/1     HTML-Titel verbergen/anzeigen\n" <<
+    "#{conf["tc"]}set pony=0/1     Ponyliebe verbergen/zeigen\n" <<
+    "#{conf["tc"]}uptime            zeigt an, wie lange der Bot schon läuft"
+
+  when /\Auptime/i then
+    output = "Uptime:\t" + timediff($Starttime)
 
   when /\A#{conf["qcmd"]}/ then 
     server.quit("[#{conf["qmsg"]}]")
@@ -100,12 +125,12 @@ def trigger( arg, conf, server, log = nil )
 
   when /\A#{conf["nick"]}say (.*)\Z/ then output = $1
 
-  when /\Aset (title|pony)=([0-1])/ then 
+  when /\Aset (title|pony)=([0-1])/i then 
     conf[$1] = ! $2.to_i.zero?
     output = $1 + " = " + $2
     log.info("Configuration set: #{$1} = #{conf[$1]}") if ! log.nil?
 
-  when /\Amost\s*(\d*)/ then 
+  when /\Amost\s*(\d*)/i then 
     most = $Stats.most(conf["most"], $1.to_i)
     raise if most.nil?
     floodprot
@@ -116,14 +141,14 @@ def trigger( arg, conf, server, log = nil )
       i += 1
     end
 
-  when /\Astats (\w*)/ then 
+  when /\Astats (\w*)/i then 
     stats = $Stats.user($1)
     raise if stats.nil?
     output = "#{$1} kam seit dem #{stats[0]} bisher #{stats[1]} mal zu Wort und füllte das Log mit #{stats[2]} zusätzlichen Wörtern."
 
-  when /\Ag (.*)\Z/ then 
+  when /\Ag (.*)\Z/i then 
     output = gsearch($1)
-    output << "\n" << title(output)
+    output << "\n" << ftitle(output)
 
   when /\A(\S*)/ then output = conf["resp"][$1][rand(conf["resp"][$1].length)] if conf["resp"].has_key?($1)
 
