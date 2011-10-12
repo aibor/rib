@@ -47,6 +47,7 @@ module HTML
     when Net::HTTPRedirection then 
       fetch(resp['location'], limit - 1)
     when Net::HTTPSuccess then resp 
+    when Net::HTTPClientError then resp
     else raise resp.error! #"HTTP-Header failure"
     end # case resp
   end
