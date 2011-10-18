@@ -19,6 +19,12 @@ qcmd = "quit"
 # Message when bot leaves
 qmsg = "See you later, shitlords!"
 
+# File for linkdumping. absolute or relative to main folder
+#linkdump = "./yaylinks"
+
+# Link to linkdump blog
+#dumplink = "https://www.linkdumpiorrrr.de"
+
 # How many words shown by most? Max 10! NO " HERE!
 most = 3
 

@@ -7,6 +7,7 @@ load File.expand_path('../html/html.rb', __FILE__)
 
 def ftitle( url )
   title = HTML.title(url)
+  return nil if title.empty?
   case title 
   when /(\s+- YouTube\s*\Z)/ then return "1,0You0,4Tube #{title.sub(/#{$1}/, "")}"
   when /(\Axkcd:\s)/ then return "xkcd: #{title.sub(/#{$1}/, "")}"
@@ -27,8 +28,9 @@ def gsearch( key )
   $1
 end
 
-def floodprot
-  raise "flood protection" if ! @last.nil? and ( Time.new.to_i < (@last + 11).to_i )
+def floodprot(int)
+  int = 15 if ! int.is_a?(Fixnum)
+  raise "flood protection" if ! @last.nil? and ( Time.new.to_i < (@last + int).to_i )
   @last = Time.new.to_i
 end
 
@@ -50,14 +52,31 @@ end
 def trigger( arg, conf, server, log = nil )
   case arg
   when /\Ahelp/i then
-    floodprot
+    floodprot(30)
     output = 
+    "#{conf["tc"]}add URL       speichere URL\n" <<
+    "#{conf["tc"]}give          gib link zum linkdump aus\n" <<
     "#{conf["tc"]}g SUCH        sucht bei Google danach\n" <<
     "#{conf["tc"]}most          zeigt die #{conf["most"]} häufigsten Wörter\n" <<
     "#{conf["tc"]}stats USER     Statistiken zu diesem Benutzer\n" <<
     "#{conf["tc"]}set title=0/1     HTML-Titel verbergen/anzeigen\n" <<
     "#{conf["tc"]}set pony=0/1     Ponyliebe verbergen/zeigen\n" <<
     "#{conf["tc"]}uptime            zeigt an, wie lange der Bot schon läuft"
+
+  when /\Aadd\s+(http[s]?:\/\/(\S*))/xi then
+    return nil if ! conf.has_key?("linkdump") or conf["linkdump"].empty?
+    linkdump = File.expand_path("../../"+conf["linkdump"], __FILE__)
+    raise "linkdump not writeable" if File.writable?(linkdump)
+    lines = String.new
+    lines = "--------------------\n" if File.exist?(linkdump)
+    lines << Time.now.asctime << "\n" << $1 << "\n"
+    File.open(linkdump, File::WRONLY | File::APPEND | File::CREAT) {|f| f.write(lines) }
+    output = "Link added!"
+   
+  when /\Agive/i then 
+    return output = "Nicht angegeben." if conf["dumplink"].nil? or conf["dumplink"].empty?
+    output = conf["dumplink"]
+    output << "\n" << ftitle(output).to_s
 
   when /\Auptime/i then
     output = "Uptime:\t" + timediff($Starttime)
@@ -76,7 +95,7 @@ def trigger( arg, conf, server, log = nil )
   when /\Amost\s*(\d*)/i then 
     most = $Stats.most(conf["most"], $1.to_i)
     raise if most.nil?
-    floodprot
+    floodprot(11)
     output = "Die #{conf["most"]} meistbenutzen Wörter seit dem #{most[0]}:\n" 
     i = 1
     most[1..conf["most"]].each do |c|
@@ -91,7 +110,7 @@ def trigger( arg, conf, server, log = nil )
 
   when /\Ag (.*)\Z/i then 
     output = gsearch($1)
-    output << "\n" << ftitle(output)
+    output << "\n" << ftitle(output).to_s
 
   when /\A(\S*)/ then output = conf["resp"][$1][rand(conf["resp"][$1].length)] if conf["resp"].has_key?($1)
 
