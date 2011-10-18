@@ -71,7 +71,8 @@ def trigger( arg, conf, server, log = nil )
     lines = "--------------------\n" if File.exist?(linkdump)
     lines << Time.now.asctime << "\n" << $1 << "\n"
     File.open(linkdump, File::WRONLY | File::APPEND | File::CREAT) {|f| f.write(lines) }
-    output = "Link added!"
+    title = ftitle($1).to_s
+    output = title + "\nLink added!"
    
   when /\Agive/i then 
     return output = "Nicht angegeben." if conf["dumplink"].nil? or conf["dumplink"].empty?
