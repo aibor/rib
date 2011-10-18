@@ -20,7 +20,7 @@ qcmd = "quit"
 qmsg = "See you later, shitlords!"
 
 # File for linkdumping. absolute or relative to main folder
-#linkdump = "./yaylinks"
+linkdump = "./yaylinks"
 
 # Link to linkdump blog
 dumplink = "https://www.linkdumpiorrrr.de"

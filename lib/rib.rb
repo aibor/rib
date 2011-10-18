@@ -66,7 +66,7 @@ def trigger( arg, conf, server, log = nil )
   when /\Aadd\s+(http[s]?:\/\/(\S*))/xi then
     return nil if ! conf.has_key?("linkdump") or conf["linkdump"].empty?
     linkdump = File.expand_path("../../"+conf["linkdump"], __FILE__)
-    raise "linkdump not writeable" if File.writable?(linkdump)
+    #raise "linkdump not writeable" if File.stat(linkdump).writable_real?
     lines = String.new
     lines = "--------------------\n" if File.exist?(linkdump)
     lines << Time.now.asctime << "\n" << $1 << "\n"
