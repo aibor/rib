@@ -75,8 +75,9 @@ def trigger( arg, conf, server, log = nil )
    
   when /\Agive/i then 
     return output = "Nicht angegeben." if conf["dumplink"].nil? or conf["dumplink"].empty?
-    output = conf["dumplink"]
-    output << "\n" << ftitle(output).to_s
+    title = ftitle(conf["dumplink"]).to_s
+    output = conf["dumplink"] + "\n" + title
+    #output << "\n" << ftitle(conf["dumplink"]).to_s
 
   when /\Auptime/i then
     output = "Uptime:\t" + timediff($Starttime)
