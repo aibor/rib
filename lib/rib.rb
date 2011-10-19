@@ -22,10 +22,10 @@ def gsearch( key )
   else
     key = Iconv.iconv("utf-8", "iso-8859-1", key).to_s
   end
-  resp = HTML.fetch(URI.escape("http://www.google.com/search?hl=de&q=#{key.gsub(/\s/, "+")}&ie=utf-8&oe=utf-8"), 10)
-  raise "Nothing found with gsearch()" if resp.nil?
-  resp.body =~ /<li class=g[>|\s].*?<a href="(.*?)"/
-  $1
+  uri = URI.parse(URI.escape("https://www.google.com/search?hl=de&btnI=1&q=#{key.gsub(/\s/, "+")}&ie=utf-8&oe=utf-8&pws=0"))
+  http = Net::HTTP.new(uri.host)
+  resp = http.request_head(uri.request_uri)
+  resp['location']
 end
 
 def floodprot(int)
@@ -53,15 +53,18 @@ def trigger( arg, conf, server, log = nil )
   case arg
   when /\Ahelp/i then
     floodprot(30)
-    output = 
-    "#{conf["tc"]}add URL       speichere URL\n" <<
-    "#{conf["tc"]}give          gib link zum linkdump aus\n" <<
-    "#{conf["tc"]}g SUCH        sucht bei Google danach\n" <<
-    "#{conf["tc"]}most          zeigt die #{conf["most"]} häufigsten Wörter\n" <<
-    "#{conf["tc"]}stats USER     Statistiken zu diesem Benutzer\n" <<
-    "#{conf["tc"]}set title=0/1     HTML-Titel verbergen/anzeigen\n" <<
-    "#{conf["tc"]}set pony=0/1     Ponyliebe verbergen/zeigen\n" <<
-    "#{conf["tc"]}uptime            zeigt an, wie lange der Bot schon läuft"
+    return output = "Kein Link angegeben. :/" if conf["dumplink"].nil? or conf["dumplink"].empty?
+    title = ftitle(conf["dumplink"]+"?h").to_s
+    output = conf["dumplink"]+"?h" + "\n" + title
+    #output = 
+    #"#{conf["tc"]}add URL       speichere URL\n" <<
+    #"#{conf["tc"]}give          gib link zum linkdump aus\n" <<
+    #"#{conf["tc"]}g SUCH        sucht bei Google danach\n" <<
+    #"#{conf["tc"]}most          zeigt die #{conf["most"]} häufigsten Wörter\n" <<
+    #"#{conf["tc"]}stats USER     Statistiken zu diesem Benutzer\n" <<
+    #"#{conf["tc"]}set title=0/1     HTML-Titel verbergen/anzeigen\n" <<
+    #"#{conf["tc"]}set pony=0/1     Ponyliebe verbergen/zeigen\n" <<
+    #"#{conf["tc"]}uptime            zeigt an, wie lange der Bot schon läuft"
 
   when /\Aadd\s+(http[s]?:\/\/(\S*))/xi then
     return nil if ! conf.has_key?("linkdump") or conf["linkdump"].empty?
@@ -75,10 +78,9 @@ def trigger( arg, conf, server, log = nil )
     output = title + "\nLink added!"
    
   when /\Agive/i then 
-    return output = "Nicht angegeben." if conf["dumplink"].nil? or conf["dumplink"].empty?
+    return output = "Kein Link angegeben. :/" if conf["dumplink"].nil? or conf["dumplink"].empty?
     title = ftitle(conf["dumplink"]).to_s
     output = conf["dumplink"] + "\n" + title
-    #output << "\n" << ftitle(conf["dumplink"]).to_s
 
   when /\Auptime/i then
     output = "Uptime:\t" + timediff($Starttime)
@@ -112,6 +114,7 @@ def trigger( arg, conf, server, log = nil )
 
   when /\Ag (.*)\Z/i then 
     output = gsearch($1)
+    return nil if output.nil?
     output << "\n" << ftitle(output).to_s
 
   when /\A(\S*)/ then output = conf["resp"][$1][rand(conf["resp"][$1].length)] if conf["resp"].has_key?($1)
