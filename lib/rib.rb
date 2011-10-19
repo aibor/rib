@@ -49,13 +49,15 @@ def timediff( start )
   uptime << s.to_s + "s"
 end
 
-def trigger( arg, conf, server, log = nil )
+def trigger( arg, conf, server, source, log = nil )
+  target = nil
   case arg
-  when /\Ahelp/i then
-    floodprot(30)
-    return output = "Kein Link angegeben. :/" if conf["dumplink"].nil? or conf["dumplink"].empty?
-    title = ftitle(conf["dumplink"]+"?h").to_s
-    output = conf["dumplink"]+"?h" + "\n" + title
+  when /\Ahelp(\sme)?/i then
+    floodprot(10)
+    return output = "Kein Link angegeben. :/" if conf["helplink"].nil? or conf["helplink"].empty?
+    title = ftitle(conf["helplink"]).to_s
+    output = conf["helplink"]+"?h" + "\n" + title
+    target = source if ! $1.nil?
     #output = 
     #"#{conf["tc"]}add URL       speichere URL\n" <<
     #"#{conf["tc"]}give          gib link zum linkdump aus\n" <<
@@ -121,7 +123,7 @@ def trigger( arg, conf, server, log = nil )
 
   else output = nil
   end # case
-  return output
+  return [target, output]
 end
 
 def readconf(cfile)

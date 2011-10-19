@@ -94,7 +94,7 @@ module IRC
 
     def recv_command
       cmd = @irc_server.gets
-			raise cmd if cmd =~ /\ERROR:.*/
+			raise cmd if cmd =~ /ERROR:.*/
       if not cmd.nil?
         if cmd =~ /:(\S+)!(?:\S+)\s(\w+)\s#{@channel}\s:(.*)/ and COMMAND_METHODS.include? $2.downcase.intern
           $Stats.update($1, $2, $3)

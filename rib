@@ -80,18 +80,22 @@ begin
 
       # If a message is received check for triggers and response properly.
       if cmd.command == "PRIVMSG"
-        output = nil
+        output = Array.new(2)
+        cmd.prefix.match(/\A(.*?)!/)  
+        source = $1 if ! $1.nil?
         case cmd.last_param 
         # several triggers and their response algorithms
-        when /\A#{conf["tc"]}(.*)\Z/ then output = trigger($1, conf, server, log)
-        when /(http[s]?:\/\/)(\S*)/x then output = ftitle($&) if conf["title"] == true
-        when /([p][o][n]{1,2}[yi][e]?s*)/i then output = "#{$1} yay." if conf["pony"] == true && rand(2).zero?
+        when /\A#{conf["tc"]}(.*)\Z/ then output = trigger($1, conf, server, source, log)
+        when /(http[s]?:\/\/)(\S*)/x then output[1] = ftitle($&) if conf["title"] == true
+        when /([p][o][n]{1,2}[yi][e]?s*)/i then output[1] = "#{$1} yay." if conf["pony"] == true && rand(2).zero?
         end # case
-
         # If useful response message was created: send it!
-        next if output.nil?
-        output = output.scan(/.+/)
-        output.each {|o| server.privmsg(conf["channel"], o)}
+        next if output[1].nil?
+        output[0] = source if ! cmd.params[0].include? "#"
+        output[0] = conf["channel"] if output[0].nil?
+        output[1] = output[1].scan(/.+/)
+        #output.each {|o| server.privmsg(conf["channel"], o)}
+        output[1].each {|o| server.privmsg(output[0], o)}
       end # if cmd.command
     rescue
       log.error($!)

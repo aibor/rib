@@ -25,6 +25,9 @@ linkdump = "./yaylinks"
 # Link to linkdump blog
 dumplink = "https://www.linkdumpiorrrr.de"
 
+# Link to help page 
+helplink = "https://www.linkdumpiorrrr.de/rib-help"
+
 # How many words shown by most? Max 10! NO " HERE!
 most = 3
 
