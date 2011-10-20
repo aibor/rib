@@ -56,7 +56,7 @@ def trigger( arg, conf, server, source, log = nil )
     floodprot(10)
     return output = "Kein Link angegeben. :/" if conf["helplink"].nil? or conf["helplink"].empty?
     title = ftitle(conf["helplink"]).to_s
-    output = conf["helplink"]+"?h" + "\n" + title
+    output = conf["helplink"] + "\n" + title
     target = source if ! $1.nil?
     #output = 
     #"#{conf["tc"]}add URL       speichere URL\n" <<
