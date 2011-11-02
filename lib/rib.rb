@@ -74,13 +74,13 @@ def trigger( arg, conf, server, source, log = nil )
     #raise "linkdump not writeable" if File.stat(linkdump).writable_real?
     lines = String.new
     lines = "--------------------\n" if File.exist?(linkdump)
-    lines << Time.now.asctime << " -" << source << " - " << server.whois(source).auth << "\n" << $1 << "\n"
+    lines << Time.now.asctime << " - " << source << " - " << server.whois(source).auth << "\n" << $1 << "\n"
     File.open(linkdump, File::WRONLY | File::APPEND | File::CREAT) {|f| f.write(lines) }
     updatefile = File.dirname(linkdump)+"/entries/.lastupdate"
     File.unlink(updatefile) if File.exist?(updatefile)
+    output = title + "\nLink added!"
     ftitle(conf["dumplink"])
     title = ftitle($1).to_s
-    output = title + "\nLink added!"
    
   when /\Adel\s+(\d+)/ then
     num = $1.to_i
