@@ -76,6 +76,9 @@ def trigger( arg, conf, server, source, log = nil )
     lines = "--------------------\n" if File.exist?(linkdump)
     lines << Time.now.asctime << " - " << source << "\n" << $1 << "\n"
     File.open(linkdump, File::WRONLY | File::APPEND | File::CREAT) {|f| f.write(lines) }
+    updatefile = File.dirname(linkdump)+"/entries/.lastupdate"
+    File.unlink(updatefile) if File.exist?(updatefile)
+    ftitle(conf["dumplink"])
     title = ftitle($1).to_s
     output = title + "\nLink added!"
    
