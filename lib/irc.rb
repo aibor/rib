@@ -8,6 +8,7 @@ module IRC
 
   class Connection
     Command = Struct.new(:prefix, :command, :params, :last_param)
+    User = Struct.new(:user, :channels, :server, :auth)
     DEFAULT_OPTIONS = { :port         => 6667,
                         :socket_class => TCPSocket }.freeze
     COMMAND_METHODS = [:nick, :join, :privmsg, :user, :mode, :quit].freeze
@@ -66,6 +67,22 @@ module IRC
 
       params = $3.split + ($4.nil? ? Array.new : [$4])
       Command.new($1, $2, params, params.last)
+    end
+
+    def whois(user)
+      send_command "WHOIS #{user}"
+      out = User.new
+      while cmd = recv
+        2.times {|i| cmd.params.shift}
+        case cmd.command
+        when /\A(?:311)\Z/ then out.user = cmd.params * " "
+        when /\A(?:319)\Z/ then out.channels = cmd.params[0].split
+        when /\A(?:312)\Z/ then out.server = cmd.params * " "
+        when /\A(?:330)\Z/ then out.auth = cmd.params[0]
+        when /\A(?:318)\Z/ then break
+        end
+      end
+      return out
     end
 
     def recv_until

@@ -74,7 +74,7 @@ def trigger( arg, conf, server, source, log = nil )
     #raise "linkdump not writeable" if File.stat(linkdump).writable_real?
     lines = String.new
     lines = "--------------------\n" if File.exist?(linkdump)
-    lines << Time.now.asctime << " - " << source << "\n" << $1 << "\n"
+    lines << Time.now.asctime << " -" << source << " - " << server.whois(source).auth << "\n" << $1 << "\n"
     File.open(linkdump, File::WRONLY | File::APPEND | File::CREAT) {|f| f.write(lines) }
     updatefile = File.dirname(linkdump)+"/entries/.lastupdate"
     File.unlink(updatefile) if File.exist?(updatefile)
@@ -91,8 +91,8 @@ def trigger( arg, conf, server, source, log = nil )
     entryarr = Dir.entries(entrydir).sort.delete_if {|e| e =~ /\A\./}
     entry = entryarr[(num - 1)] 
     return [target, "Eintrag ##{num} nicht gefunden"] if entry.nil?
-    entry =~ /\A\d+-(.*?)\Z/
-    return [target, "Du nicht!"] if $1 != source
+    entry =~ /\A\d+-(?:.*?)-(.*?)\Z/
+    return [target, "Du nicht!"] if $1 != server.whois(source).auth
     File.unlink(entrydir+entry)
     output = "Eintrag ##{num} gelöscht"
 
