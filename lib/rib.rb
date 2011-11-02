@@ -69,18 +69,32 @@ def trigger( arg, conf, server, source, log = nil )
     #"#{conf["tc"]}uptime            zeigt an, wie lange der Bot schon läuft"
 
   when /\Aadd\s+(http[s]?:\/\/(\S*))/xi then
-    return nil if ! conf.has_key?("linkdump") or conf["linkdump"].empty?
+    return [target, nil] if ! conf.has_key?("linkdump") or conf["linkdump"].empty?
     linkdump = File.expand_path("../../"+conf["linkdump"], __FILE__)
     #raise "linkdump not writeable" if File.stat(linkdump).writable_real?
     lines = String.new
     lines = "--------------------\n" if File.exist?(linkdump)
-    lines << Time.now.asctime << "\n" << $1 << "\n"
+    lines << Time.now.asctime << " - " << source << "\n" << $1 << "\n"
     File.open(linkdump, File::WRONLY | File::APPEND | File::CREAT) {|f| f.write(lines) }
     title = ftitle($1).to_s
     output = title + "\nLink added!"
    
+  when /\Adel\s+(\d+)/ then
+    num = $1.to_i
+    return [target, "Nein!"] if ! conf.has_key?("linkdump") or conf["linkdump"].empty? or num < 1
+    linkdump = File.expand_path("../../"+conf["linkdump"], __FILE__)
+    File.unlink(linkdump) if File.exist?(linkdump)
+    entrydir = File.dirname(linkdump)+"/entries/"
+    entryarr = Dir.entries(entrydir).sort.delete_if {|e| e =~ /\A\./}
+    entry = entryarr[(num - 1)] 
+    return [target, "Eintrag ##{num} nicht gefunden"] if entry.nil?
+    entry =~ /\A\d+-(.*?)\Z/
+    return [target, "Du nicht!"] if $1 != source
+    File.unlink(entrydir+entry)
+    output = "Eintrag ##{num} gelöscht"
+
   when /\Agive/i then 
-    return output = "Kein Link angegeben. :/" if conf["dumplink"].nil? or conf["dumplink"].empty?
+    return [target, "Kein Link angegeben. :/"] if conf["dumplink"].nil? or conf["dumplink"].empty?
     title = ftitle(conf["dumplink"]).to_s
     output = conf["dumplink"] + "\n" + title
 
@@ -116,7 +130,7 @@ def trigger( arg, conf, server, source, log = nil )
 
   when /\Ag (.*)\Z/i then 
     output = gsearch($1)
-    return nil if output.nil?
+    return [target, nil] if output.nil?
     output << "\n" << ftitle(output).to_s
 
   when /\A(\S*)/ then output = conf["resp"][$1][rand(conf["resp"][$1].length)] if conf["resp"].has_key?($1)
