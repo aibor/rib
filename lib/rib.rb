@@ -78,9 +78,10 @@ def trigger( arg, conf, server, source, log = nil )
     File.open(linkdump, File::WRONLY | File::APPEND | File::CREAT) {|f| f.write(lines) }
     updatefile = File.dirname(linkdump)+"/entries/.lastupdate"
     File.unlink(updatefile) if File.exist?(updatefile)
-    output = title + "\nLink added!"
     ftitle(conf["dumplink"])
-    title = ftitle($1).to_s
+    title = ftitle($1).to_s + "\n"
+    title = "" if title.nil?
+    output = title + "Link added!"
    
   when /\Adel\s+(\d+)/ then
     num = $1.to_i
