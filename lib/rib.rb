@@ -8,21 +8,33 @@ load File.expand_path('../html/html.rb', __FILE__)
 def ftitle( url )
   title = HTML.title(url)
   return nil if title.empty?
+  formattitle(title)
+end
+
+def formattitle(title)
   case title 
   when /(\s+- YouTube\s*\Z)/ then return "1,0You0,4Tube #{title.sub(/#{$1}/, "")}"
   when /(\Axkcd:\s)/ then return "xkcd: #{title.sub(/#{$1}/, "")}"
   when /(\son\sdeviantART\Z)/ then return "0,10deviantART #{title.sub(/#{$1}/, "")}"
+  when /(\s+(-|–) Wikipedia((, the free encyclopedia)|)\Z)/ then return "Wikipedia: #{title.sub(/#{$1}/, "")}"
+  when /\A(dict\.cc \| )/ then return "dict.cc: #{title.sub($1, "")}"
   else return "Title: #{title}"
   end # case title
 end
 
-def gsearch( key )
+def gsearch( site, key )
   if RUBY_VERSION > '1.9'
     key.encode!("utf-8", "iso-8859-1") if key.encoding.name != "UTF-8"
   else
     key = Iconv.iconv("utf-8", "iso-8859-1", key).to_s
   end
-  uri = URI.parse(URI.escape("https://www.google.com/search?hl=de&btnI=1&q=#{key.gsub(/\s/, "+")}&ie=utf-8&oe=utf-8&pws=0"))
+  key.gsub!(/\s/, "+")
+  case site
+  when /w(iki)?/ then url = "https://www.google.com/search?hl=de&btnI=1&q=site:wikipedia.org+#{key}&ie=utf-8&oe=utf-8&pws=0" 
+  when /d(ict)?/ then url = "http://dict.cc/?s=#{key}"
+  else url = "https://www.google.com/search?hl=de&btnI=1&q=#{key}&ie=utf-8&oe=utf-8&pws=0" 
+  end
+  uri = URI.parse(URI.escape(url))
   http = Net::HTTP.new(uri.host)
   resp = http.request_head(uri.request_uri)
   resp['location']
@@ -49,6 +61,24 @@ def timediff( start )
   uptime << s.to_s + "s"
 end
 
+def getentryname( path, num )
+  entrydir = File.dirname(path)+"/entries/"
+  entryarr = Dir.entries(entrydir).sort.delete_if {|e| e =~ /\A\./}
+  if num == "r"
+    num = rand(entryarr.length) + 1
+  end
+  entryarr[(num - 1)] =~ /\A(\d+)-(.*?)-(.*?)\Z/
+  [entrydir, $&, $1, $2, $3]
+end
+
+def readentry(file)
+  f = File.open(file, File::RDONLY | File::NONBLOCK) 
+  line = f.gets
+  line =~ /\A<a href="(.*?)" target="_blank" title="(.*?)">(?:.*?)<\/a><br>\Z/
+  title = $2.empty? ? $2 : formattitle($2)
+  $1 + "\n" + title
+end 
+
 def trigger( arg, conf, server, source, log = nil )
   target = nil
   case arg
@@ -58,15 +88,6 @@ def trigger( arg, conf, server, source, log = nil )
     title = ftitle(conf["helplink"]).to_s
     output = conf["helplink"] + "\n" + title
     target = source if ! $1.nil?
-    #output = 
-    #"#{conf["tc"]}add URL       speichere URL\n" <<
-    #"#{conf["tc"]}give          gib link zum linkdump aus\n" <<
-    #"#{conf["tc"]}g SUCH        sucht bei Google danach\n" <<
-    #"#{conf["tc"]}most          zeigt die #{conf["most"]} häufigsten Wörter\n" <<
-    #"#{conf["tc"]}stats USER     Statistiken zu diesem Benutzer\n" <<
-    #"#{conf["tc"]}set title=0/1     HTML-Titel verbergen/anzeigen\n" <<
-    #"#{conf["tc"]}set pony=0/1     Ponyliebe verbergen/zeigen\n" <<
-    #"#{conf["tc"]}uptime            zeigt an, wie lange der Bot schon läuft"
 
   when /\Aadd\s+(http[s]?:\/\/(\S*))/xi then
     return [target, nil] if ! conf.has_key?("linkdump") or conf["linkdump"].empty?
@@ -92,19 +113,32 @@ def trigger( arg, conf, server, source, log = nil )
     return [target, "Nein!"] if ! conf.has_key?("linkdump") or conf["linkdump"].empty? or num < 1
     linkdump = File.expand_path("../../"+conf["linkdump"], __FILE__)
     File.unlink(linkdump) if File.exist?(linkdump)
-    entrydir = File.dirname(linkdump)+"/entries/"
-    entryarr = Dir.entries(entrydir).sort.delete_if {|e| e =~ /\A\./}
-    entry = entryarr[(num - 1)] 
-    return [target, "Eintrag ##{num} nicht gefunden"] if entry.nil?
-    entry =~ /\A\d+-(?:.*?)-(.*?)\Z/
-    return [target, "Du nicht!"] if $1 != server.whois(source).auth
-    File.unlink(entrydir+entry)
+    entry = getentryname(linkdump, num)
+    return [target, "Eintrag ##{num} nicht gefunden"] if entry[1].nil?
+    #entry =~ /\A\d+-(?:.*?)-(.*?)\Z/
+    return [target, "Du nicht!"] if entry[4] != server.whois(source).auth
+    File.unlink(entry[0]+entry[1])
     output = "Eintrag ##{num} gelöscht"
 
-  when /\Agive/i then 
+  when /\Agive\s*(r|\d*)/i then 
+    if $1 == "r"
+      num = $1
+    else
+      num = $1.to_i 
+    end
     return [target, "Kein Link angegeben. :/"] if conf["dumplink"].nil? or conf["dumplink"].empty?
-    title = ftitle(conf["dumplink"]).to_s
-    output = conf["dumplink"] + "\n" + title
+    begin
+      raise if num != "r" and num.zero?
+      linkdump = File.expand_path("../../"+conf["linkdump"], __FILE__)
+      entry = getentryname(linkdump, num)
+      file = entry[0]+entry[1]
+      raise if ! File.exist?(file)
+      output = readentry(file)
+    rescue
+      url = conf["dumplink"]
+      title = ftitle(url).to_s
+      output = url + "\n" + title
+    end
 
   when /\Auptime/i then
     output = "Uptime:\t" + timediff($Starttime)
@@ -136,8 +170,10 @@ def trigger( arg, conf, server, source, log = nil )
     raise if stats.nil?
     output = "#{$1} kam seit dem #{stats[0]} bisher #{stats[1]} mal zu Wort und füllte das Log mit #{stats[2]} zusätzlichen Wörtern."
 
-  when /\Ag (.*)\Z/i then 
-    output = gsearch($1)
+  when /\A(g|w|d|wiki|dict) (.*)\Z/i then 
+    site = $1
+    key = $2.to_s
+    output = gsearch(site, key)
     return [target, nil] if output.nil?
     output << "\n" << ftitle(output).to_s
 
