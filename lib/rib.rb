@@ -64,10 +64,12 @@ end
 def getentryname( path, num )
   entrydir = File.dirname(path)+"/entries/"
   entryarr = Dir.entries(entrydir).sort.delete_if {|e| e =~ /\A\./}
-  if num == "r"
-    num = rand(entryarr.length) + 1
+  case  num
+  when "r" then num = rand(entryarr.length)
+  when "l" then num = -1
+  else num -= 1
   end
-  entryarr[(num - 1)] =~ /\A(\d+)-(.*?)-(.*?)\Z/
+  entryarr[(num)] =~ /\A(\d+)-(.*?)-(.*?)\Z/
   [entrydir, $&, $1, $2, $3]
 end
 
@@ -120,15 +122,16 @@ def trigger( arg, conf, server, source, log = nil )
     File.unlink(entry[0]+entry[1])
     output = "Eintrag ##{num} gelöscht"
 
-  when /\Agive\s*(r|\d*)/i then 
-    if $1 == "r"
-      num = $1
+  when /\Agive\s*(l|r|\d*)/i then 
+    input = $1
+    if input =~ /\A[l|r]\Z/
+      num = input
     else
-      num = $1.to_i 
+      num = input.to_i 
     end
     return [target, "Kein Link angegeben. :/"] if conf["dumplink"].nil? or conf["dumplink"].empty?
     begin
-      raise if num != "r" and num.zero?
+      raise if num =~ /[^lr]/ and num.zero?
       linkdump = File.expand_path("../../"+conf["linkdump"], __FILE__)
       entry = getentryname(linkdump, num)
       file = entry[0]+entry[1]
