@@ -11,7 +11,7 @@ module IRC
     User = Struct.new(:user, :channels, :server, :auth)
     DEFAULT_OPTIONS = { :port         => 6667,
                         :socket_class => TCPSocket }.freeze
-    COMMAND_METHODS = [:nick, :join, :privmsg, :user, :mode, :quit].freeze
+    COMMAND_METHODS = [:nick, :join, :privmsg, :user, :mode, :quit, :action].freeze
 
     def initialize( host, channel, options = Hash.new )
       options = DEFAULT_OPTIONS.merge(options)
@@ -22,7 +22,9 @@ module IRC
       irclogfile = File.expand_path("../../log/#{host}_#{channel}.log", __FILE__)
       @irclog = Logger.new(irclogfile)
       @irclog.level = Logger::INFO
-      $Stats = Statistics.new(channel, irclogfile)
+      @logging = nil
+      @me = String.new
+      #$Stats = Statistics.new(channel, irclogfile)
     end
 
     def login( nickname, host_name, server_name, full_name )
@@ -44,6 +46,11 @@ module IRC
       $! 
     end
 
+    def setme(me)
+      mearr = whois(me).user.split(' ').shift(2)
+      @me = ":" + me + "!" + mearr * "@" + " "
+    end
+
     def join_channel
       join(@channel)
 
@@ -53,6 +60,14 @@ module IRC
       if rpl.nil? or rpl.command !~ /\A3(?:32|53)\Z/
         raise "Join error:  #{rpl.last_param}."
       end
+    end
+
+    def setlogging
+      @logging = @logging.nil? ? true : nil
+    end
+
+    def irclog( msg )
+      @logging.nil? ? nil : @irclog.info(msg)
     end
 
     def recv
@@ -114,8 +129,7 @@ module IRC
 			raise cmd if cmd =~ /ERROR:.*/
       if not cmd.nil?
         if cmd =~ /:(\S+)!(?:\S+)\s(\w+)\s#{@channel}\s:(.*)/ and COMMAND_METHODS.include? $2.downcase.intern
-          $Stats.update($1, $2, $3)
-          @irclog.info(cmd.chop) 
+          $Stats.nil? ? nil : $Stats.update($1, $2, $3)
         end
       end
 
@@ -123,17 +137,15 @@ module IRC
         send_command("PONG #{$1}")
         recv_command
       else
+        irclog(cmd.chop) 
         cmd.nil? ? cmd : cmd.sub(/\r\n\Z/, "")
       end
     end
 
     def send_command( cmd )
-      if ! cmd.include? "PONG :"
-        @irclog.info(cmd)
-      end
+      (cmd =~ /\A(?:PONG|WHOIS|PRIVMSG [^#])/).nil? ? irclog(@me + cmd) : nil
       @irc_server.print "#{cmd}\r\n"
     end
-
 
   end
 

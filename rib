@@ -63,6 +63,8 @@ begin
   log.info(server.auth_nick(conf["auth"], conf["nick"]))
   server.join_channel
   log.info("Connected to #{conf["irc"]} as #{conf["nick"]} in #{conf["channel"]}")
+  server.setme(conf["nick"])
+  server.setlogging
   $Starttime = Time.new
 
   # Daemonizing
@@ -73,7 +75,7 @@ begin
       log.info("Running as daemon now!")
     end
   end
-
+  
   # After successful connection start with server response loop.
   while cmd = server.recv
     begin
@@ -88,6 +90,7 @@ begin
         when /\A#{conf["tc"]}(.*)\Z/ then output = trigger($1, conf, server, source, log)
         when /(http[s]?:\/\/)(\S*)/x then output[1] = ftitle($&) if conf["title"] == true
         when /([p][o][n]{1,2}[yi][e]?s*)/i then output[1] = "#{$1} yay." if conf["pony"] == true && rand(2).zero?
+        when /\A(ACTION\s+salutes)\Z/ then output[1] = $1 + "\nI am Dave ! Yognaut and I have the balls!"
         end # case
         # If useful response message was created: send it!
         next if output[1].nil?
@@ -95,7 +98,7 @@ begin
         output[0] = conf["channel"] if output[0].nil?
         output[1] = output[1].scan(/.+/)
         #output.each {|o| server.privmsg(conf["channel"], o)}
-        output[1].each {|o| server.privmsg(output[0], o)}
+        output[1].each {|o| server.privmsg(output[0], ":"+o)}
       end # if cmd.command
     rescue
       log.error($!)
