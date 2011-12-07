@@ -3,6 +3,7 @@
 require "socket"
 require "logger"
 require "date"
+require "iconv" if RUBY_VERSION < '1.9'
 
 module IRC
 
@@ -62,12 +63,21 @@ module IRC
       end
     end
 
+    def transcoding( string )
+      if RUBY_VERSION > '1.9'
+        string.encode!("utf-8", "iso-8859-1") if string.encoding.name != "UTF-8"
+      else
+        string = Iconv.iconv("utf-8", "iso-8859-1", string).to_s
+      end
+      return string
+    end
+
     def setlogging
       @logging = @logging.nil? ? true : nil
     end
 
     def irclog( msg )
-      @logging.nil? ? nil : @irclog.info(msg)
+      @logging.nil? ? nil : @irclog.info(msg.gsub(/||/, ''))
     end
 
     def recv
@@ -137,7 +147,7 @@ module IRC
         send_command("PONG #{$1}")
         recv_command
       else
-        irclog(cmd.chop) 
+        irclog(transcoding(cmd.chop)) 
         cmd.nil? ? cmd : cmd.sub(/\r\n\Z/, "")
       end
     end
