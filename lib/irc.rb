@@ -77,7 +77,7 @@ module IRC
     end
 
     def irclog( msg )
-      @logging.nil? ? nil : @irclog.info(msg.gsub(/||/, ''))
+      @logging.nil? ? nil : @irclog.info(msg.gsub(/||/, ''))
     end
 
     def recv
