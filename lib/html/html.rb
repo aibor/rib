@@ -2,7 +2,7 @@ module HTML
   require 'net/http'
   require 'uri'
   require 'iconv' if RUBY_VERSION < '1.9'
-  require_relative 'entities.rb'
+  require File.expand_path('../entities.rb', __FILE__)
 
   def HTML.unentit( string, enc )
     if RUBY_VERSION > '1.9'

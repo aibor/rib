@@ -160,8 +160,9 @@ def trigger( arg, conf, server, source, log = nil )
     begin
       title = "\n" + ftitle(output).to_s
     rescue
-      title = ""
+      title = nil
     end
+    title = "" if title.nil?
     output << title 
 
   when /\A(\S*)/ then output = conf["resp"][$1][rand(conf["resp"][$1].length)] if conf["resp"].has_key?($1)
