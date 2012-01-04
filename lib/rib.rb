@@ -157,7 +157,12 @@ def trigger( arg, conf, server, source, log = nil )
     key = $2.to_s
     output = gsearch(site, key)
     return [target, nil] if output.nil?
-    output << "\n" << ftitle(output).to_s
+    begin
+      title = "\n" + ftitle(output).to_s
+    rescue
+      title = ""
+    end
+    output << title 
 
   when /\A(\S*)/ then output = conf["resp"][$1][rand(conf["resp"][$1].length)] if conf["resp"].has_key?($1)
 
