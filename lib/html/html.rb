@@ -1,8 +1,8 @@
 module HTML
   require 'net/http'
   require 'uri'
-  require 'iconv'
-  require File.expand_path('../entities.rb', __FILE__)
+  require 'iconv' if RUBY_VERSION < '1.9'
+  require_relative 'entities.rb'
 
   def HTML.unentit( string, enc )
     if RUBY_VERSION > '1.9'
@@ -43,6 +43,7 @@ module HTML
         res.instance_eval {@body_exist = false}
       end
     end # request_get
+    return resp if url == resp['location']
     case resp
     when Net::HTTPRedirection then 
       fetch(resp['location'], limit - 1)
@@ -53,7 +54,7 @@ module HTML
   end
 
   def HTML.title( url )
-    resp = fetch(url, 10)
+    resp = fetch(url, 20)
     raise "No title can be found" if resp.nil?
     enc = "utf-8"
     enc = $1 if resp.body =~ /charset=([-\w\d]+)/

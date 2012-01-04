@@ -12,18 +12,6 @@ def ftitle( url )
   formattitle(title)
 end
 
-#def formattitle(title)
-  #case title 
-  #when /(\s+- YouTube\s*\Z)/ then return "1,0You0,4Tube #{title.sub(/#{$1}/, "")}"
-  #when /(\Axkcd:\s)/ then return "xkcd: #{title.sub(/#{$1}/, "")}"
-  #when /(\son\sdeviantART\Z)/ then return "0,10deviantART #{title.sub(/#{$1}/, "")}"
-  #when /(\s+(-|–) Wikipedia((, the free encyclopedia)|)\Z)/ then return "Wikipedia: #{title.sub(/#{$1}/, "")}"
-  #when /\A(dict\.cc \| )/ then return "dict.cc: #{title.sub($1, "")}"
-  #when /(\ADer Postillon:\s)/ then return "Der Postillon: #{title.sub($1, "")}"
-  #else return "Titel: #{title}"
-  #end # case title
-#end
-
 def gsearch( site, key )
   if RUBY_VERSION > '1.9'
     key.encode!("utf-8", "iso-8859-1") if key.encoding.name != "UTF-8"
@@ -32,14 +20,21 @@ def gsearch( site, key )
   end
   key.gsub!(/\s/, "+")
   case site
-  when /w(iki)?/ then url = "https://www.google.com/search?hl=de&btnI=1&q=site:wikipedia.org+#{key}&ie=utf-8&oe=utf-8&pws=0" 
-  when /d(ict)?/ then url = "http://dict.cc/?s=#{key}"
-  else url = "https://www.google.com/search?hl=de&btnI=1&q=#{key}&ie=utf-8&oe=utf-8&pws=0" 
+    when /w(iki)?/ then url = "https://www.google.com/search?hl=de&btnI=1&q=site:wikipedia.org+#{key}&ie=utf-8&oe=utf-8&pws=0" 
+    when /d(ict)?/ then url = "http://dict.cc/?s=#{key}"
+    else url = "https://www.google.com/search?hl=de&btnI=1&q=#{key}&ie=utf-8&oe=utf-8&pws=0" 
   end
-  uri = URI.parse(URI.escape(url))
-  http = Net::HTTP.new(uri.host)
-  resp = http.request_head(uri.request_uri)
-  resp['location']
+  count = 10
+  while ! url.nil?
+    out = url
+    uri = URI.parse(URI.escape(url))
+    http = Net::HTTP.new(uri.host)
+    resp = http.request_head(uri.request_uri)
+    break if url == resp['location']
+    url = resp['location']
+    count.zero? ? break : (count = count - 1) 
+  end
+  out
 end
 
 def floodprot(int)
@@ -96,7 +91,6 @@ def trigger( arg, conf, server, source, log = nil )
   when /\Aadd\s+(http[s]?:\/\/(\S*))/xi then
     return [target, nil] if ! conf.has_key?("linkdump") or conf["linkdump"].empty?
     linkdump = File.expand_path("../../"+conf["linkdump"], __FILE__)
-    #raise "linkdump not writeable" if File.stat(linkdump).writable_real?
     lines = String.new
     lines = "--------------------\n" if File.exist?(linkdump)
     lines << Time.now.asctime << " - " << source << " - " << server.whois(source).auth << "\n" << $1 << "\n"
@@ -119,7 +113,6 @@ def trigger( arg, conf, server, source, log = nil )
     File.unlink(linkdump) if File.exist?(linkdump)
     entry = getentryname(linkdump, num)
     return [target, "Eintrag ##{num} nicht gefunden"] if entry[1].nil?
-    #entry =~ /\A\d+-(?:.*?)-(.*?)\Z/
     return [target, "Du nicht!"] if entry[4] != server.whois(source).auth
     File.unlink(entry[0]+entry[1])
     output = "Eintrag ##{num} gelöscht"
@@ -158,22 +151,6 @@ def trigger( arg, conf, server, source, log = nil )
     conf[$1] = ! $2.to_i.zero?
     output = $1 + " = " + $2
     log.info("Configuration set: #{$1} = #{conf[$1]}") if ! log.nil?
-
-  when /\Amost\s*(\d*)/i then 
-    most = $Stats.most(conf["most"], $1.to_i)
-    raise if most.nil?
-    floodprot(11)
-    output = "Die #{conf["most"]} meistbenutzen Wörter seit dem #{most[0]}:\n" 
-    i = 1
-    most[1..conf["most"]].each do |c|
-      output << i.to_s << ".:\t\t" << c[1].to_s << "x\t\t" << c[0] << "\n"
-      i += 1
-    end
-
-  when /\Astats (\w*)/i then 
-    stats = $Stats.user($1)
-    raise if stats.nil?
-    output = "#{$1} kam seit dem #{stats[0]} bisher #{stats[1]} mal zu Wort und füllte das Log mit #{stats[2]} zusätzlichen Wörtern."
 
   when /\A(g|w|d|wiki|dict) (.*)\Z/i then 
     site = $1
@@ -223,4 +200,3 @@ def readconf(cfile)
   end
   conf
 end
-

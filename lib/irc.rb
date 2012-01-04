@@ -25,7 +25,6 @@ module IRC
       @irclog.level = Logger::INFO
       @logging = nil
       @me = String.new
-      #$Stats = Statistics.new(channel, irclogfile)
     end
 
     def login( nickname, host_name, server_name, full_name )
@@ -155,71 +154,6 @@ module IRC
     def send_command( cmd )
       (cmd =~ /\A(?:PONG|WHOIS|PRIVMSG [^#])/).nil? ? irclog(@me + cmd) : nil
       @irc_server.print "#{cmd}\r\n"
-    end
-
-  end
-
-  class Statistics
-
-    LOG_CMDS =[:privmsg, :join, :nick, :quit]
-
-    def initialize( channel, irclogfile )
-      @statsh = Hash.new
-      @wordsh = Hash.new
-      analyze_log(channel, irclogfile) if File.exist?(irclogfile)
-    end
-
-    def most( c, l )
-      l = 0 if l.nil?
-      most = @wordsh.reject {|k, v| k.length < l}.sort {|a, b| b[1]<=>a[1]}[0..c-1] 
-      return nil if most.empty?
-      @since.scan(/.+/) + most
-    end
-
-    def user( key )
-      if key.is_a?(String)
-        keyd = key.downcase
-        @statsh[keyd].nil? ? nil : @statsh[keyd]
-      else
-        nil
-      end
-    end
-
-    def update( usr, cmd, val, snc = local_date )
-      if cmd == "PRIVMSG" and val.is_a?(String) and usr.is_a?(String)
-        usr.downcase!
-        wds = val.split
-        wds.each {|w| 
-          w.downcase! if ! w =~ /\A:.*/
-          @wordsh[w].nil? ? @wordsh[w] = 1 : @wordsh[w] += 1 }
-        wds = wds.length
-        if ! @statsh.has_key? usr 
-          @statsh[usr] = [snc, 1, wds]
-        else
-          @statsh[usr][1] += 1
-          @statsh[usr][2] += wds
-        end
-      end
-    end
-
-    private
-
-    def local_date ( dt = nil )
-		 dt = Date.today().to_s if dt.nil?
-      dt.sub(/(\d{4})-(\d{2})-(\d{2})/, '\3.\2.\1')
-    end
-
-    def analyze_log (channel, irclogfile)
-      file = File.open(irclogfile, File::RDONLY | File::NONBLOCK)
-      file.gets =~ /\A(?:# Logfile created on |., \[)(\d{4}-\d{2}-\d{2}).*\Z/
-      @since, file.pos = local_date($1), 0
-      file.each do |line|
-        next if RUBY_VERSION > '1.9' and ! line.force_encoding("UTF-8").ascii_only?
-        if line =~ /:(\S+)!(?:\S+)\s(\w+)\s#{channel}\s:(.*)/ and LOG_CMDS.include? $2.downcase.intern
-          update($1, $2, $3, @since)
-        end
-      end
-      file.close()
     end
 
   end
