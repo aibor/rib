@@ -6,7 +6,7 @@ require "iconv" if RUBY_VERSION < '1.9'
 load File.expand_path('../html/html.rb', __FILE__)
 
 def ftitle( url )
-  title = HTML.title(url)
+  title = self.title(url)
   return nil if title.empty?
   load File.expand_path('../formattitle.rb', __FILE__)
   formattitle(title)
@@ -74,7 +74,7 @@ def readentry(file)
   f = File.open(file, File::RDONLY | File::NONBLOCK) 
   line = f.gets
   line =~ /\A<a href="(.*?)" target="_blank" title="(.*?)">(?:.*?)<\/a><br>\Z/
-  title = $2.empty? ? $2 : formattitle($2)
+  title = $2.empty? ? $2 : formattitle(HTML.unentit($2, "utf-8"))
   $1 + "\n" + title
 end 
 
@@ -118,7 +118,7 @@ def trigger( arg, conf, server, source, log = nil )
     output = "Eintrag ##{num} gelöscht"
 
   when /\Agive\s*(l|r|\d*)/i then 
-    input = $1
+    input = ($1 or 0)
     if input =~ /\A[l|r]\Z/
       num = input
     else
@@ -126,7 +126,7 @@ def trigger( arg, conf, server, source, log = nil )
     end
     return [target, "Kein Link angegeben. :/"] if conf["dumplink"].nil? or conf["dumplink"].empty?
     begin
-      raise if num =~ /[^lr]/ and num.zero?
+      raise if num =~ /[^lr]/ or num.zero?
       linkdump = File.expand_path("../../"+conf["linkdump"], __FILE__)
       entry = getentryname(linkdump, num)
       file = entry[0]+entry[1]

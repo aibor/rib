@@ -4,7 +4,7 @@ module HTML
   require 'iconv' if RUBY_VERSION < '1.9'
   require File.expand_path('../entities.rb', __FILE__)
 
-  def HTML.unentit( string, enc )
+  def self.unentit( string, enc )
     if RUBY_VERSION > '1.9'
       string.encode!("utf-8", enc)
     else
@@ -32,7 +32,7 @@ module HTML
     end
   end
 
-  def HTML.fetch( url, limit )
+  def self.fetch( url, limit )
     raise ArgumentError,'HTTP redirect too deep' if limit == 0
     uri = URI.parse(url)
     http = Net::HTTP.new(uri.host)
@@ -53,7 +53,7 @@ module HTML
     end # case resp
   end
 
-  def HTML.title( url )
+  def self.title( url )
     resp = fetch(url, 20)
     raise "No title can be found" if resp.nil?
     enc = "utf-8"
