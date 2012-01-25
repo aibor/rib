@@ -6,7 +6,7 @@ require "iconv" if RUBY_VERSION < '1.9'
 load File.expand_path('../html/html.rb', __FILE__)
 
 def ftitle( url )
-  title = self.title(url)
+  title = HTML.title(url)
   return nil if title.empty?
   load File.expand_path('../formattitle.rb', __FILE__)
   formattitle(title)
