@@ -126,7 +126,8 @@ def trigger( arg, conf, server, source, log = nil )
     end
     return [target, "Kein Link angegeben. :/"] if conf["dumplink"].nil? or conf["dumplink"].empty?
     begin
-      raise if num =~ /[^lr]/ or num.zero?
+      raise if num =~ /[^lr]/
+      raise if num.zero?
       linkdump = File.expand_path("../../"+conf["linkdump"], __FILE__)
       entry = getentryname(linkdump, num)
       file = entry[0]+entry[1]
