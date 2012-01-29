@@ -9,7 +9,9 @@ module RIB
       
       def output( s, m )
         key = RESP[m[1]]
-        return nil, key[rand(key.length)]
+        out = key[rand(key.length)]
+        out.gsub(/\\/, '\\\\') if RUBY_VERSION < '1.9'
+        return nil, out
       end
     end
   end
