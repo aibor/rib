@@ -81,7 +81,7 @@ module RIB
     end
     class Giveentry
       include Linkdump
-      TRIGGER = /\A#{RIB::TC}give\s*(l|r|\d*)/i 
+      TRIGGER = /\A#{RIB::TC}give\s*(l|r|-?\d*)/i 
 
       def output( s, m )
         input = (m[1] or 0)
