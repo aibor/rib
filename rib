@@ -9,105 +9,95 @@
 # To Public License, Version 2, as published by Sam Hocevar. See
 # http://sam.zoy.org/wtfpl/COPYING for more details. 
 
-require File.expand_path('../lib/irc.rb', __FILE__)
-require File.expand_path('../lib/rib.rb', __FILE__)
+# add locla library directory to $LOAD_PATH
+$: << File.expand_path("../lib", __FILE__)
+
 require 'logger'
 require 'optparse'
+require 'irc'
+require 'rib.rb'
 
-conf = readconf("config")
+config = RIB::CONFIG
 
+# handle possible arguments
 OptionParser.new do |opts|
   opts.banner = "Usage: #{File.basename($0)} [options]"
 
   opts.on("-i", "--irc [HOSTNAME]", "IRC Server to connect to") do |irc|
-    conf["irc"] = irc
+    config.irc(irc)
   end
   opts.on("-n", "--nick [NICKNAME]", "nickname for the bot") do |n|
-    conf["nick"] = n
+    config.nick(n)
   end
   opts.on("-c", "--channel [CHANNEL]", String, "which channel to join") do |c|
     c.gsub!(/\A([^\#].*)/, '#\0')
-    conf["channel"] = c
+    config.channel(c)
   end
   opts.on("-f", "--file [CONFFILE]", "read configuration from this file") do |f|
-    conf = readconf(f)
-  end
-  opts.on("-d", "--[no-]daemon", "run as daemon") do |d|
-    conf["daemon"] = d
+    config.update(f)
   end
   # No argument, shows at tail.  This will print an options summary.
-  # Try it and see!
   opts.on_tail("-h", "--help", "show this message") do
     puts opts
     exit
   end
 end.parse!
 
+# check for necessary params
 ["irc", "channel", "nick"].each do |t|
-  if conf[t].nil? or conf[t].empty?
+  cmd = "config." + t
+  if (eval cmd).nil?
     puts "No #{t} specified!", "Type #{File.basename($0)} -h for help"
     exit
   end
 end
 
 # Logfile for the Programm. NOT IRC log! Look into lib/irc.rb therefore.
-logfile = File.expand_path("../log/#{File.basename($0)}_#{conf["irc"]}_#{conf["channel"]}.log", __FILE__)
-log = Logger.new(logfile)
-log.level = Logger::INFO
+logfile = File.expand_path("../log/#{File.basename($0)}_#{config.irc}_#{config.channel}.log", __FILE__)
+$Log = Logger.new(logfile)
+$Log.level = Logger::INFO
 
-# Start IRC Connection
+# load modules
+
+#puts "Modules:"
+#RIB::MODS.trigger.each_key {|t| puts t.to_s}
+
 begin
-  log.info("Server starts")
-  server = IRC::Connection.new(conf["irc"], conf["channel"])
-  server.login(conf["nick"], "hostname", "servername", "\"#{conf["nick"]}\" Rigged Bot")
-  log.info(server.auth_nick(conf["auth"], conf["nick"]))
-  server.join_channel
-  log.info("Connected to #{conf["irc"]} as #{conf["nick"]} in #{conf["channel"]}")
-  server.setme(conf["nick"])
-  server.setlogging
   $Starttime = Time.new
+  # Start IRC Connection
+  $Log.info("Server starts")
+  server = IRC::Connection.new(config.irc, config.channel)
+  server.login(config.nick, "hostname", "servername", "\"#{config.nick}\" Rigged Bot")
+  $Log.info(server.auth_nick(config.auth, config.nick))
+  server.join_channel
+  $Log.info("Connected to #{config.irc} as #{config.nick} in #{config.channel}")
+  server.setme(config.nick)
+  server.setlogging
+  $Server = server
 
-  # Daemonizing
-  if RUBY_VERSION > '1.9'
-    if conf["daemon"] == true
-      puts "Connection established!\nDaemonizing now!"
-      Process.daemon()
-      log.info("Running as daemon now!")
-    end
-  end
-  
   # After successful connection start with server response loop.
   while cmd = server.recv
     begin
 
       # If a message is received check for triggers and response properly.
       if cmd.command == "PRIVMSG"
-        output = Array.new(2)
-        cmd.prefix.match(/\A(.*?)!/)  
-        source = $1 if ! $1.nil?
-        case cmd.last_param 
-        # several triggers and their response algorithms
-        when /\A#{conf["tc"]}(.*)\Z/ then output = trigger($1, conf, server, source, log)
-        when /(http[s]?:\/\/)(\S*)/x then output[1] = ftitle($&) if conf["title"] == true
-        when /([p][o][n]{1,2}[yi][e]?s*)/i then output[1] = "#{$1} yay." if conf["pony"] == true && rand(2).zero?
-        when /\A(ACTION\s+salutes)\Z/ then output[1] = $1 + "\nI am Dave ! Yognaut and I have the balls!"
-        end # case
+        msg = RIB::Message.new(cmd)
+        output = msg.check
         # If useful response message was created: send it!
         next if output[1].nil?
-        output[0] = source if ! cmd.params[0].include? "#"
-        output[0] = conf["channel"] if output[0].nil?
+        output[0] = source if ! cmd.params[0].include? "#" and output[0].nil?
+        output[0] = config.channel if output[0].nil?
         output[1] = output[1].scan(/.+/)
-        #output.each {|o| server.privmsg(conf["channel"], o)}
-        output[1].each {|o| server.privmsg(output[0], ":"+o)}
+        output[1].each {|o| server.privmsg(output[0], ":" + o); sleep(0.3)}
       end # if cmd.command
     rescue
-      log.error($!)
+      $Log.error($!)
     end # begin
   end # while
 
 rescue
-  log.fatal($!)
+  $Log.fatal($!)
 ensure
-  log.info("EXITING")
-  log.close
+  $Log.info("EXITING")
+  $Log.close
 end # begin

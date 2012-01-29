@@ -138,7 +138,6 @@ module IRC
 			raise cmd if cmd =~ /ERROR:.*/
       if not cmd.nil?
         if cmd =~ /:(\S+)!(?:\S+)\s(\w+)\s#{@channel}\s:(.*)/ and COMMAND_METHODS.include? $2.downcase.intern
-          $Stats.nil? ? nil : $Stats.update($1, $2, $3)
         end
       end
 

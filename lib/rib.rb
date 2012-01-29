@@ -61,11 +61,18 @@ end
 def getentryname( path, num )
   entrydir = File.dirname(path)+"/entries/"
   entryarr = Dir.entries(entrydir).sort.delete_if {|e| e =~ /\A\./}
+  entrycnt = entryarr.size
   case  num
   when "r" then num = rand(entryarr.length)
   when "l" then num = -1
-  else num -= 1
+  else 
+    if num < 0
+      num += entrycnt
+    else
+      num -= 1 
+    end
   end
+  raise if num < -1
   entryarr[(num)] =~ /\A(\d+)-(.*?)-(.*?)\Z/
   [entrydir, $&, $1, $2, $3]
 end
@@ -173,37 +180,128 @@ def trigger( arg, conf, server, source, log = nil )
   return [target, output]
 end
 
-def readconf(cfile)
-  cfile = File.expand_path("../../#{cfile}", __FILE__)
-  conf = Hash.new
-  conf["resp"] = Hash.new
-  if File.exist?(cfile)
-    file = File.open(cfile, File::RDONLY | File::NONBLOCK)
-    file.each do |line|
-      line =~ /\A\s*(\w+)\s*(=\s*(.*?)\s*)?\Z/
-      key, val = $1, $3
-      next if key == "#" || key.nil?
-      if $2.nil?
-        conf[key] = true
-        next
+
+module RIB
+  Conf = Struct.new(:irc, :nick, :channel, :auth, :tc, :qcmd, :qmsg, :linkdump, :dumplink, :helplink, :title, :pony)
+  # Default Configuration
+  DEFCONFIG = Conf.new("irc.quakenet.org",                        # irc
+                     "rubybot" + rand(999).to_s,                  # nick
+                     "#rubybot",                                  # channel
+                     nil,                                         # auth
+                     "!",                                         # tc
+                     "quit",                                      # qcmd
+                     "Bye!",                                      # qmsg
+                     "./yaylinks",                                # linkdump
+                     "http://www.linkdumpioorrrr.de",             # dumplink
+                     "http://www.linkdumpioorrrr.de/rib-help",    # helplink
+                     true,                                        # title
+                     nil)                                         # pony
+  
+  class Configuration
+
+    def initialize( file )
+      @config = DEFCONFIG
+      cfile = File.expand_path("../../#{file}", __FILE__)
+      if File.exist?(cfile)
+        if read(cfile).nil?
+        else
+          puts "Can not read file: " + cfile
+        end
+      else
+        puts "File doesn't exist: " + cfile
       end
-      if key == "most"
-        val = val.to_i
-        val = 7 if val > 7
-        conf[key] = val
-        next 
-      end
-      if val.include? '"'
-        val = val.scan(/".*?"/)
-        val.each {|v| v.gsub!(/\A"(.*)"\Z/, '\1')}
-        val = val[0] if val.length == 1
-      end
-      if key == "resp"
-        conf[key][val.shift] = val
-        next
-      end
-      conf[key] = val
     end
-  end
-  conf
-end
+
+    def read(cfile)
+      file = File.open(cfile, File::RDONLY | File::NONBLOCK)
+      file.each do |line|
+        line =~ /\A\s*(#?)\s*(\w+)\s*(=\s*"?(.*?)"?\s*)?\Z/
+        key, val = $2, $4
+        next if $1 == "#" or key.nil?
+        val = true if $3.nil?
+        insert(key, val)
+      end
+      file.close
+    end
+
+    def update( file )
+      read( file )
+    end
+
+    def method_missing( meth, *args )
+      if @config.members.include? meth
+        args.empty? ? @config[meth] : insert(meth, args.shift)
+      elsif @config[arg[0]]
+        super
+      end
+    end
+
+    def insert( key, val )
+      @config[key.to_sym] = val if @config.respond_to?(key)
+    end
+
+  end # class Config
+
+  # initialize configuration from file
+  CONFIG = Configuration.new("config")
+  TC = CONFIG.tc
+
+  # Modulklasse
+  class Modules 
+    def initialize( moduledir )
+      readmoduledir(moduledir)
+      settrigger
+    end
+
+    def readmoduledir( moduledir )
+      mods = Dir.glob(moduledir + "/*.rib.rb")
+      if ! mods.empty?
+        mods.each {|mod| loadmod(mod)}
+      end
+    end
+
+    def loadmod( modpath )
+      require modpath
+    end
+
+    def trigger
+      @trigger
+    end
+
+    def settrigger
+      @trigger = Hash.new
+      RIB::MyModules.constants.each do |mymod|
+        name = "RIB::MyModules::" + mymod.to_s
+        next if ! (eval(name + ".respond_to?('new')"))
+        cmd = name + ".const_get('TRIGGER')"
+        @trigger[mymod] = (eval cmd)
+      end
+    end
+
+  end # class Modules
+
+  MODS = RIB::Modules.new(File.expand_path('../rib/modules/', __FILE__))
+
+  # Klasse, die eingehende PRIVMSG auf trigger prüft
+  class Message
+    def initialize( cmd )
+      @cmd = cmd
+      @output = Array.new(2)
+      cmd.prefix.match(/\A(.*?)!/)  
+      @source = $1 if ! $1.nil?
+    end
+
+    def check
+      RIB::MODS.trigger.each do |mod, trig|
+        if @cmd.last_param =~ trig
+          cmd = "RIB::MyModules::" + mod.to_s + ".new.output(@source, $~)"
+          out = eval(cmd)
+          @output = out.is_a?(Array) ? out : @output
+          break
+        end
+      end
+      @output
+    end
+  end # class Message
+
+end # module RIB

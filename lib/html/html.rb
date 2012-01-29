@@ -57,7 +57,7 @@ module HTML
     resp = fetch(url, 20)
     raise "No title can be found" if resp.nil?
     enc = "utf-8"
-    enc = $1 if resp.body =~ /charset=([-\w\d]+)/
+    enc = $1 if resp.body =~ /charset=([-\w]+)/
     resp.body =~ /\<title\>\s*([^<]*)\s*\<\/title\>/mi 
     raise "No title can be found" if $1.nil?
     unentit($1, enc).gsub(/(\r|\n)/, " ").gsub(/(\s{2,})/, " ")
