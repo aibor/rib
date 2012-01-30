@@ -8,6 +8,7 @@ def formattitle(title)
   when /(\s+(-|–) Wikipedia((, the free encyclopedia)|)\Z)/ then return "Wikipedia: #{title.sub(/#{$1}/, "")}"
   when /\A(dict\.cc \| )/ then return "dict.cc: #{title.sub($1, "")}"
   when /(\ADer Postillon:\s)/ then return "Der Postillon: #{title.sub($1, "")}"
+  when /(\s+- Wolfram\|Alpha\s*\Z)/ then return "Wolfram|Alpha: #{title.sub("#{$1}", "")}"
   else return "Titel: #{title}"
   end # case title
 end

@@ -1,7 +1,7 @@
 module RIB
   module MyModules
     class Websearch
-      TRIGGER = /\A#{RIB::TC}(g|w|d|wiki|dict) (.*)\Z/i
+      TRIGGER = /\A#{RIB::TC}(g|wolf|wiki|dict|d|w) (.*)\Z/i
       
       def output( s, m )
         site = m[1]
@@ -26,6 +26,7 @@ module RIB
         end
         key.gsub!(/\s/, "+")
         case site
+          when /wolf/ then url = "http://www.wolframalpha.com/input/?i=#{key}"
           when /w(iki)?/ then url = "https://www.google.com/search?hl=de&btnI=1&q=site:wikipedia.org+#{key}&ie=utf-8&oe=utf-8&pws=0" 
           when /d(ict)?/ then url = "http://dict.cc/?s=#{key}"
           else url = "https://www.google.com/search?hl=de&btnI=1&q=#{key}&ie=utf-8&oe=utf-8&pws=0" 
