@@ -28,7 +28,7 @@ module RIB
         entrycnt = entryarr.size
         case  num
         when "r" then num = rand(entryarr.length)
-        when "l" then num = -1
+        when "l" then num = entrycnt - 1
         else 
           num = entrycnt if num > entrycnt
           if num < 0
