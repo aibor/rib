@@ -103,6 +103,20 @@ module RIB
       end
     end
 
+    def commands
+      setcommands
+      @commands
+    end
+
+    def setcommands
+      @commands = Array.new
+      @trigger.each_value do |t|
+        if t.to_s =~ /\\A!\(?(\w+(\|\w+|\s\w+)*)/
+          $1.split(/\|/).each {|r| @commands.push(r)}
+        end
+      end
+    end
+
   end # class Modules
 
   MODS = RIB::Modules.new(File.expand_path('../rib/modules/', __FILE__))
