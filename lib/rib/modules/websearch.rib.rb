@@ -1,7 +1,7 @@
 module RIB
   module MyModules
     class Websearch
-      TRIGGER = /\A#{RIB::TC}(g|wolf|w(iki)?|d(ict)?) (.*)\Z/i
+      TRIGGER = /\A#{RIB::TC}(g|wolf|wiki|dict|w|d) (.*)\Z/i
       
       def output( s, m )
         site = m[1]
