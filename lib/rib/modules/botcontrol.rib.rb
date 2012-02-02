@@ -9,7 +9,7 @@ module RIB
       TRIGGER = /\A#{RIB::TC}#{RIB::CONFIG.qcmd}/
       def output( s, m )
         $Server.quit(CONFIG.qmsg)
-        log.info("Server left") if ! log.nil?
+        $Log.info("Server left") if ! $Log.nil?
       end
     end
     class Uptime

@@ -2,7 +2,7 @@ module RIB
   module MyModules
     class Pagetitle
       #TRIGGER = /\A(?<!#{RIB::TC}).*?(http[s]?:\/\/\S*)/x
-      TRIGGER = /\A[^#{RIB::TC}].*?(http[s]?:\/\/\S*)/x
+      TRIGGER = /\A(?<!#{RIB::TC}).*?(http[s]?:\/\/\S*)/x
       
       def output( s, m )
         if CONFIG.title

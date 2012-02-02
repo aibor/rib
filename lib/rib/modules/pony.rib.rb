@@ -1,9 +1,11 @@
 module RIB
   module MyModules
     class Pony
-      TRIGGER = /\A[^#{RIB::TC}].*?([p][o][n]{1,2}[yi][e]?s*)/i
+      TRIGGER = /\A(?!#{RIB::TC}).*?([p][o][n]{1,2}[yi][e]?s*)/i
       def output( s, m )
-        return m[1] + " yay." if CONFIG.pony == true && rand(2).zero?
+        if CONFIG.pony and rand(2).zero?
+          return nil, m[1] + " yay." 
+        end
       end
     end
     class Setpony

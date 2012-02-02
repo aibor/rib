@@ -36,11 +36,3 @@ title
 
 # Appreciate ponies
 #pony
-
-# Run as daemon?
-#daemon
-
-# Specify several responses to a trigger here: "trigger" "response"
-# resp = "hi" "Hallo" will let the bot say "Hallo" if someone posts "!hi" in the channel
-resp = "hi" "Moin!" "Hallo" "Tag"
-resp = "bye" "nein?"

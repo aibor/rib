@@ -6,7 +6,7 @@ require "iconv" if RUBY_VERSION < '1.9'
 load File.expand_path('../html/html.rb', __FILE__)
 
 module RIB
-  Conf = Struct.new(:irc, :nick, :channel, :auth, :tc, :qcmd, :qmsg, :linkdump, :dumplink, :helplink, :title, :pony)
+  Conf = Struct.new(:irc, :nick, :channel, :auth, :tc, :qcmd, :qmsg, :linkdump, :dumplink, :helplink, :title, :pony, :verbose)
   # Default Configuration
   DEFCONFIG = Conf.new("irc.quakenet.org",                        # irc
                      "rubybot" + rand(999).to_s,                  # nick

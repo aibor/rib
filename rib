@@ -18,6 +18,7 @@ require 'irc'
 require 'rib.rb'
 
 config = RIB::CONFIG
+verbose = nil
 
 # handle possible arguments
 OptionParser.new do |opts|
@@ -35,6 +36,9 @@ OptionParser.new do |opts|
   end
   opts.on("-f", "--file [CONFFILE]", "read configuration from this file") do |f|
     config.update(f)
+  end
+  opts.on("-v", "--verbose", "write to STDOUT instead of logfile") do |f|
+    verbose = true
   end
   # No argument, shows at tail.  This will print an options summary.
   opts.on_tail("-h", "--help", "show this message") do
@@ -54,7 +58,8 @@ end
 
 # Logfile for the Programm. NOT IRC log! Look into lib/irc.rb therefore.
 logfile = File.expand_path("../log/#{File.basename($0)}_#{config.irc}_#{config.channel}.log", __FILE__)
-$Log = Logger.new(logfile)
+destination = verbose.nil? ? logfile : STDOUT
+$Log = Logger.new(destination)
 $Log.level = Logger::INFO
 
 # load modules

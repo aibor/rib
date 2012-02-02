@@ -3,35 +3,45 @@
 module RIB
   module MyModules
     module Linkdump
-      LINKDUMP = File.expand_path("../" + CONFIG.linkdump, $0)
-      def addentry( source, input )
-        lines = String.new
-        lines = "--------------------\n" if File.exist?(LINKDUMP)
-        lines << Time.now.asctime << " - " 
-        lines << source << " - " 
-        lines << $Server.whois(source).auth << "\n" 
-        lines << input << "\n"
-        File.open(LINKDUMP, File::WRONLY | File::APPEND | File::CREAT) {|f| f.write(lines) }
-        updatefile = File.dirname(LINKDUMP)+"/entries/.lastupdate"
-        File.unlink(updatefile) if File.exist?(updatefile)
+      LINKDUMP = File.expand_path("../" + CONFIG.linkdump, $0).sub(/[^\/]\Z/, '\&/')
+      def addentry( source, input, title )
+        title = input if title.nil?
+        line = "<a href=\"#{input}\" target=\"_blank\" title=\"#{title}\">#{title}<\/a><br>\n"
+        filename = Time.now.strftime("%s") + "-"
+        filename << source << "-" 
+        filename << $Server.whois(source).auth
+        if ! File.exists?(LINKDUMP)
+          require 'fileutils'
+          FileUtils.mkdir_p(LINKDUMP)
+        end
+        File.open(LINKDUMP + filename, File::WRONLY | File::CREAT) {|f| f.write(line) }
+        #updatefile = File.dirname(LINKDUMP)+"/entries/.lastupdate"
+        #File.unlink(updatefile) if File.exist?(updatefile)
       end
-      def getentryname( path, num )
-        entrydir = File.dirname(path)+"/entries/"
-        entryarr = Dir.entries(entrydir).sort.delete_if {|e| e =~ /\A\./}
+      def getentryname( entrydir, num )
+        entryarr = Dir.entries(entrydir).sort.keep_if {|e| e =~ /\A\d+-.*?-.*?\Z/}
+        num = getentrynum( entryarr, num )
+        entryarr[(num)] =~ /\A(\d+)-(.*?)-(.*?)\Z/
+        [entrydir, $&, $1, $2, $3, num.next]
+      end
+      def getentrynum( entryarr, num )
         entrycnt = entryarr.size
         case  num
         when "r" then num = rand(entryarr.length)
         when "l" then num = -1
         else 
+          num = entrycnt if num > entrycnt
           if num < 0
-            num += entrycnt
+            if num.abs > entrycnt
+              num = 0
+            else
+              num += entrycnt
+            end
           else
             num -= 1 
           end
         end
-        raise if num < -1
-        entryarr[(num)] =~ /\A(\d+)-(.*?)-(.*?)\Z/
-        [entrydir, $&, $1, $2, $3]
+        num
       end
       def readentry(file)
         f = File.open(file, File::RDONLY | File::NONBLOCK) 
@@ -44,20 +54,25 @@ module RIB
     end
     class Addentry
       include Linkdump
-      TRIGGER = /\A#{RIB::TC}add\s+(http[s]?:\/\/\S*)/xi 
+      TRIGGER = /\A#{RIB::TC}add\s+(http[s]?:\/\/\S*)(\s+(.+))?\Z/xi 
       
       def output( s, m )
-        if ! CONFIG.linkdump.nil?
-          addentry(s, m[1])
+        if CONFIG.linkdump.nil?
+          return nil, nil
+        end
+        if m[3].nil?
+          begin
+            require 'html/html'
+            title = HTML.title(m[1]).to_s
+          rescue
+            title = nil
+          end
         else
-          return s, nil
+          title = m[3]
         end
-        begin
-          title = Pagetitle.new.ftitle(m[1]).to_s + "\n"
-        rescue
-          title = nil
-        end
-        title = "" if title.nil?
+        addentry(s, m[1], title)
+        load File.expand_path('../formattitle.rb', __FILE__)
+        title = title.nil? ? "" : "#{formattitle(HTML.unentit(title, 'utf-8'))}\n"
         out = title + "Link added!"
         return nil, out
       end
@@ -65,23 +80,26 @@ module RIB
     end
     class Delentry
       include Linkdump
-      TRIGGER = /\A#{RIB::TC}del\s+(\d+)/
+      TRIGGER = /\A#{RIB::TC}del\s+(l|-?\d+)/
 
       def output ( s, m )
-        num = m[1].to_i
-        return [nil, "Nein!"] if CONFIG.linkdump.nil? or num < 1
-        File.unlink(LINKDUMP) if File.exist?(LINKDUMP)
+        if m[1] =~ /\A[l|r]\Z/
+          num = m[1]
+        else
+          num = m[1].to_i 
+        end
+        return [nil, "Nein!"] if CONFIG.linkdump.nil? or (num.respond_to?("zero?") and num.zero?)
         entry = getentryname(LINKDUMP, num)
         return [nil, "Eintrag ##{num} nicht gefunden"] if entry[1].nil?
-        return [nil, "Du nicht!"] if entry[4] != $Server.whois(source).auth
+        return [nil, "Du nicht!"] if entry[4] != $Server.whois(s).auth
         File.unlink(entry[0]+entry[1])
-        out = "Eintrag ##{num} gelöscht"
+        out = "Eintrag ##{entry[5]} gelöscht"
         return nil, out
       end
     end
     class Giveentry
       include Linkdump
-      TRIGGER = /\A#{RIB::TC}give\s*(l|r|-?\d*)/i 
+      TRIGGER = /\A#{RIB::TC}give(?:\s+(l|r|-?\d+))?/i 
 
       def output( s, m )
         input = (m[1] or 0)
@@ -90,18 +108,21 @@ module RIB
         else
           num = input.to_i 
         end
-        return [s, "Kein Link angegeben. :/"] if CONFIG.dumplink.nil?
         begin
           raise if num =~ /[^lr]/
           raise if num.respond_to?("zero?") and num.zero?
           entry = getentryname(LINKDUMP, num)
           file = entry[0]+entry[1]
           raise if ! File.exist?(file)
-          out = readentry(file)
+          out = "Link ##{entry[5]}: " + readentry(file)
         rescue
-          url = CONFIG.dumplink
-          title = Pagetitle.new.ftitle(url).to_s
-          out = url + "\n" + title
+          if CONFIG.dumplink.nil?
+            out = "Kein Link angegeben. :/"
+          else
+            url = CONFIG.dumplink
+            title = Pagetitle.new.ftitle(url).to_s
+            out = url + "\n" + title
+          end
         end
         return nil, out
       end
