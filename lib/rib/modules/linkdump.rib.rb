@@ -19,7 +19,7 @@ module RIB
         #File.unlink(updatefile) if File.exist?(updatefile)
       end
       def getentryname( entrydir, num )
-        entryarr = Dir.entries(entrydir).sort.keep_if {|e| e =~ /\A\d+-.*?-.*?\Z/}
+        entryarr = Dir.entries(entrydir).sort.delete_if {|e| e !~ /\A\d+-.*?-.*?\Z/}
         num = getentrynum( entryarr, num )
         entryarr[(num)] =~ /\A(\d+)-(.*?)-(.*?)\Z/
         [entrydir, $&, $1, $2, $3, num.next]
