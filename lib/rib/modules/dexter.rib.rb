@@ -1,6 +1,6 @@
 module RIB
   module MyModules
-    class Moduletemplate
+    class Dexterquote
       TRIGGER = /\A#{RIB::TC}dexter/
       
       def output( s, m )

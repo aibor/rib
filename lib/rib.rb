@@ -133,12 +133,13 @@ module RIB
     def check
       RIB::MODS.trigger.each do |mod, trig|
         if @cmd.last_param =~ trig
-          cmd = "RIB::MyModules::" + mod.to_s + ".new.output(@source, $~)"
-          out = eval(cmd)
+          classname = "RIB::MyModules::" + mod.to_s 
+          out = Class.new(eval classname).new.output(@source, $~)
           @output = out.is_a?(Array) ? out : @output
           break
         end
       end
+      ObjectSpace.garbage_collect
       @output
     end
   end # class Message
