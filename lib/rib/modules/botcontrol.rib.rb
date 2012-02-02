@@ -50,7 +50,7 @@ module RIB
       TRIGGER = /\A#{RIB::TC}list(\sme)?/i
 
       def output( s, m )
-        out = RIB::MODS.commands.join(', ')
+        out = RIB::MODS.commands.sort.join(', ')
         target = m[1].nil? ? nil : s
         return target, out
       end
