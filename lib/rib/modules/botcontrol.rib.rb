@@ -14,7 +14,7 @@ module RIB
     end
     class Uptime
       TRIGGER = /\A#{RIB::TC}uptime/i
-      def output( m )
+      def output( s, m )
         return nil, "Uptime:\t" + timediff($Starttime)
       end
       def timediff( start )
