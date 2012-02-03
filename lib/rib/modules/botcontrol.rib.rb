@@ -15,7 +15,7 @@ module RIB
     class Uptime
       TRIGGER = /\A#{RIB::TC}uptime/i
       def output( s, m )
-        return nil, "Uptime:\t" + timediff($Starttime)
+        return nil, "Uptime: " + timediff($Starttime) + "   started: " + $Starttime.strftime("%d.%m.%Y %T %Z").to_s
       end
       def timediff( start )
         raise if ! start.is_a?(Time)
@@ -27,9 +27,7 @@ module RIB
 
         uptime = String.new
         uptime << d.to_s + "d " if d > 0
-        uptime << h.to_s + "h " if h > 0
-        uptime << m.to_s + "m " if m > 0
-        uptime << s.to_s + "s"
+        uptime << sprintf("%#2d:%02d:%02d", h, m, s)
       end
     end
     class Givehelp
