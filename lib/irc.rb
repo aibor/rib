@@ -38,8 +38,8 @@ module IRC
     end
 
     def auth_nick( authdata, nick )
-      raise "Auth error: #{authdata.to_s} not valid" if authdata.nil? or ! authdata.is_a? Array or authdata.length != 2
-      privmsg(authdata[0], authdata[1])
+      raise "Auth error: #{authdata.to_s} not valid" if authdata.nil?
+      privmsg(authdata)
       mode("#{nick} +x", " ")
       "auth sent"
     rescue
