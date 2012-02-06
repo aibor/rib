@@ -61,10 +61,6 @@ logfile = File.expand_path("../log/#{File.basename($0)}_#{config.irc}_#{config.c
 destination = verbose.nil? ? logfile : STDOUT
 $Log = Logger.new(destination)
 $Log.level = Logger::INFO
-
-# load modules
-
-#puts "Modules:"
 #RIB::MODS.trigger.each_key {|t| puts t.to_s}
 
 begin

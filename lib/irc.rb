@@ -38,8 +38,9 @@ module IRC
     end
 
     def auth_nick( authdata, nick )
-      raise "Auth error: #{authdata.to_s} not valid" if authdata.nil?
-      privmsg(authdata)
+      raise "Auth error: #{authdata} not valid" if authdata.nil?
+      authdata = authdata.split(/\s+/)
+      privmsg(authdata.shift, authdata.join(' '))
       mode("#{nick} +x", " ")
       "auth sent"
     rescue
