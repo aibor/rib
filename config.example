@@ -1,0 +1,38 @@
+# IRC-Server to join? Example: irc.freenode.net
+irc = irc.quakenet.org        
+
+# Which nick to use?
+nick = rubybot
+
+# Which channel to join?
+channel = "#rib"
+
+# Authentification command send as privmsg
+#auth = "Q@CServe.quakenet.org auth rubybot sEcReTpAsSwOrD"
+
+# Character which triggers the bot to do something
+tc = !
+
+# Command for disconnecting the bot via IRC message
+qcmd = "quit"
+
+# Message when bot leaves
+qmsg = "See you later, shitlords!"
+
+# File for linkdumping. absolute or relative to main folder
+linkdump = "./yaylinks"
+
+# Link to linkdump blog
+dumplink = "https://www.linkdumpiorrrr.de"
+
+# Link to help page 
+helplink = "https://www.linkdumpiorrrr.de/rib-help"
+
+# How many words shown by most? Max 10! NO " HERE!
+most = 3
+
+# Print HTML-title of a posted url if set.
+title
+
+# Appreciate ponies
+#pony
