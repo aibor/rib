@@ -6,7 +6,7 @@ module RIB
       def output( s, m )
         quotefile = File.expand_path("../dexterquotes", __FILE__)
         quotes = File.readlines(quotefile).each {|l| l.strip!}
-        out = "Dexter: " + quotes[rand(quotes.size)]
+        out = "Dexter says: " + quotes[rand(quotes.size)]
         return nil, out
       end
 
