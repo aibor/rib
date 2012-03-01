@@ -119,7 +119,7 @@ module RIB
 
   end # class Modules
 
-  MODS = RIB::Modules.new(File.expand_path('../rib/modules/', __FILE__))
+  MODS = RIB::Modules.new(File.expand_path('../../modules/', __FILE__))
 
   # Klasse, die eingehende PRIVMSG auf trigger prüft
   class Message
