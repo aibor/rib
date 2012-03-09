@@ -68,7 +68,7 @@ module RIB
             entries.push("##{index.next}: " + content)
           end
         end
-        entries.join(' -- ')[0..200]
+        entries.join(' -- ')[0..350]
       end
     end # module Linkdump
 
