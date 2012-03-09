@@ -17,7 +17,10 @@ require 'optparse'
 require 'irc'
 require 'rib.rb'
 
-config = RIB::CONFIG
+# initialize configuration from file
+RIB::CONFIG = RIB::Configuration.new("config")
+RIB::TC = RIB::CONFIG.tc
+MODS = RIB::Modules.new(File.expand_path('../modules/', __FILE__))
 verbose = nil
 
 # handle possible arguments
@@ -25,17 +28,17 @@ OptionParser.new do |opts|
   opts.banner = "Usage: #{File.basename($0)} [options]"
 
   opts.on("-i", "--irc [HOSTNAME]", "IRC Server to connect to") do |irc|
-    config.irc(irc)
+    RIB::CONFIG.irc(irc)
   end
   opts.on("-n", "--nick [NICKNAME]", "nickname for the bot") do |n|
-    config.nick(n)
+    RIB::CONFIG.nick(n)
   end
   opts.on("-c", "--channel [CHANNEL]", String, "which channel to join") do |c|
     c.gsub!(/\A([^\#].*)/, '#\0')
-    config.channel(c)
+    RIB::CONFIG.channel(c)
   end
   opts.on("-f", "--file [CONFFILE]", "read configuration from this file") do |f|
-    config.update(f)
+    RIB::CONFIG.update(f)
   end
   opts.on("-v", "--verbose", "write to STDOUT instead of logfile") do |f|
     verbose = true
@@ -49,7 +52,7 @@ end.parse!
 
 # check for necessary params
 ["irc", "channel", "nick"].each do |t|
-  cmd = "config." + t
+  cmd = "RIB::CONFIG." + t
   if (eval cmd).nil?
     puts "No #{t} specified!", "Type #{File.basename($0)} -h for help"
     exit
@@ -57,24 +60,23 @@ end.parse!
 end
 
 # Logfile for the Programm. NOT IRC log! Look into lib/irc.rb therefore.
-logfile = File.expand_path("../log/#{File.basename($0)}_#{config.irc}_#{config.channel}.log", __FILE__)
+logfile = File.expand_path("../log/#{File.basename($0)}_#{RIB::CONFIG.irc}_#{RIB::CONFIG.channel}.log", __FILE__)
 destination = verbose.nil? ? logfile : STDOUT
 $Log = Logger.new(destination)
 $Log.level = Logger::INFO
-#RIB::MODS.trigger.each_key {|t| puts t.to_s}
 
 begin
   $Starttime = Time.new
   # Start IRC Connection
   $Log.info("Server starts")
-  server = IRC::Connection.new(config.irc, config.channel)
-  server.login(config.nick, "hostname", "servername", "\"#{config.nick}\" Rigged Bot")
-  $Log.info(server.auth_nick(config.auth, config.nick))
+  server = IRC::Connection.new(RIB::CONFIG.irc, RIB::CONFIG.channel)
+  server.login(RIB::CONFIG.nick, "hostname", "servername", "\"#{RIB::CONFIG.nick}\" RIB")
+  $Log.info(server.auth_nick(RIB::CONFIG.auth, RIB::CONFIG.nick))
   server.join_channel
-  $Log.info("Connected to #{config.irc} as #{config.nick} in #{config.channel}")
-  server.setme(config.nick)
+  $Log.info("Connected to #{RIB::CONFIG.irc} as #{RIB::CONFIG.nick} in #{RIB::CONFIG.channel}")
+  server.setme(RIB::CONFIG.nick)
   server.setlogging
-  $Server = server
+  RIB::Server = server
 
   # After successful connection start with server response loop.
   while cmd = server.recv
@@ -82,12 +84,10 @@ begin
 
       # If a message is received check for triggers and response properly.
       if cmd.command == "PRIVMSG"
-        msg = RIB::Message.new(cmd)
+        msg = RIB::Message.new( MODS, cmd )
         output = msg.check
         # If useful response message was created: send it!
         next if output[1].nil?
-        output[0] = source if ! cmd.params[0].include? "#" and output[0].nil?
-        output[0] = config.channel if output[0].nil?
         output[1] = output[1].scan(/.+/)
         output[1].each {|o| server.privmsg(output[0], ":" + o); sleep(0.3)}
       end # if cmd.command

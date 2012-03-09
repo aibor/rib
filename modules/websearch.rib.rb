@@ -1,12 +1,20 @@
+# coding: utf-8
+
 module RIB
   module MyModules
     class Websearch
       TRIGGER = /\A#{RIB::TC}(g|wolf|dict|d) (.*)\Z/i
+      HELP = {
+        "g" => "Suche bei Google. -- #{RIB::TC}g <Suchstring>",
+        "dict" => "Wörterbuchsuche bei Dict.cc. -- #{RIB::TC}g <Suchstring>",
+        "d" => "Wörterbuchsuche bei Dict.cc. -- #{RIB::TC}g <Suchstring>",
+        "wolf" => "Suche bei Wolfram|Alpha. -- #{RIB::TC}wolf <Suchstring>"
+      }
       
       def output( s, m )
         site = m[1]
         key = m[2].to_s
-        output = gsearch(site, key)
+        output = s + ": " + gsearch(site, key)
         return [target, nil] if output.nil?
         begin
           title = "\n" + Pagetitle.new.ftitle(output).to_s

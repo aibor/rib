@@ -67,15 +67,18 @@ module RIB
 
   end # class Config
 
-  # initialize configuration from file
-  CONFIG = Configuration.new("config")
-  TC = CONFIG.tc
-
   # Modulklasse
   class Modules 
     def initialize( moduledir )
-      readmoduledir(moduledir)
+      @moddir = moduledir
+      update
+    end
+
+    def update
+      readmoduledir(@moddir)
       settrigger
+      sethelp
+      setcommands
     end
 
     def readmoduledir( moduledir )
@@ -86,7 +89,7 @@ module RIB
     end
 
     def loadmod( modpath )
-      require modpath
+      load modpath
     end
 
     def trigger
@@ -94,52 +97,68 @@ module RIB
     end
 
     def settrigger
-      @trigger = Hash.new
+      @trigger = getconstant("TRIGGER")
+    end
+
+    def help
+      @help
+    end
+
+    def sethelp
+      @help = getconstant("HELP")
+    end
+
+    def getconstant( constantname )
+      constant = Hash.new
       RIB::MyModules.constants.each do |mymod|
         name = "RIB::MyModules::" + mymod.to_s
-        next if ! (eval(name + ".respond_to?('new')"))
-        cmd = name + ".const_get('TRIGGER')"
-        @trigger[mymod] = (eval cmd)
+        next if ! (eval(name + ".respond_to?('new')")) or ! eval(name + ".const_defined?('#{constantname}')")
+        cmd = name + ".const_get('#{constantname}')"
+        constant[mymod] = (eval cmd)
       end
+      constant
     end
 
     def commands
-      setcommands
       @commands
     end
 
     def setcommands
-      @commands = Array.new
-      @trigger.each_value do |t|
+      @commands = Hash.new
+      @trigger.each_pair do |k, t|
         if t.to_s =~ /\\A!\(?(\w+(\|\w+|\s\w+)*)/
-          $1.split(/\|/).each {|r| @commands.push(r)}
+          @commands[k] = Array.new
+          $1.split(/\|/).each {|r| @commands[k].push(r)}
         end
       end
     end
 
   end # class Modules
 
-  MODS = RIB::Modules.new(File.expand_path('../../modules/', __FILE__))
-
   # Klasse, die eingehende PRIVMSG auf trigger prüft
   class Message
-    def initialize( cmd )
+    def initialize( mods, cmd )
+      @mods = mods
       @cmd = cmd
       @output = Array.new(2)
       cmd.prefix.match(/\A(.*?)!/)  
-      @source = $1 if ! $1.nil?
+      @source = $1
     end
 
     def check
-      RIB::MODS.trigger.each do |mod, trig|
+      @mods.trigger.each do |mod, trig|
         if @cmd.last_param =~ trig
           classname = "RIB::MyModules::" + mod.to_s 
-          out = Class.new(eval classname).new.output(@source, $~)
+          workmod = Class.new(eval classname).new
+          out = workmod.output(@source, $~)
+          ObjectSpace.define_finalizer(self, proc { workmod.self_destruct! })
           @output = out.is_a?(Array) ? out : @output
           break
         end
       end
       ObjectSpace.garbage_collect
+      @output[0] = @source if ! @cmd.params[0].include? "#" and @output[0].nil?
+      @output[0] = RIB::CONFIG.channel if @output[0].nil?
       @output
     end
   end # class Message

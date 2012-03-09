@@ -4,12 +4,13 @@ module RIB
   module MyModules
     module Linkdump
       LINKDUMP = File.expand_path("../" + CONFIG.linkdump, $0).sub(/[^\/]\Z/, '\&/')
+
       def addentry( source, input, title )
         title = input if title.nil?
         line = "<a href=\"#{input}\" target=\"_blank\" title=\"#{title}\">#{title}<\/a><br>\n"
         filename = Time.now.strftime("%s") + "-"
         filename << source << "-" 
-        filename << $Server.whois(source).auth
+        filename << RIB::Server.whois(source).auth
         if ! File.exists?(LINKDUMP)
           require 'fileutils'
           FileUtils.mkdir_p(LINKDUMP)
@@ -18,12 +19,18 @@ module RIB
         #updatefile = File.dirname(LINKDUMP)+"/entries/.lastupdate"
         #File.unlink(updatefile) if File.exist?(updatefile)
       end
+
+      def getentryarr( entrydir )
+        Dir.entries(entrydir).sort.delete_if {|e| e !~ /\A\d+-.*?-.*?\Z/}
+      end
+
       def getentryname( entrydir, num )
-        entryarr = Dir.entries(entrydir).sort.delete_if {|e| e !~ /\A\d+-.*?-.*?\Z/}
+        entryarr = getentryarr(entrydir)
         num = getentrynum( entryarr, num )
         entryarr[(num)] =~ /\A(\d+)-(.*?)-(.*?)\Z/
         [entrydir, $&, $1, $2, $3, num.next]
       end
+
       def getentrynum( entryarr, num )
         entrycnt = entryarr.size
         case  num
@@ -43,18 +50,32 @@ module RIB
         end
         num
       end
+
       def readentry(file)
         f = File.open(file, File::RDONLY | File::NONBLOCK) 
         line = f.gets
         line =~ /\A<a href="(.*?)" target="_blank" title="(.*?)">(?:.*?)<\/a><br>\Z/
-        load File.expand_path('../formattitle.rb', __FILE__)
+        load File.expand_path('../../lib/formattitle.rb', __FILE__)
         title = $2.empty? ? $2 : formattitle(HTML.unentit($2, "utf-8"))
         $1 + "\n" + title
       end 
-    end
+
+      def searchentry( entrydir, key )
+        entries = Array.new
+        getentryarr(entrydir).each_with_index do |entry, index|
+          content = readentry(entrydir + entry).sub(/\n/, ' - ')
+          if content.sub(/.+/, '').include?(key)
+            entries.push("##{index.next}: " + content)
+          end
+        end
+        entries.join(' -- ')[0..200]
+      end
+    end # module Linkdump
+
     class Addentry
       include Linkdump
       TRIGGER = /\A#{RIB::TC}add\s+(http[s]?:\/\/\S*)(\s+(.+))?\Z/xi 
+      HELP = "URL in den Linkdump eintragen. -- #{RIB::TC}add http://harharhar.de"
       
       def output( s, m )
         if CONFIG.linkdump.nil?
@@ -71,9 +92,9 @@ module RIB
           title = m[3]
         end
         addentry(s, m[1], title)
-        load File.expand_path('../formattitle.rb', __FILE__)
+        load File.expand_path('../../lib/formattitle.rb', __FILE__)
         title = title.nil? ? "" : "#{formattitle(HTML.unentit(title, 'utf-8'))}\n"
-        out = title + "Link added!"
+        out = title + s + ": Fertsch!"
         return nil, out
       end
 
@@ -81,6 +102,7 @@ module RIB
     class Delentry
       include Linkdump
       TRIGGER = /\A#{RIB::TC}del\s+(l|-?\d+)/
+      HELP = "Lösche Eintrag aus dem Linkdump. Nur wer den Eintrag angelegt hat, kann ihn löschen. -- #{RIB::TC}del <Eintragsnummer>"
 
       def output ( s, m )
         if m[1] =~ /\A[l|r]\Z/
@@ -91,15 +113,16 @@ module RIB
         return [nil, "Nein!"] if CONFIG.linkdump.nil? or (num.respond_to?("zero?") and num.zero?)
         entry = getentryname(LINKDUMP, num)
         return [nil, "Eintrag ##{num} nicht gefunden"] if entry[1].nil?
-        return [nil, "Du nicht!"] if entry[4] != $Server.whois(s).auth
+        return [nil, "Du nicht!"] if entry[4] != RIB::Server.whois(s).auth
         File.unlink(entry[0]+entry[1])
-        out = "Eintrag ##{entry[5]} gelöscht"
+        out = s + ": Eintrag ##{entry[5]} gelöscht!"
         return nil, out
       end
     end
     class Giveentry
       include Linkdump
       TRIGGER = /\A#{RIB::TC}give(?:\s+(l|r|-?\d+))?/i 
+      HELP = "Gib eine URL aus dem Linkdump aus. -- #{RIB::TC}give[ <l|r|-1|3|-4|...>"
 
       def output( s, m )
         input = (m[1] or 0)
@@ -124,8 +147,22 @@ module RIB
             out = url + "\n" + title
           end
         end
+        return nil, s + ": " + out
+      end
+    end
+
+    class Searchentry
+      include Linkdump
+      TRIGGER = /\A#{RIB::TC}search (.*)\Z/
+      HELP = "Sucht im Linkdump nach dem Suchstring. -- #{RIB::TC}search <Suchstring>"
+
+      def output( s, m )
+        found = searchentry(LINKDUMP, m[1])
+        found = "Nichts gefunden!" if found.empty?
+        out = s + ": " + found
         return nil, out
       end
     end
+
   end
 end

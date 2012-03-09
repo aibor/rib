@@ -1,7 +1,8 @@
+# coding: utf-8
+
 module RIB
   module MyModules
     class Pagetitle
-      #TRIGGER = /\A(?<!#{RIB::TC}).*?(http[s]?:\/\/\S*)/x
       TRIGGER = /\A(?!#{RIB::TC}).*?(http[s]?:\/\/\S*)/x
       
       def output( s, m )
@@ -14,12 +15,13 @@ module RIB
         require 'html/html'
         title = HTML.title(url)
         return nil if title.empty?
-        load File.expand_path('../formattitle.rb', __FILE__)
+        load File.expand_path('../../lib/formattitle.rb', __FILE__)
         formattitle(title)
       end
     end
     class Settitle
       TRIGGER = /\A#{RIB::TC}set title\s*=?\s*(on|off|0|1)/i
+      HELP = "De-/aktiviere die automatische HTML-Titelausgabe für URLS. -- #{RIB::TC}set title <0|1|on|off>"
 
       def output( s, m )
         case m[1]
