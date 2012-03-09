@@ -60,7 +60,7 @@ module RIB
             #out = "Kein Link angegeben. :/" 
           end
         elsif commandlist.flatten.include?(m[1])
-          key = MODS.commands.select {|k, v| v.include?(m[1])}.keys[0]
+          key = MODS.commands.select {|k, v| v.include?(m[1])}.to_a.flatten[0]
           help = MODS.help[key]
           out << if help.is_a?(Hash)
                   help[m[1]]
