@@ -19,13 +19,14 @@ module RIB
       TRIGGER = /\A#{RIB::TC}#{RIB::CONFIG.qcmd}/
       def output( s, m )
         RIB::Server.quit(CONFIG.qmsg)
-        $Log.info("Server left") if ! $Log.nil?
+        $Log.info("Server left") if $Log.respond_to?("info")
+        return nil
       end
     end
 
     class Uptime
       TRIGGER = /\A#{RIB::TC}uptime/i
-      HELP = "Zeige die Laufzeit und die Startzeit des Bots an. -- #{RIB::TC}uptime"
+      HELP = "#{RIB::TC}uptime -- Zeige die Laufzeit und die Startzeit des Bots an."
 
       def output( s, m )
         return nil, "Uptime: " + timediff($Starttime) + "   started: " + $Starttime.strftime("%d.%m.%Y %T %Z").to_s
@@ -47,7 +48,7 @@ module RIB
     class Givehelp
       include Botcontrol
       TRIGGER = /\A#{RIB::TC}help(?:\s(.+))?/i
-      HELP = "gibt Hilfetext für Befehle aus. -- !help <Befehl>"
+      HELP = "!help <Befehl> -- Gibt Hilfetext für Befehle aus."
 
       def output( s, m )
         out = s + ": "
@@ -78,7 +79,7 @@ module RIB
     class Listcommands
       include Botcontrol
       TRIGGER = /\A#{RIB::TC}list(\sme)?/i
-      HELP = "Liste alle Befehle auf. -- #{RIB::TC}list"
+      HELP = "#{RIB::TC}list -- Liste alle Befehle auf."
 
       def output( s, m )
         out = s + ": " + commandlist.join(', ')
@@ -88,7 +89,7 @@ module RIB
 
     class Botsay
       TRIGGER = /\A#{RIB::TC}say (.*)\Z/
-      HELP = "Lass den Bot etwas im Channel sagen. -- #{RIB::TC}say <lauter Unsinn>"
+      HELP = "#{RIB::TC}say <lauter Unsinn> -- Lass den Bot etwas im Channel sagen."
 
       def output( s, m )
         return CONFIG.channel, m[1]

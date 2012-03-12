@@ -2,6 +2,7 @@ module RIB
   module MyModules
     class Moduletemplate
       TRIGGER = /regexp/
+      #HELP = "helpful text"
       
       # s = source of message, m = matchdata of TRIGGER-regexp
       def output( s, m )

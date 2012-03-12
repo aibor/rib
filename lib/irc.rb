@@ -146,11 +146,12 @@ module IRC
         send_command("PONG #{$1}")
         recv_command
       else
+        return cmd if cmd.nil?
         #puts cmd.chop
         #puts transcoding(cmd.chop)
         #irclog(transcoding(cmd.chop)) 
         irclog(cmd.chop) 
-        cmd.nil? ? cmd : cmd.sub(/\r\n\Z/, "")
+        cmd.sub(/\r\n\Z/, "")
       end
     end
 

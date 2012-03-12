@@ -6,36 +6,33 @@ require "iconv" if RUBY_VERSION < '1.9'
 load File.expand_path('../html/html.rb', __FILE__)
 
 module RIB
-  Conf = Struct.new(:irc, :nick, :channel, :auth, :tc, :qcmd, :qmsg, :linkdump, :dumplink, :helplink, :title, :pony, :verbose)
-  # Default Configuration
-  DEFCONFIG = Conf.new("irc.quakenet.org",                        # irc
-                     "rubybot" + rand(999).to_s,                  # nick
-                     "#rubybot",                                  # channel
-                     nil,                                         # auth
-                     "!",                                         # tc
-                     "quit",                                      # qcmd
-                     "Bye!",                                      # qmsg
-                     "./yaylinks",                                # linkdump
-                     "http://www.linkdumpioorrrr.de",             # dumplink
-                     "http://www.linkdumpioorrrr.de/rib-help",    # helplink
-                     true,                                        # title
-                     nil)                                         # pony
-  
+   
   class Configuration
+    Conf = Struct.new(:irc, :nick, :channel, :auth, :tc, :qcmd, :qmsg, :linkdump, :dumplink, :helplink, :title, :pony, :verbose)
 
     def initialize( file )
-      @config = DEFCONFIG
+      @config = default
       cfile = File.expand_path("../../#{file}", __FILE__)
-      if File.exist?(cfile)
-        if read(cfile).nil?
-        else
-          puts "Can not read file: " + cfile
-        end
-      else
-        puts "File doesn't exist: " + cfile
-      end
+      File.exist?(cfile) ? read(cfile) : puts("File doesn't exist: " + cfile)
     end
 
+    def default # Default Configuration
+      Conf.new(
+        "irc.quakenet.org",                          # irc
+        "rubybot" + rand(999).to_s,                  # nick
+        "#rib",                                      # channel
+        nil,                                         # auth
+        "!",                                         # tc
+        "quit",                                      # qcmd
+        "Bye!",                                      # qmsg
+        "./yaylinks",                                # linkdump
+        "http://www.linkdumpioorrrr.de",             # dumplink
+        "http://www.linkdumpioorrrr.de/rib-help",    # helplink
+        true,                                        # title
+        nil                                          # pony
+      )                                         
+    end
+ 
     def read(cfile)
       file = File.open(cfile, File::RDONLY | File::NONBLOCK)
       file.each do |line|
@@ -69,6 +66,8 @@ module RIB
 
   # Modulklasse
   class Modules 
+    attr_accessor :trigger, :help, :commands
+
     def initialize( moduledir )
       @moddir = moduledir
       update
@@ -76,36 +75,16 @@ module RIB
 
     def update
       readmoduledir(@moddir)
-      settrigger
-      sethelp
+      @trigger = getconstant("TRIGGER")
+      @help = getconstant("HELP")
       setcommands
     end
 
     def readmoduledir( moduledir )
       mods = Dir.glob(moduledir + "/*.rib.rb")
       if ! mods.empty?
-        mods.each {|mod| loadmod(mod)}
+        mods.each {|mod| load mod}
       end
-    end
-
-    def loadmod( modpath )
-      load modpath
-    end
-
-    def trigger
-      @trigger
-    end
-
-    def settrigger
-      @trigger = getconstant("TRIGGER")
-    end
-
-    def help
-      @help
-    end
-
-    def sethelp
-      @help = getconstant("HELP")
     end
 
     def getconstant( constantname )
@@ -119,10 +98,6 @@ module RIB
       constant
     end
 
-    def commands
-      @commands
-    end
-
     def setcommands
       @commands = Hash.new
       @trigger.each_pair do |k, t|
@@ -132,34 +107,30 @@ module RIB
         end
       end
     end
-
   end # class Modules
 
   # Klasse, die eingehende PRIVMSG auf trigger prüft
   class Message
+
     def initialize( mods, cmd )
-      @mods = mods
-      @cmd = cmd
-      @output = Array.new(2)
-      cmd.prefix.match(/\A(.*?)!/)  
-      @source = $1
+      @mods, @cmd, @source = mods, cmd, cmd.prefix.match(/\A(.*?)!/)[1]  
     end
 
     def check
+      output = Array.new(2)
       @mods.trigger.each do |mod, trig|
         if @cmd.last_param =~ trig
-          classname = "RIB::MyModules::" + mod.to_s 
-          workmod = Class.new(eval classname).new
+          workmod = Class.new(eval("RIB::MyModules::" + mod.to_s)).new
           out = workmod.output(@source, $~)
           ObjectSpace.define_finalizer(self, proc { workmod.self_destruct! })
-          @output = out.is_a?(Array) ? out : @output
+          output = out.is_a?(Array) ? out : [nil, out]
           break
         end
       end
       ObjectSpace.garbage_collect
-      @output[0] = @source if ! @cmd.params[0].include? "#" and @output[0].nil?
-      @output[0] = RIB::CONFIG.channel if @output[0].nil?
-      @output
+      output[0] = @source if ! @cmd.params[0].include? "#" and output[0].nil?
+      output[0] = RIB::CONFIG.channel if output[0].nil?
+      output
     end
   end # class Message
 

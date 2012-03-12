@@ -5,10 +5,10 @@ module RIB
     class Websearch
       TRIGGER = /\A#{RIB::TC}(g|wolf|dict|d) (.*)\Z/i
       HELP = {
-        "g" => "Suche bei Google. -- #{RIB::TC}g <Suchstring>",
-        "dict" => "Wörterbuchsuche bei Dict.cc. -- #{RIB::TC}g <Suchstring>",
-        "d" => "Wörterbuchsuche bei Dict.cc. -- #{RIB::TC}g <Suchstring>",
-        "wolf" => "Suche bei Wolfram|Alpha. -- #{RIB::TC}wolf <Suchstring>"
+        "g" => "#{RIB::TC}g <Suchstring> -- Suche bei Google.",
+        "dict" => "#{RIB::TC}g <Suchstring> -- Wörterbuchsuche bei Dict.cc.",
+        "d" => "#{RIB::TC}g <Suchstring> -- Wörterbuchsuche bei Dict.cc.",
+        "wolf" => "#{RIB::TC}wolf <Suchstring> -- Suche bei Wolfram|Alpha."
       }
       
       def output( s, m )
