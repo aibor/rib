@@ -72,6 +72,7 @@ begin
   server = IRC::Connection.new(RIB::CONFIG.irc, RIB::CONFIG.channel)
   server.login(RIB::CONFIG.nick, "hostname", "servername", "\"#{RIB::CONFIG.nick}\" RIB")
   $Log.info(server.auth_nick(RIB::CONFIG.auth, RIB::CONFIG.nick))
+  #RIB::CONFIG.channel.split(/\s+|\s*,\s*/).each do |chan|
   server.join_channel
   $Log.info("Connected to #{RIB::CONFIG.irc} as #{RIB::CONFIG.nick} in #{RIB::CONFIG.channel}")
   server.setme(RIB::CONFIG.nick)

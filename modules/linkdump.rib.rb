@@ -15,7 +15,7 @@ module RIB
           require 'fileutils'
           FileUtils.mkdir_p(LINKDUMP)
         end
-        File.open(LINKDUMP + filename, File::WRONLY | File::CREAT) {|f| f.write(line) }
+        File.open(LINKDUMP + filename, File::WRONLY | File::CREAT, 0644) {|f| f.write(line) }
         #updatefile = File.dirname(LINKDUMP)+"/entries/.lastupdate"
         #File.unlink(updatefile) if File.exist?(updatefile)
       end
