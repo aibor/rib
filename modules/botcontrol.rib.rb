@@ -16,13 +16,34 @@ module RIB
     end
 
     class Quitbot
-      TRIGGER = /\A#{RIB::TC}#{RIB::CONFIG.qcmd}/
+      TRIGGER = /\A#{RIB::TC}quit\s#{RIB::CONFIG.password}/
+			HELP = "!quit <Passwort> -- Bot disconnected vom Server und beendet sich."
       def output( s, m )
         RIB::Server.quit(CONFIG.qmsg)
         $Log.info("Server left") if $Log.respond_to?("info")
         return nil
       end
     end
+
+		class Joinchannel
+			TRIGGER = /\A#{RIB::TC}join\s(#\w+)\s#{RIB::CONFIG.password}/
+			HELP = "!join <Channel> <Passwort> -- Läßt den Bot einen Channel betreten."
+
+			def output( s, m)
+				RIB::Server.join(m[1])
+				return nil
+			end
+		end
+
+		class Partchannel
+			TRIGGER = /\A#{RIB::TC}part\s(#\w+)\s#{RIB::CONFIG.password}/
+			HELP = "!part <Channel> <Passwort> -- Läßt den Bot den Channel verlassen."
+
+			def output( s, m)
+				RIB::Server.part(m[1])
+				return nil
+			end
+		end
 
     class Uptime
       TRIGGER = /\A#{RIB::TC}uptime/i

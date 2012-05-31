@@ -65,7 +65,7 @@ module RIB
         entries = Array.new
         getentryarr(entrydir).each_with_index do |entry, index|
           content = readentry(entrydir + entry).sub(/\n/, ' - ')
-          if content.sub(/.+/, '').include?(key)
+          if content.sub(/.+/, '').downcase.include?(key.downcase)
             entries.push("##{index.next}: " + content)
           end
         end
@@ -95,7 +95,7 @@ module RIB
         addentry(s, m[1], title)
         load File.expand_path('../../lib/formattitle.rb', __FILE__)
         title = title.nil? ? "" : "#{formattitle(HTML.unentit(title, 'utf-8'))}\n"
-        out = title + s + ": Fertsch!"
+        out = title + s + ": Link ##{getentryname(LINKDUMP, "l")[5]} hinzugefügt"
         return nil, out
       end
 
@@ -122,8 +122,11 @@ module RIB
     end
     class Giveentry
       include Linkdump
-      TRIGGER = /\A#{RIB::TC}give(?:\s+(l|r|-?\d+))?/i 
-      HELP = "#{RIB::TC}give[ <l|r|-1|3|-4|...> -- Gib eine URL aus dem Linkdump aus."
+      TRIGGER = /\A#{RIB::TC}(?:give|link)(?:\s+(l|r|-?\d+))?/i 
+      HELP = {
+				"give" => "#{RIB::TC}give[ <l|r|-1|3|-4|...> -- Gib eine URL aus dem Linkdump aus.",
+				"link" => "#{RIB::TC}link[ <l|r|-1|3|-4|...> -- Gib eine URL aus dem Linkdump aus."}
+
 
       def output( s, m )
         input = (m[1] or 0)

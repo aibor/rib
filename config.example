@@ -1,6 +1,21 @@
 # IRC-Server to join? Example: irc.freenode.net
 irc = irc.quakenet.org        
 
+# Port of the Server to connect to
+port = 6667
+
+# use ssl?
+#use_ssl
+
+# verify ssl connection?
+#ssl_verify
+
+# ca path to use
+#ssl_ca_path = "/etc/ssl/certs"
+
+# host certificate
+#ssl_client_cert = ""
+
 # Which nick to use?
 nick = rubybot
 
@@ -13,8 +28,8 @@ channel = "#rib"
 # Character which triggers the bot to do something
 tc = !
 
-# Command for disconnecting the bot via IRC message
-qcmd = "quit"
+# password for interacting with the bot 
+password = "rib"
 
 # Message when bot leaves
 qmsg = "See you later, shitlords!"
@@ -27,9 +42,6 @@ dumplink = "https://www.linkdumpiorrrr.de"
 
 # Link to help page 
 helplink = "https://www.linkdumpiorrrr.de/rib-help"
-
-# How many words shown by most? Max 10! NO " HERE!
-most = 3
 
 # Print HTML-title of a posted url if set.
 title

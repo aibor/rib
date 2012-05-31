@@ -60,7 +60,7 @@ end.parse!
 end
 
 # Logfile for the Programm. NOT IRC log! Look into lib/irc.rb therefore.
-logfile = File.expand_path("../log/#{File.basename($0)}_#{RIB::CONFIG.irc}_#{RIB::CONFIG.channel}.log", __FILE__)
+logfile = File.expand_path("../log/#{File.basename($0)}_#{RIB::CONFIG.irc}.log", __FILE__)
 destination = verbose.nil? ? logfile : STDOUT
 $Log = Logger.new(destination)
 $Log.level = Logger::INFO
@@ -69,14 +69,22 @@ begin
   $Starttime = Time.new
   # Start IRC Connection
   $Log.info("Server starts")
-  server = IRC::Connection.new(RIB::CONFIG.irc, RIB::CONFIG.channel)
+  server = IRC::Connection.new(RIB::CONFIG.irc, { :port			=> RIB::CONFIG.port, 
+															 										:ssl			=> RIB::CONFIG.use_ssl, 
+																									:ca_path	=> RIB::CONFIG.ssl_ca_path, 
+																									:verify		=> RIB::CONFIG.ssl_verify, 
+																									:cert			=> RIB::CONFIG.ssl_client_cert })
+  server.togglelogging
   server.login(RIB::CONFIG.nick, "hostname", "servername", "\"#{RIB::CONFIG.nick}\" RIB")
   $Log.info(server.auth_nick(RIB::CONFIG.auth, RIB::CONFIG.nick))
-  #RIB::CONFIG.channel.split(/\s+|\s*,\s*/).each do |chan|
-  server.join_channel
-  $Log.info("Connected to #{RIB::CONFIG.irc} as #{RIB::CONFIG.nick} in #{RIB::CONFIG.channel}")
+  RIB::CONFIG.channel.split(/\s+|\s*,\s*/).each do |chan|
+		#server.join_channel(RIB::CONFIG.channel)
+		server.join_channel(chan)
+		#$Log.info("Connected to #{RIB::CONFIG.irc} as #{RIB::CONFIG.nick} in #{RIB::CONFIG.channel}")
+		$Log.info("Connected to #{RIB::CONFIG.irc} as #{RIB::CONFIG.nick} in #{chan}")
+	end
   server.setme(RIB::CONFIG.nick)
-  server.setlogging
+  #server.togglelogging
   RIB::Server = server
 
   # After successful connection start with server response loop.

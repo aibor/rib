@@ -8,7 +8,7 @@ load File.expand_path('../html/html.rb', __FILE__)
 module RIB
    
   class Configuration
-    Conf = Struct.new(:irc, :nick, :channel, :auth, :tc, :qcmd, :qmsg, :linkdump, :dumplink, :helplink, :title, :pony, :verbose)
+    Conf = Struct.new(:irc, :port, :use_ssl, :ssl_verify, :ssl_ca_path, :ssl_client_cert, :nick, :channel, :auth, :tc, :password, :qmsg, :linkdump, :dumplink, :helplink, :title, :pony, :verbose)
 
     def initialize( file )
       @config = default
@@ -19,11 +19,16 @@ module RIB
     def default # Default Configuration
       Conf.new(
         "irc.quakenet.org",                          # irc
+				6667,																				 # port
+				nil,																				 # use_ssl
+				nil,																				 # ssl_verify
+				"/etc/ssl/certs",														 # ssl_ca_path
+				nil,																				 # ssl_client_cert
         "rubybot" + rand(999).to_s,                  # nick
         "#rib",                                      # channel
         nil,                                         # auth
         "!",                                         # tc
-        "quit",                                      # qcmd
+        "rib",                                       # password
         "Bye!",                                      # qmsg
         "./yaylinks",                                # linkdump
         "http://www.linkdumpioorrrr.de",             # dumplink
@@ -101,7 +106,7 @@ module RIB
     def setcommands
       @commands = Hash.new
       @trigger.each_pair do |k, t|
-        if t.to_s =~ /\\A!\(?(\w+(\|\w+|\s\w+)*)/
+        if t.to_s =~ /\\A!\(?(?:\?\:)?(\w+(\|\w+|\s\w+)*)/
           @commands[k] = Array.new
           $1.split(/\|/).each {|r| @commands[k].push(r)}
         end
@@ -128,8 +133,14 @@ module RIB
         end
       end
       ObjectSpace.garbage_collect
-      output[0] = @source if ! @cmd.params[0].include? "#" and output[0].nil?
-      output[0] = RIB::CONFIG.channel if output[0].nil?
+			if output[0].nil?
+				if @cmd.params[0].include? "#"  
+					output[0] = @cmd.params[0]
+				else
+					output[0] = @source 
+				end
+      #output[0] = RIB::CONFIG.channel if output[0].nil?
+			end
       output
     end
   end # class Message
