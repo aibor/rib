@@ -11,7 +11,7 @@ module RIB
         log = logfile.readlines
         log.reverse.each do |entry|
           begin
-            if entry.match(/[^:]+--\s:\s:#{nick}!/)
+            if entry.match(/[^:]+--\s:\s:#{nick}!\S+\sPRIVMSG/)
               return entry
             end
           rescue
