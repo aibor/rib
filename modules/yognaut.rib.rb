@@ -3,7 +3,7 @@ module RIB
     class Yognaut
       TRIGGER = /\A(ACTION\s+salutes)\Z/ 
       
-      def output( s, m )
+      def output( s, m, c )
         return nil, m[1] + "\nI am Dave ! Yognaut and I have the balls!"
       end
     end

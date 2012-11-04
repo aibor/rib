@@ -11,7 +11,7 @@ module RIB
         "wolf" => "#{RIB::TC}wolf <Suchstring> -- Suche bei Wolfram|Alpha."
       }
       
-      def output( s, m )
+      def output( s, m, c )
         site = m[1]
         key = m[2].to_s
         output = s + ": " + gsearch(site, key)

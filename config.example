@@ -41,7 +41,7 @@ linkdump = "./yaylinks"
 dumplink = "https://www.linkdumpiorrrr.de"
 
 # Link to help page 
-helplink = "https://www.linkdumpiorrrr.de/rib-help"
+helplink = "https://github.com/aibor/rib/wiki"
 
 # Print HTML-title of a posted url if set.
 title

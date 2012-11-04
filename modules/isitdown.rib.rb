@@ -30,7 +30,7 @@ module RIB
       end
 
       # s = source of message, m = matchdata of TRIGGER-regexp
-      def output( s, m )
+      def output( s, m, c )
         out = s + ": " + isupme(m[1])
         #out = s + ": " + botserver(m[1])
         return nil, out

@@ -13,7 +13,7 @@ module RIB
         }
       TRIGGER = /\A#{RIB::TC}(#{RESP.keys.join('|')})\Z/
       
-      def output( s, m )
+      def output( s, m, c )
         key = RESP[m[1]]
         out = key.is_a?(Array) ? key[rand(key.length)] : key
         #out.gsub(/\\/, '\\\\') if RUBY_VERSION < '1.9'

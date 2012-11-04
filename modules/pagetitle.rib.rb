@@ -5,7 +5,7 @@ module RIB
     class Pagetitle
       TRIGGER = /\A(?!#{RIB::TC}).*?(http[s]?:\/\/\S*)/x
       
-      def output( s, m )
+      def output( s, m, c )
         if CONFIG.title
           return nil, ftitle(m[1])
         end
@@ -23,7 +23,7 @@ module RIB
       TRIGGER = /\A#{RIB::TC}set title\s*=?\s*(on|off|0|1)/i
       HELP = "De-/aktiviere die automatische HTML-Titelausgabe für URLS. -- #{RIB::TC}set title <0|1|on|off>"
 
-      def output( s, m )
+      def output( s, m, c )
         case m[1]
         when /on|1/ then 
           CONFIG.title(true)

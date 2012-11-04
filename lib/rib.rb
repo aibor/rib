@@ -32,7 +32,7 @@ module RIB
         "Bye!",                                      # qmsg
         "./yaylinks",                                # linkdump
         "http://www.linkdumpioorrrr.de",             # dumplink
-        "http://www.linkdumpioorrrr.de/rib-help",    # helplink
+        "https://github.com/aibor/rib/wiki",		     # helplink
         true,                                        # title
         nil                                          # pony
       )                                         
@@ -126,7 +126,7 @@ module RIB
       @mods.trigger.each do |mod, trig|
         if @cmd.last_param =~ trig
           workmod = Class.new(eval("RIB::MyModules::" + mod.to_s)).new
-          out = workmod.output(@source, $~)
+          out = workmod.output(@source, $~, @cmd)
           ObjectSpace.define_finalizer(self, proc { workmod.self_destruct! })
           output = out.is_a?(Array) ? out : [nil, out]
           break

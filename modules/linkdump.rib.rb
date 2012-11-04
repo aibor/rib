@@ -78,7 +78,7 @@ module RIB
       TRIGGER = /\A#{RIB::TC}add\s+(http[s]?:\/\/\S*)(\s+(.+))?\Z/xi 
       HELP = "#{RIB::TC}add http://harharhar.de -- URL in den Linkdump eintragen."
       
-      def output( s, m )
+      def output( s, m, c )
         if CONFIG.linkdump.nil?
           return nil, nil
         end
@@ -105,7 +105,7 @@ module RIB
       TRIGGER = /\A#{RIB::TC}del\s+(l|-?\d+)/
       HELP = "#{RIB::TC}del <Eintragsnummer> -- Lösche Eintrag aus dem Linkdump. Nur wer den Eintrag angelegt hat, kann ihn löschen."
 
-      def output ( s, m )
+      def output ( s, m, c )
         if m[1] =~ /\A[l|r]\Z/
           num = m[1]
         else
@@ -128,7 +128,7 @@ module RIB
 				"link" => "#{RIB::TC}link[ <l|r|-1|3|-4|...> -- Gib eine URL aus dem Linkdump aus."}
 
 
-      def output( s, m )
+      def output( s, m, c )
         input = (m[1] or 0)
         if input =~ /\A[l|r]\Z/
           num = input
@@ -160,7 +160,7 @@ module RIB
       TRIGGER = /\A#{RIB::TC}search (.*)\Z/
       HELP = "#{RIB::TC}search <Suchstring> -- Sucht im Linkdump nach dem Suchstring."
 
-      def output( s, m )
+      def output( s, m, c )
         found = searchentry(LINKDUMP, m[1])
         found = "Nichts gefunden!" if found.empty?
         out = s + ": " + found
