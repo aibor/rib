@@ -1,7 +1,7 @@
 module RIB
   module MyModules
     class Lastseen
-      TRIGGER = /\A#{RIB::TC}seen\s+(.+)/
+      TRIGGER = /\A#{RIB::TC}seen\s+(\S+)/
         HELP = "Show time and content of someone's last privmsg"
 
       def readlog( channel, nick )
