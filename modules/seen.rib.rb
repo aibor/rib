@@ -10,8 +10,11 @@ module RIB
         logfile = File.new(logfilepath)
         log = logfile.readlines
         log.reverse.each do |entry|
-          if entry.match(/[^:]+--\s:\s:#{nick}!/)
-            return entry
+          begin
+            if entry.match(/[^:]+--\s:\s:#{nick}!/)
+              return entry
+            end
+          rescue next
           end
         end
         nil
