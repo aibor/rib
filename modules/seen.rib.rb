@@ -14,7 +14,8 @@ module RIB
             if entry.match(/[^:]+--\s:\s:#{nick}!/)
               return entry
             end
-          rescue next
+          rescue
+            next
           end
         end
         nil
