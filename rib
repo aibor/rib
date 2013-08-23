@@ -34,7 +34,7 @@ OptionParser.new do |opts|
     RIB::CONFIG.nick(n)
   end
   opts.on("-c", "--channel [CHANNEL]", String, "which channel to join") do |c|
-    c.gsub!(/\A([^\#].*)/, '#\0')
+    c = c.gsub(/\A([^\#].*)/, '#\0')
     RIB::CONFIG.channel(c)
   end
   opts.on("-f", "--file [CONFFILE]", "read configuration from this file") do |f|
