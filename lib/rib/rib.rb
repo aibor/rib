@@ -121,7 +121,7 @@ module RIB
       end
 
       # Logfile for the Programm. NOT IRC log! Look into lib/irc.rb therefore.
-      logfile = File.expand_path("../../log/#{File.basename($0)}_#{@config.irc}.log", __FILE__)
+      logfile = File.expand_path("../../../log/#{File.basename($0)}_#{@config.irc}.log", __FILE__)
       destination = @config.verbose.nil? ? logfile : STDOUT
       @log = Logger.new(destination)
       @log.level = Logger::INFO
