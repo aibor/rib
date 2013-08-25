@@ -14,7 +14,7 @@ module RIB
 
     def initialize( file = String.new )
       @config = default
-      cfile = File.expand_path("../../#{file}", __FILE__)
+      cfile = File.expand_path("../../../#{file}", __FILE__)
       File.exist?(cfile) ? read(cfile) : puts("File doesn't exist: " + cfile)
     end
 
