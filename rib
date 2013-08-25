@@ -12,36 +12,31 @@
 # add locla library directory to $LOAD_PATH
 $: << File.expand_path("../lib", __FILE__)
 
-require 'logger'
 require 'optparse'
-require 'irc'
-require 'rib.rb'
+require 'rib/rib'
 
 # initialize configuration from file
-RIB::CONFIG = RIB::Configuration.new("config")
-RIB::TC = RIB::CONFIG.tc
-MODS = RIB::Modules.new(File.expand_path('../modules/', __FILE__))
-verbose = nil
+config = RIB::Configuration.new( "config" )
 
 # handle possible arguments
 OptionParser.new do |opts|
   opts.banner = "Usage: #{File.basename($0)} [options]"
 
   opts.on("-i", "--irc [HOSTNAME]", "IRC Server to connect to") do |irc|
-    RIB::CONFIG.irc(irc)
+    config.irc(irc)
   end
   opts.on("-n", "--nick [NICKNAME]", "nickname for the bot") do |n|
-    RIB::CONFIG.nick(n)
+    config.nick(n)
   end
   opts.on("-c", "--channel [CHANNEL]", String, "which channel to join") do |c|
     c = c.gsub(/\A([^\#].*)/, '#\0')
-    RIB::CONFIG.channel(c)
+    config.channel(c)
   end
   opts.on("-f", "--file [CONFFILE]", "read configuration from this file") do |f|
-    RIB::CONFIG.update(f)
+    config.update(f)
   end
   opts.on("-v", "--verbose", "write to STDOUT instead of logfile") do |f|
-    verbose = true
+    config.verbose = true
   end
   # No argument, shows at tail.  This will print an options summary.
   opts.on_tail("-h", "--help", "show this message") do
@@ -50,64 +45,6 @@ OptionParser.new do |opts|
   end
 end.parse!
 
-# check for necessary params
-["irc", "channel", "nick"].each do |t|
-  cmd = "RIB::CONFIG." + t
-  if (eval cmd).nil?
-    puts "No #{t} specified!", "Type #{File.basename($0)} -h for help"
-    exit
-  end
-end
+aibot = RIB::Bot.new( config )
 
-# Logfile for the Programm. NOT IRC log! Look into lib/irc.rb therefore.
-logfile = File.expand_path("../log/#{File.basename($0)}_#{RIB::CONFIG.irc}.log", __FILE__)
-destination = verbose.nil? ? logfile : STDOUT
-$Log = Logger.new(destination)
-$Log.level = Logger::INFO
-
-begin
-  $Starttime = Time.new
-  # Start IRC Connection
-  $Log.info("Server starts")
-  server = IRC::Connection.new(RIB::CONFIG.irc, { :port			=> RIB::CONFIG.port, 
-															 										:ssl			=> RIB::CONFIG.use_ssl, 
-																									:ca_path	=> RIB::CONFIG.ssl_ca_path, 
-																									:verify		=> RIB::CONFIG.ssl_verify, 
-																									:cert			=> RIB::CONFIG.ssl_client_cert })
-  server.togglelogging
-  server.login(RIB::CONFIG.nick, "hostname", "servername", "\"#{RIB::CONFIG.nick}\" RIB")
-  $Log.info(server.auth_nick(RIB::CONFIG.auth, RIB::CONFIG.nick))
-  RIB::CONFIG.channel.split(/\s+|\s*,\s*/).each do |chan|
-		#server.join_channel(RIB::CONFIG.channel)
-		server.join_channel(chan)
-		#$Log.info("Connected to #{RIB::CONFIG.irc} as #{RIB::CONFIG.nick} in #{RIB::CONFIG.channel}")
-		$Log.info("Connected to #{RIB::CONFIG.irc} as #{RIB::CONFIG.nick} in #{chan}")
-	end
-  server.setme(RIB::CONFIG.nick)
-  #server.togglelogging
-  RIB::Server = server
-
-  # After successful connection start with server response loop.
-  while cmd = server.recv
-    begin
-
-      # If a message is received check for triggers and response properly.
-      if cmd.command == "PRIVMSG"
-        msg = RIB::Message.new( MODS, cmd )
-        output = msg.check
-        # If useful response message was created: send it!
-        next if output[1].nil?
-        output[1] = output[1].scan(/.+/)
-        output[1].each {|o| server.privmsg(output[0], ":" + o); sleep(0.3)}
-      end # if cmd.command
-    rescue
-      $Log.error($!)
-    end # begin
-  end # while
-
-rescue
-  $Log.fatal($!)
-ensure
-  $Log.info("EXITING")
-  $Log.close
-end # begin
+aibot.run

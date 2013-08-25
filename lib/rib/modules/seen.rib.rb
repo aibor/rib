@@ -1,11 +1,16 @@
+# coding: utf-8
 module RIB
   module MyModules
-    class Lastseen
-      TRIGGER = /\A#{RIB::TC}seen\s+(\S+)/
-        HELP = "Show time and content of someone's last privmsg"
+    class Lastseen < RIB::MyModulesBase
+      def trigger
+        /\A#{@bot.config.tc}seen\s+(\S+)/
+      end
+        def help
+          "Show time and content of someone's last privmsg"
+        end
 
       def readlog( channel, nick )
-        logfilepath = File.expand_path("../log/#{RIB::CONFIG.irc}_#{channel}.log", $0)
+        logfilepath = File.expand_path("../log/#{@bot.config.irc}_#{channel}.log", $0)
         return nil if channel.nil? or nick.nil? or ! File.exists?(logfilepath)
         logfile = File.new(logfilepath)
         log = logfile.readlines

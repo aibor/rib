@@ -22,15 +22,12 @@ module IRC
       options = DEFAULT_OPTIONS.merge(options)
 
       port ,@host = options[:port], host
-      #@irc_server  = options[:socket_class].new(host, port)
       tcp_socket  = options[:socket_class].new(host, port)
 			@irc_server = options[:ssl] ?	ssl_connection(tcp_socket, options) : tcp_socket
       @cmd_buffer = Array.new
-      serverlogfile = File.expand_path("../../log/#{host}.log", __FILE__)
+      serverlogfile = File.expand_path("../../../log/#{host}.log", __FILE__)
 			@logs = { :server => Logger.new(serverlogfile)}
-      #@serverlog = Logger.new(serverlogfile)
 			@logs[:server].level = Logger::INFO
-      #@serverlog.level = Logger::INFO
       @logging = nil
       @me = String.new
     end
@@ -90,7 +87,7 @@ module IRC
       if rpl.nil? or rpl.command !~ /\A3(?:32|53)\Z/
         raise "Join error:  #{rpl.last_param}."
       end
-			channellogfile = File.expand_path("../../log/#{@host}_#{channel}.log", __FILE__)
+			channellogfile = File.expand_path("../../../log/#{@host}_#{channel}.log", __FILE__)
 			logname = channel.sub(/\A#/, 'c_').to_sym
 			@logs[logname] = Logger.new(channellogfile)
 			@logs[logname].level = Logger::INFO

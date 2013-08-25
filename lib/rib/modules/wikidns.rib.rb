@@ -1,12 +1,15 @@
+# coding: utf-8
 module RIB
   module MyModules
-    class Wikidns
+    class Wikidns < RIB::MyModulesBase
 			# Great project by David Leadbeater. Get a short summary from Wikipedia
 			# about a keyword over DNS. Description of the project: 
 			# https://dgl.cx/2008/10/wikipedia-summary-dns
       require "resolv"
 
-      TRIGGER = /\A#{RIB::TC}(?:wiki|w) (.+)\Z/
+      def trigger
+        /\A#{@bot.config.tc}(?:wiki|w) (.+)\Z/
+      end
       
       # s = source of message, m = matchdata of TRIGGER-regexp
       def output( s, m, c )

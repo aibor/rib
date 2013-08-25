@@ -43,7 +43,7 @@ module HTML
         res.instance_eval {@body_exist = false}
       end
     end # request_get
-    raise ArgumentError 'Redirect source and target identical' if url == resp['location']
+    raise ArgumentError, 'Redirect source and target identical' if url == resp['location']
     case resp
     when Net::HTTPRedirection then 
       fetch(resp['location'], limit - 1)

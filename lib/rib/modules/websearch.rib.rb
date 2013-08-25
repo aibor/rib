@@ -1,15 +1,19 @@
 # coding: utf-8
-
 module RIB
   module MyModules
-    class Websearch
-      TRIGGER = /\A#{RIB::TC}(g|wolf|dict|d) (.*)\Z/i
-      HELP = {
-        "g" => "#{RIB::TC}g <Suchstring> -- Suche bei Google.",
-        "dict" => "#{RIB::TC}g <Suchstring> -- Wörterbuchsuche bei Dict.cc.",
-        "d" => "#{RIB::TC}g <Suchstring> -- Wörterbuchsuche bei Dict.cc.",
-        "wolf" => "#{RIB::TC}wolf <Suchstring> -- Suche bei Wolfram|Alpha."
-      }
+
+    class Websearch < RIB::MyModulesBase
+      def trigger
+        /\A#{@bot.config.tc}(g|wolf|dict|d) (.*)\Z/i
+      end
+      def help
+        {
+          "g" => "#{@bot.config.tc}g <Suchstring> -- Suche bei Google.",
+          "dict" => "#{@bot.config.tc}dict <Suchstring> -- Wörterbuchsuche bei Dict.cc.",
+          "d" => "#{@bot.config.tc}d <Suchstring> -- Wörterbuchsuche bei Dict.cc.",
+          "wolf" => "#{@bot.config.tc}wolf <Suchstring> -- Suche bei Wolfram|Alpha."
+        }
+      end
       
       def output( s, m, c )
         site = m[1]

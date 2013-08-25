@@ -1,7 +1,10 @@
+# coding: utf-8
 module RIB
   module MyModules
-    class Dexterquote
-      TRIGGER = /\A#{RIB::TC}dexter/
+    class Dexterquote < RIB::MyModulesBase
+      def trigger
+        /\A#{@bot.config.tc}dexter/
+      end
       
       def output( s, m, c )
         quotefile = File.expand_path("../dexterquotes", __FILE__)

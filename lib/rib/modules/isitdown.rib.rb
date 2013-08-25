@@ -1,9 +1,13 @@
 # coding: utf-8
 module RIB
   module MyModules
-    class Isitdown
-      TRIGGER = /\A#{RIB::TC}isup\s+([\w.]+)/xi
-      HELP = "#{RIB::TC}isup rigged.me -- Test a Host if it's up or not."
+    class Isitdown < RIB::MyModulesBase
+      def trigger
+        /\A#{@bot.config.tc}isup\s+([\w.]+)/xi
+      end
+      def help
+        "#{@bot.config.tc}isup rigged.me -- Test a Host if it's up or not."
+      end
 
       #require 'html/html'
       
