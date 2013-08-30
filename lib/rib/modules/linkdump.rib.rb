@@ -59,7 +59,7 @@ module RIB
         f = File.open(file, File::RDONLY | File::NONBLOCK) 
         line = f.gets
         line =~ /\A<a href="(.*?)" target="_blank" title="(.*?)">(?:.*?)<\/a><br>\Z/
-        load File.expand_path('../../lib/formattitle.rb', __FILE__)
+        load File.expand_path('../../formattitle.rb', __FILE__)
         title = $2.empty? ? $2 : formattitle(HTML.unentit($2, "utf-8"))
         $1 + "\n" + title
       end 
@@ -100,7 +100,7 @@ module RIB
           title = m[3]
         end
         addentry( linkdump( @bot.config.linkdump), s, m[1], title)
-        load File.expand_path('../../lib/formattitle.rb', __FILE__)
+        load File.expand_path('../../formattitle.rb', __FILE__)
         title = title.nil? ? "" : "#{formattitle(HTML.unentit(title, 'utf-8'))}\n"
         out = title + s + ": Link ##{getentryname( linkdump( @bot.config.linkdump ), "l" )[5]} hinzugefügt"
         return nil, out
