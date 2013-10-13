@@ -23,7 +23,9 @@ module RIB
           "panic" => ["https://dl.dropbox.com/u/6670723/images/panic.gif","https://dl.dropbox.com/u/6670723/images/panic2.gif"],
           "alone" => "https://dl.dropbox.com/u/6670723/images/forever_alone.png",
           "arch" => "http://xyne.archlinux.ca/img/misc/allan_sux.png",
-          "deal" => "https://dl.dropbox.com/u/6670723/images/dealwithit.gif"
+          "deal" => "https://dl.dropbox.com/u/6670723/images/dealwithit.gif",
+          "chill" => "https://dl.dropboxusercontent.com/u/6670723/images/chill.jpg",
+          "calm" => "https://dl.dropboxusercontent.com/u/6670723/images/chill.jpg"
         }
       end
     end
