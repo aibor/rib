@@ -24,7 +24,7 @@ module RIB
           "alone" => "https://dl.dropbox.com/u/6670723/images/forever_alone.png",
           "arch" => "http://xyne.archlinux.ca/img/misc/allan_sux.png",
           "deal" => "https://dl.dropbox.com/u/6670723/images/dealwithit.gif",
-          "chill" => "https://dl.dropboxusercontent.com/u/6670723/images/chill.jpg",
+          "chill" => "┬─┬ ノ( ゜-゜ノ)",
           "calm" => "https://dl.dropboxusercontent.com/u/6670723/images/chill.jpg"
         }
       end
