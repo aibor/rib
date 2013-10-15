@@ -25,7 +25,9 @@ module RIB
           "arch" => "http://xyne.archlinux.ca/img/misc/allan_sux.png",
           "deal" => "https://dl.dropbox.com/u/6670723/images/dealwithit.gif",
           "chill" => "┬─┬ ノ( ゜-゜ノ)",
-          "calm" => "https://dl.dropboxusercontent.com/u/6670723/images/chill.jpg"
+          "calm" => "https://dl.dropboxusercontent.com/u/6670723/images/chill.jpg",
+          "nope" => "https://dl.dropboxusercontent.com/u/6670723/images/keep-calm-and-nope.png",
+          "#{@bot.config.nick}" => "hell yeah!"
         }
       end
     end
