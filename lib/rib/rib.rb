@@ -4,58 +4,44 @@ require "net/http"
 require "uri"
 require "iconv" if RUBY_VERSION < '1.9'
 require 'logger'
-require 'rib/irc'
 load File.expand_path('../html/html.rb', __FILE__)
 
 module RIB
    
   class Configuration
-    Conf = Struct.new(:irc, :port, :use_ssl, :ssl_verify, :ssl_ca_path, :ssl_client_cert, :nick, :channel, :auth, :tc, :password, :qmsg, :linkdump, :dumplink, :helplink, :title, :pony, :verbose)
+    Conf = Struct.new(:protocol, :server, :port, :ssl, :nick, :jid, :channel, :auth,
+                      :tc, :password, :qmsg, :linkdump, :dumplink, :helplink,
+                      :title, :pony, :verbose)
+    SSL = Struct.new(:use, :verify, :ca_path, :client_cert)
 
-    def initialize( file = String.new )
+    def initialize
       @config = default
-      cfile = File.expand_path("../../../#{file}", __FILE__)
-      File.exist?(cfile) ? read(cfile) : puts("File doesn't exist: " + cfile)
     end
 
     def default # Default Configuration
       Conf.new(
-        "irc.quakenet.org",                          # irc
+        :irc,                                        # protocol
+        'irc.quakenet.org',                          # server
 				6667,																				 # port
-				nil,																				 # use_ssl
-				nil,																				 # ssl_verify
-				"/etc/ssl/certs",														 # ssl_ca_path
-				nil,																				 # ssl_client_cert
-        "rubybot" + rand(999).to_s,                  # nick
-        "#rib",                                      # channel
-        nil,                                         # auth
-        "!",                                         # tc
-        "rib",                                       # password
-        "Bye!",                                      # qmsg
-        "./yaylinks",                                # linkdump
-        "http://www.linkdumpioorrrr.de",             # dumplink
-        "https://github.com/aibor/rib/wiki",		     # helplink
+        SSL.new( false,                              # use ssl? 
+                 false,															 # ssl_verify
+				         '/etc/ssl/certs',									 # ssl_ca_path
+				         ''),	  														 # ssl_client_cert
+        'rubybot' + rand(999).to_s,                  # nick
+        'rubybot@xmpp.example.com',                  # jid
+        '#rib',                                      # channel
+        '',                                          # auth
+        '!',                                         # tc
+        'rib',                                       # password
+        'Bye!',                                      # qmsg
+        './yaylinks',                                # linkdump
+        'http://www.linkdumpioorrrr.de',             # dumplink
+        'https://github.com/aibor/rib/wiki',		     # helplink
         true,                                        # title
-        nil                                          # pony
+        false                                        # pony
       )                                         
     end
  
-    def read(cfile)
-      file = File.open(cfile, File::RDONLY | File::NONBLOCK)
-      file.each do |line|
-        line =~ /\A\s*(#?)\s*(\w+)\s*(=\s*"?(.*?)"?\s*)?\Z/
-        key, val = $2, $4
-        next if $1 == "#" or key.nil?
-        val = true if $3.nil?
-        insert(key, val)
-      end
-      file.close
-    end
-
-    def update( file )
-      read( file )
-    end
-
     def method_missing( meth, *args )
       meth = meth.to_s.sub(/=$/, '').to_sym
       if Conf.members.include? meth
@@ -104,30 +90,38 @@ module RIB
     end
   end # class Message
 
+  class ConnectionBase
+    Command = Struct.new(:prefix, :command, :params, :last_param)
+    def initialize(host, *args)
+      serverlogfile = File.expand_path("../../../log/#{host}.log", __FILE__)
+			@logs = { :server => Logger.new(serverlogfile)}
+			@logs[:server].level = Logger::INFO
+      @logging = nil
+      @me = String.new
+    end
+
+    def togglelogging
+      @logging = @logging.nil? ? true : nil
+    end
+  end
+
   class Bot
+    Command = Struct.new(:prefix, :command, :params, :last_param)
 
     attr_accessor :log, :config, :modules, :server, :starttime, :commands
+    
 
-    def initialize( config = Configuration.new )
-
-      @config = config
-      # check for necessary params
-      ["irc", "channel", "nick"].each do |t|
-        cmd = "@config." + t
-        if (eval cmd).nil?
-          puts "No #{t} specified!", "Type #{File.basename($0)} -h for help"
-          exit
-        end
-      end
-
-      # Logfile for the Programm. NOT IRC log! Look into lib/irc.rb therefore.
-      logfile = File.expand_path("../../../log/#{File.basename($0)}_#{@config.irc}.log", __FILE__)
-      destination = @config.verbose.nil? ? logfile : STDOUT
-      @log = Logger.new(destination)
-      @log.level = Logger::INFO
-      load_modules
-
+    def initialize
+      @config = Configuration.new
     end # initialize
+
+    def configure
+      yield @config
+    end
+
+    def protocol
+      @config.protocol
+    end
 
     def load_modules
       @modules = create_module_instances( File.expand_path( '../modules/', __FILE__ ) )
@@ -156,45 +150,53 @@ module RIB
     end
 
     def run
+      # check for necessary params
+      ["server", "channel", "nick"].each do |param|
+        raise "No #{param} specified!" if @config.send(param).nil?
+      end
+
+      # Logfile for the Programm. NOT IRC log! Look into lib/irc.rb therefore.
+      logfile = File.expand_path("../../../log/#{File.basename($0)}_#{@config.server}.log", __FILE__)
+      destination = @config.verbose.nil? ? logfile : STDOUT
+      @log = Logger.new(destination)
+      @log.level = Logger::INFO
+
+      load_modules
+
       begin
         @starttime = Time.new
         # Start IRC Connection
         @log.info( "Server starts" )
-        @server = IRC::Connection.new( @config.irc, { :port			=> @config.port, 
-                                                      :ssl	    => @config.use_ssl, 
-                                                      :ca_path  => @config.ssl_ca_path, 
-                                                      :verify		=> @config.ssl_verify, 
-                                                      :cert			=> @config.ssl_client_cert } )
+
+        @server = case self.protocol
+                    when :irc then
+                      require 'rib/irc'
+                      IRC::Connection.new( @config.server, @config.nick, 
+                                                        { :port	=> @config.port, 
+                                                          :ssl   => @config.ssl.to_h } )
+                    when :xmpp then
+                      require 'rib/xmpp'
+                      XMPP::Connection.new( @config.jid, @config.server, @config.nick )
+                    else raise "Unknown protocol '#{self.protocol}'"
+                  end
+
         @server.togglelogging
-        @server.login( @config.nick, "hostname", "servername", "\"#{@config.nick}\" RIB" )
-        @log.info( @server.auth_nick( @config.auth, @config.nick ) )
-        
+        @log.info( @server.login(@config.auth) )
+
         # iterate through channel list and join them
         @config.channel.split( /\s+|\s*,\s*/ ).each do |chan|
           @server.join_channel( chan )
-          @log.info( "Connected to #{@config.irc} as #{@config.nick} in #{chan}" )
+          @log.info( "Connected to #{@config.server} as #{@config.nick} in #{chan}" )
         end
 
         # make the bot aware of himself 
         @server.setme( @config.nick )
 
-        # After successful connection start with server response loop.
-        while cmd = @server.recv
-          begin
-
-            # If a message is received check for triggers and response properly.
-            if cmd.command == "PRIVMSG"
-              msg = Message.new( self, cmd )
-              output = msg.check
-              # If useful response message was created: send it!
-              next if output[1].nil?
-              output[1] = output[1].scan(/.+/)
-              output[1].each {|o| @server.privmsg(output[0], ":" + o); sleep(0.3)}
-            end # if cmd.command
-          rescue
-            @log.error($!)
-          end # begin
-        end # while
+        case self.protocol
+          when :irc then run_irc
+          when :xmpp then run_xmpp
+          else raise "Unknown protocol '#{self.protocol}'"
+        end
 
       rescue
         @log.fatal($!)
@@ -203,5 +205,48 @@ module RIB
         @log.close
       end # begin
     end # method run
+
+    private
+
+    def run_irc
+        
+      # After successful connection start with server response loop.
+      while cmd = @server.recv
+        begin
+
+          # If a message is received check for triggers and response properly.
+          if cmd.command == "PRIVMSG"
+            msg = Message.new( self, cmd )
+            output = msg.check
+            # If useful response message was created: send it!
+            next if output[1].nil?
+            output[1] = output[1].scan(/.+/)
+            output[1].each {|o| @server.privmsg(output[0], ":" + o); sleep(0.3)}
+          end # if cmd.command
+        rescue
+          @log.error($!)
+        end # begin
+      end # while
+    end
+
+    def run_xmpp
+    
+      @server.muc.each do |room,muc|
+        muc.on_message do |time,nick,text|
+          begin
+            raise if nick == @config.nick
+            cmd = Command.new(nick + '!', 'PRIVMSG', ["room"], text) 
+            msg = Message.new( self, cmd )
+            output = msg.check
+            muc.say(output[1].gsub(/(\|\[0-9,]+)/,'').gsub(/\/,':').encode("utf-8")) unless output[1].nil?
+          rescue
+            true
+          end
+        end
+      end
+      Jabber::debug = true
+
+      Thread.stop
+    end
   end # class Bot
 end # module RIB

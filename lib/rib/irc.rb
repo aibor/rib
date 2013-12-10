@@ -4,32 +4,28 @@ require "socket"
 require "logger"
 require "date"
 require "iconv" if RUBY_VERSION < '1.9'
-
+module RIB
 module IRC
 
-  class Connection
-    Command = Struct.new(:prefix, :command, :params, :last_param)
+  class Connection < RIB::ConnectionBase
     User = Struct.new(:user, :channels, :server, :auth)
     DEFAULT_OPTIONS = { :port         => 6667,
-												:ssl					=> false, 
-												:ca_path			=> "/etc/ssl/certs", 
-												:verify				=> false, 
-												:cert					=> false,
+												:ssl          => { :use	    => false, 
+                                           :ca_path  => "/etc/ssl/certs", 
+												                   :verify	  => false, 
+												                   :cert		  => false },
                         :socket_class => TCPSocket }.freeze
     COMMAND_METHODS = [:nick, :join, :privmsg, :user, :mode, :quit, :action, :part].freeze
 
-    def initialize( host, options = Hash.new )
+    def initialize( host, nick, options = Hash.new )
       options = DEFAULT_OPTIONS.merge(options)
 
       port ,@host = options[:port], host
+      @nick = nick
       tcp_socket  = options[:socket_class].new(host, port)
-			@irc_server = options[:ssl] ?	ssl_connection(tcp_socket, options) : tcp_socket
+			@irc_server = options[:ssl][:use] ?	ssl_connection(tcp_socket, options[:ssl]) : tcp_socket
       @cmd_buffer = Array.new
-      serverlogfile = File.expand_path("../../../log/#{host}.log", __FILE__)
-			@logs = { :server => Logger.new(serverlogfile)}
-			@logs[:server].level = Logger::INFO
-      @logging = nil
-      @me = String.new
+      super
     end
 
 		def ssl_connection(socket, options)
@@ -53,21 +49,22 @@ module IRC
 		end
 
 
-    def login( nickname, host_name, server_name, full_name )
-      nick(nickname)
-      user(nickname, host_name, server_name, full_name)
+    def login( authdata )
+      nick(@nick)
+      user(@nick, 'hostname', 'servername', "\"#{@nick}\" RIB")
 
       rpl = recv_until { |c| c.command =~ /\A(?:43[1236]|46[12]|001)\Z/ }
       if rpl.nil? or rpl.command != "001"
         raise "Login error:  #{rpl.last_param}."
       end
+      auth_nick( authdata )
     end
 
-    def auth_nick( authdata, nick )
+    def auth_nick( authdata )
       raise "Auth error: #{authdata} not valid" if authdata.nil?
       authdata = authdata.split(/\s+/)
       privmsg(authdata.shift, authdata.join(' '))
-      mode("#{nick} +x", " ")
+      mode("#{@nick} +x", " ")
       "auth sent"
     rescue
       $! 
@@ -100,10 +97,6 @@ module IRC
         string = Iconv.iconv("utf-8", "iso-8859-1", string).to_s
       end
       return string
-    end
-
-    def togglelogging
-      @logging = @logging.nil? ? true : nil
     end
 
     def irclog( msg )
@@ -176,27 +169,12 @@ module IRC
     def recv_command
       cmd = @irc_server.gets
 			raise cmd if cmd =~ /ERROR:.*/
-      #if not cmd.nil?
-        #if cmd =~ /:(\S+)!(?:\S+)\s(\w+)\s((#\S+)\s)?:(.*)/ #and COMMAND_METHODS.include? $2.downcase.intern
-				#  puts cmd
-				#  puts $3
-        #end
-      #end
 
       if not cmd.nil? and cmd =~ /\APING (.*?)\r\n\Z/
         send_command("PONG #{$1}")
         recv_command
       else
         return cmd if cmd.nil?
-        #puts cmd.chop
-        #puts transcoding(cmd.chop)
-        #irclog(transcoding(cmd.chop)) 
-        #if cmd =~ /:(\S+)!(?:\S+)\s(\w+)\s(#(\S+)\s)?:(.*)/
-					#target = "c_" + $4
-					#target = target.to_sym
-				#else
-					#target = :server
-				#end
         irclog(cmd.chop) #if ! target.nil?
         cmd.sub(/\r\n\Z/, "")
       end
@@ -208,4 +186,5 @@ module IRC
     end
 
   end
+end
 end
