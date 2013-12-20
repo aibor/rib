@@ -10,52 +10,45 @@
 # http://sam.zoy.org/wtfpl/COPYING for more details. 
 
 # add local library directory to $LOAD_PATH
-$: << File.expand_path("../lib", __FILE__)
+$: << File.realpath('lib')
 
 require 'rib/rib'
 
-aibot = RIB::Bot.new
+rib = RIB::Bot.new do |bot|
 
-aibot.configure do |bot|
-  # which protcoll to use? :irc or :xmpp
-  bot.protocol = :irc
-  # IRC/XMPP-Server to join? Example: irc.freenode.net
-  bot.server = 'irc.quakenet.org'
-  # Port of the Server to connect to
+  bot.protocol = :irc               # which protcoll to use? :irc or :xmpp
+  bot.server = 'irc.quakenet.org'   # IRC/XMPP-Server to join
   bot.port = 6667
-  # use ssl?
-  #bot.ssl.use = false
-  # verify ssl connection?
-  #bot.ssl.verify = false
-  # ca path to use
-  #bot.ssl.ca_path = '/etc/ssl/certs'
-  # host certificate
-  #bot.ssl.client_cert = ''
-  # Which nick to use?
-  bot.nick = 'rubybot'
-  # Which channel to join?
+  #bot.ssl.use = false              # use ssl?
+  #bot.ssl.verify = false           # verify ssl connection?
+  #bot.ssl.ca_path = '/etc/ssl/certs' # ca path to use
+  #bot.ssl.client_cert = ''         # host certificate
+  #bot.nick = 'rib'
   bot.channel = '#rib'
-  # XMPP: jid of user to login as
-  #bot.jid = 'rubybot@xmpp.example.com'
-  # Authentification command for IRC or passowrt for the XMPP user
+  #bot.jid = 'rubybot@xmpp.example.com'  # XMPP: jid of user to login as
+  # Authentification command for IRC or password for the XMPP user
   #bot.auth = 'Q@CServe.quakenet.org auth rubybot sEcReTpAsSwOrD'
-  #bot.auth = 'ooph4aiseingohc3Phu2aexooxie5ialei7meibiu5ooNahneiphio8xi7eam3yo'
-  # Character which triggers the bot to do something
-  bot.tc = '!'
-  # password for interacting with the bot 
-  bot.password = 'rib'
-  # Message when bot leaves
-  bot.qmsg = 'See you later, shitlords!'
-  # File for linkdumping. absolute or relative to main folder
+  bot.tc = '!'                # Character which triggers the bot to do something
+  bot.password = 'rib'              # password for interacting with the bot 
+  bot.qmsg = 'See you later, shitlords!'    # Message when bot leaves
   bot.linkdump = './yaylinks'
-  # Link to linkdump blog
   bot.dumplink = 'https://www.linkdumpiorrrr.de'
-  # Link to help page 
   bot.helplink = 'https://github.com/aibor/rib/wiki'
-  # Print HTML-title of a posted url if set.
-  bot.title = true
-  # Appreciate ponies
-  #bot.pony = false
+  bot.title = true                  # Print HTML-title of a posted url if set.
+  #bot.pony = false                 # Appreciate ponies
+  bot.verbose = true                # Debuging time
+  bot.admin = 'Crapedia'
+
 end
 
-aibot.run
+eval(IO.read('actions.rb'), binding)
+
+rib.add_response /\A#{rib.tc}reload\s#{rib.password}/ do
+  if eval(IO.read('actions.rb'), binding)
+    "geschafft"
+  else
+    "kaputt"
+  end
+end
+
+rib.run

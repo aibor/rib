@@ -8,6 +8,7 @@ module RIB
 module IRC
 
   class Connection < RIB::ConnectionBase
+    Command = Struct.new(:prefix, :command, :params, :last_param)
     User = Struct.new(:user, :channels, :server, :auth)
     DEFAULT_OPTIONS = { :port         => 6667,
 												:ssl          => { :use	    => false, 
