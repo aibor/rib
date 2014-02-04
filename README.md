@@ -6,7 +6,7 @@ Simple IRCbot written for ruby 1.9
 
 ## Requirements
 
-* ruby (tested with 1.9.2 and 1.8.5 - may run with other versions too)
+* ruby (tested with 1.9.2, 1.9.3, 2.0.0, 2.1.0 - may run with other versions too)
 
 
 ## Installation
@@ -19,10 +19,8 @@ Done.
 
 ### Configuration
 
-There are two ways to pass the needed parameters to the bot:
-
-1. Edit the file `config` in the main directory. The possible options are well commented.
-1. Pass it as arguments at the start of the bot. See **Start** for additional information.
+Take a look at the file `rib`. It is an example for the configuration of the
+bot and the definition of your desired triggers and responses.
 
 The essential options are:
 
@@ -35,16 +33,7 @@ The essential options are:
 
 Start the bot with
 
-    rib [options]
-
-If you have a proper `config` file you need no furter options. Otherwise the following options can be used:
-
-        -i, --irc [HOSTNAME]             IRC Server to connect to
-        -n, --nick [NICKNAME]            nickname for the bot
-        -c, --channel [CHANNEL]          which channel to join
-        -f, --file [CONFFILE]            read configuration from this file
-        -d, --[no-]daemon                run as daemon?
-        -h, --help                       Show a helpful message
+    ruby rib
 
 
 Copyright
