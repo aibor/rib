@@ -1,15 +1,10 @@
 module HTML
   require 'net/http'
   require 'uri'
-  require 'iconv' if RUBY_VERSION < '1.9'
   require File.expand_path('../entities.rb', __FILE__)
 
   def self.unentit( string, enc )
-    if RUBY_VERSION > '1.9'
-      string.encode!("utf-8", enc)
-    else
-      string = Iconv.iconv("utf-8", enc, string).to_s
-    end
+    string.encode!("utf-8", enc)
     string.gsub(/&(.*?);/) do
       ent = $1
       return nil if ent.nil?
@@ -24,11 +19,7 @@ module HTML
       else
         return string
       end
-      if RUBY_VERSION > '1.9'
-        out.chr("utf-8")
-      else
-        out.chr
-      end
+      out.chr("utf-8")
     end
   end
 

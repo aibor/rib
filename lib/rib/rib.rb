@@ -106,9 +106,13 @@ module RIB
       @server = case self.protocol
                 when :irc then
                   require 'rib/irc'
+                  ssl_hash = {}
+                  @config.ssl.each_pair {|k,v| ssl_hash[k] = v }
                   IRC::Connection.new( @config.server, @config.nick,
                                       { :port	=> @config.port,
-                                        :ssl   => @config.ssl.to_h } )
+                                        # ruby1.9.3 - no to_h for Structs
+                                        #:ssl   => @config.ssl.to_h } )
+                                        :ssl   => ssl_hash } )
                 when :xmpp then
                   require 'rib/xmpp'
                   XMPP::Connection.new( @config.jid, @config.server, @config.nick )

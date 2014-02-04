@@ -62,18 +62,18 @@ end
 #
 
 responses = {
+  "ping" => ["pong", "peng", "mowl!"],
   "hi"   => ["hi", "Moin!", "Tag", "Ahoj!", "Servus!"],
   "bye"  => ["nein?", "orrr, nö!", "selber!", "°_°"],
   "rage" => "(╯°□°)╯︵ ┻━┻",
-  "panic" => ["https://dl.dropbox.com/u/6670723/images/panic.gif",
-              "https://dl.dropbox.com/u/6670723/images/panic2.gif"],
-  "alone" => "https://dl.dropbox.com/u/6670723/images/forever_alone.png",
-  "arch" => "http://xyne.archlinux.ca/img/misc/allan_sux.png",
-  "deal" => "https://dl.dropbox.com/u/6670723/images/dealwithit.gif",
+  "panic" => ["http://rib.aibor.de/images/panic.gif",
+              "http://rib.aibor.de/images/panic2.gif"],
+  "alone" => "http://rib.aibor.de/images/forever_alone.png",
+  "arch" => "http://rib.aibor.de/images/allan_sux.png",
+  "deal" => "http://rib.aibor.de/images/dealwithit.gif",
   "chill" => "┬─┬ ノ( ゜-゜ノ)",
-  "calm" => "https://dl.dropboxusercontent.com/u/6670723/images/chill.jpg",
-  "nope" => 
-  "https://dl.dropboxusercontent.com/u/6670723/images/keep-calm-and-nope.png",
+  "calm" => "http://rib.aibor.de/images/chill.jpg",
+  "nope" => "http://rib.aibor.de/images/keep-calm-and-nope.png",
   "#{rib.nick}" => "hell yeah!"
 }
 
@@ -131,3 +131,7 @@ end
 rib.add_response /\A((ACTION|\/me)\s+salutes()?)\Z/  do |m,u,c|
   m[1] + '\nI am Dave ! Yognaught and I have the balls!'
 end
+
+#rib.add_response /.{20,}/ do |m,u,c|
+#  rand(40).zero? ? "Wir haben es nicht leicht. :(" : nil
+#end
