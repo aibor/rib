@@ -43,12 +43,9 @@ end
 
 eval(IO.read('actions.rb'), binding)
 
-rib.add_response /\A#{rib.tc}reload\s#{rib.password}/ do
-  if eval(IO.read('actions.rb'), binding)
-    "geschafft"
-  else
-    "kaputt"
-  end
+rib.add_response /\A#{rib.tc}reload\s#{rib.password}/ do |m,u,c|
+  return "nope" unless u == rib.admin
+  eval(IO.read('actions.rb'), binding) ? "geschafft" : "kaputt"
 end
 
 rib.run
