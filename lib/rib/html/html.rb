@@ -25,7 +25,6 @@ module HTML
   end
 
   def self.fetch( url, limit )
-    puts url
     raise ArgumentError,'HTTP redirect too deep' if limit == 0
     uri = URI.parse(url)
     http = Net::HTTP.new(uri.host)
