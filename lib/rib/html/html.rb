@@ -52,7 +52,7 @@ module HTML
 
   def self.title( url )
     resp = fetch(url, 20)
-    resp = Struct.new(:body).new(resp.read) unless resp.class == Net::HTTPResponse
+    resp = Struct.new(:body).new(resp.read) unless resp.class.to_s =~ /^Net::HTTP.*/
     raise "No title can be found" if resp.nil?
     enc = "utf-8"
     enc = $1 if resp.body =~ /charset=([-\w]+)/
