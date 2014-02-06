@@ -203,7 +203,7 @@ module RIB
           @callbacks.each do |trigger,action|
             begin
               next unless text =~ trigger
-              say( action.call($~, nick, text), muc )
+              say( action.call($~, nick, text, muc), muc )
             rescue
               @log.error($!)
             end # begin
