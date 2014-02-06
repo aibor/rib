@@ -138,20 +138,48 @@ end
 
 require 'date'
 alarms = []
-rib.add_response /\A#{rib.tc}alarm (\S+) (.*)\Z/ do |m,u,c,s|
-  date = DateTime.parse(m[1])
-  if date <= Time.now.to_datetime
-    "#{u}: This date is in the past! Try again."
-  else
-    alarms << Thread.new do
-      while date > Time.now.to_datetime do
-        sleep 1
-      end
-      #rib.channel.split( /\s+|\s*,\s*/ ).each do |chan|
-        rib.say(m[2], s)
-      #end
-      alarms.delete_if {|a| a == Thread.current}
+rib.add_response /\A#{rib.tc}alarm(?: (\w+)(?: (\S+)(?: (.*))?)?)?\Z/ do |m,u,c,s|
+  case m[1]
+  when 'list' then
+    if alarms.select {|t| t[:source] == s}.empty?
+      "#{u}: Currently no alarms active."
+    else
+      alarms.map.with_index do |thread,index|
+        "#{index}. #{thread[:date]} by #{thread[:user]} - #{thread[:msg]}" if thread[:source] == s
+      end.compact.join('\n')
     end
-    "#{u}: added alarm, stay tuned!"
+  when 'del' then
+    if m[2] !~ /\A[0-9]\z/ or alarms[m[2].to_i].nil?
+      "#{u}: No alarm found. Try again."
+    elsif u != alarms[m[2].to_i][:user] or alarms[m[2].to_i][:source] != s
+      "#{u}: dafuq? Who the hell are you? oO"
+    else
+      alarms.delete_at(m[2].to_i)
+      "#{u}: alarm deleted"
+    end
+  when 'add' then
+    date = Time.parse(m[2])
+    if date <= Time.now
+      "#{u}: This date is in the past! Try again."
+    elsif alarms.select {|t| t[:source] == s}.size >= 10
+      "#{u}: Sorry, I already have 10 alarms to handle."
+    else
+      alarms << Thread.new do
+        Thread.current[:date] = date
+        Thread.current[:user] = u
+        Thread.current[:source] = s
+        Thread.current[:msg] = m[3]
+        while Thread.current[:date] > Time.now do
+          sleep 1
+        end
+        #rib.channel.split( /\s+|\s*,\s*/ ).each do |chan|
+          rib.say(Thread.current[:msg], Thread.current[:source])
+        #end
+        alarms.delete_if {|a| a == Thread.current}
+      end
+      "#{u}: added alarm, stay tuned!"
+    end
+  else
+    "#{u}: possible commands: list, del <[0-9]>, add <time> <msg>"
   end
 end
