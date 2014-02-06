@@ -74,6 +74,7 @@ responses = {
   "chill" => "┬─┬ ノ( ゜-゜ノ)",
   "calm" => "http://rib.aibor.de/images/chill.jpg",
   "nope" => "http://rib.aibor.de/images/keep-calm-and-nope.png",
+  "haha" => "http://rib.aibor.de/images/haha.jpg",
   "#{rib.nick}" => "hell yeah!"
 }
 
@@ -136,48 +137,44 @@ end
 #  rand(40).zero? ? "Wir haben es nicht leicht. :(" : nil
 #end
 
-require 'date'
-alarms = []
+rib.add_response /\A#{rib.tc}blame (.+)/ do |m|
+  "Was zur Hölle stimmt mit #{m[1].strip} nicht? oO"
+end
+
+alarms = {}
+require 'rib/alarms'
 rib.add_response /\A#{rib.tc}alarm(?: (\w+)(?: (\S+)(?: (.*))?)?)?\Z/ do |m,u,c,s|
+  alarms[s] = AlarmBucket.new unless alarms[s].class == AlarmBucket
   case m[1]
   when 'list' then
-    if alarms.select {|t| t[:source] == s}.empty?
+    if alarms[s].empty?
       "#{u}: Currently no alarms active."
     else
-      alarms.map.with_index do |thread,index|
-        "#{index}. #{thread[:date]} by #{thread[:user]} - #{thread[:msg]}" if thread[:source] == s
-      end.compact.join('\n')
+      alarms[s].map.with_index do |thread,index|
+        "#{index}. #{thread[:date]} by #{thread[:user]} - #{thread[:msg]}"
+      end.join('\n')
     end
   when 'del' then
-    if m[2] !~ /\A[0-9]\z/ or alarms[m[2].to_i].nil?
+    if m[2] !~ /\A[0-9]\z/ or ! alarm = alarms[s][m[2]]
       "#{u}: No alarm found. Try again."
-    elsif u != alarms[m[2].to_i][:user] or alarms[m[2].to_i][:source] != s
+    elsif u != alarm[:user]
       "#{u}: dafuq? Who the hell are you? oO"
     else
-      alarms.delete_at(m[2].to_i)
-      "#{u}: alarm deleted"
+      alarms[s].delete(m[2]) ? "#{u}: alarm deleted" : "#{u}: ouch, something went wrong :/"
     end
   when 'add' then
     date = Time.parse(m[2])
     if date <= Time.now
       "#{u}: This date is in the past! Try again."
-    elsif alarms.select {|t| t[:source] == s}.size >= 10
+    elsif alarms[s].full?
       "#{u}: Sorry, I already have 10 alarms to handle."
-    else
-      alarms << Thread.new do
-        Thread.current[:date] = date
-        Thread.current[:user] = u
-        Thread.current[:source] = s
-        Thread.current[:msg] = m[3]
-        while Thread.current[:date] > Time.now do
-          sleep 1
-        end
-        #rib.channel.split( /\s+|\s*,\s*/ ).each do |chan|
-          rib.say(Thread.current[:msg], Thread.current[:source])
-        #end
-        alarms.delete_if {|a| a == Thread.current}
+    elsif alarms[s].add(date, m[3], u, s) do |alarm|
+        rib.say("Notification by #{alarm[:user]}: " + alarm[:msg],
+                alarm[:source])
       end
       "#{u}: added alarm, stay tuned!"
+    else
+      "#{u}: dammit, something went wrong :\\"
     end
   else
     "#{u}: possible commands: list, del <[0-9]>, add <time> <msg>"

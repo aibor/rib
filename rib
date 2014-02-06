@@ -36,7 +36,7 @@ rib = RIB::Bot.new do |bot|
   bot.helplink = 'https://github.com/aibor/rib'
   bot.title = true                  # Print HTML-title of a posted url if set.
   #bot.pony = false                 # Appreciate ponies
-  bot.verbose = false                # Debuging time
+  bot.verbose = true                # Debuging time
   bot.admin = 'aibo'
 
 end
