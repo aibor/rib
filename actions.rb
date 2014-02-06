@@ -135,3 +135,23 @@ end
 #rib.add_response /.{20,}/ do |m,u,c|
 #  rand(40).zero? ? "Wir haben es nicht leicht. :(" : nil
 #end
+
+require 'date'
+alarms = []
+rib.add_response /\A#{rib.tc}alarm (\S+) (.*)\Z/ do |m,u,c,s|
+  date = DateTime.parse(m[1])
+  if date <= Time.now.to_datetime
+    "#{u}: This date is in the past! Try again."
+  else
+    alarms << Thread.new do
+      while date > Time.now.to_datetime do
+        sleep 1
+      end
+      #rib.channel.split( /\s+|\s*,\s*/ ).each do |chan|
+        rib.say(m[2], s)
+      #end
+      alarms.delete_if {|a| a == Thread.current}
+    end
+    "#{u}: added alarm, stay tuned!"
+  end
+end
