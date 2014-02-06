@@ -169,7 +169,7 @@ rib.add_response /\A#{rib.tc}alarm(?: (\w+)(?: (\S+)(?: (.*))?)?)?\Z/ do |m,u,c,
     elsif alarms[s].full?
       "#{u}: Sorry, I already have 10 alarms to handle."
     elsif alarms[s].add(date, m[3], u, s) do |alarm|
-        rib.say("Notification by #{alarm[:user]}: " + alarm[:msg],
+        rib.say("ALARM added by #{alarm[:user]}: " + alarm[:msg],
                 alarm[:source])
       end
       "#{u}: added alarm, stay tuned!"

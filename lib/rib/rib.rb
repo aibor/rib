@@ -175,12 +175,13 @@ module RIB
             user = cmd.prefix.match(/\A(.*?)!/)[1]
             @callbacks.each do |trigger,action|
               next unless cmd.last_param =~ trigger
-              out = action.call($~, user, cmd.last_param, cmd.params[0])
+              source = cmd.params[0].include?("#") ? cmd.params[0] : user
+              out = action.call($~, user, cmd.last_param, source)
               case out.class.to_s
               when Array
                 say *out 
               when String
-                say out, cmd.params[0].include?("#") ? cmd.params[0] : user
+                say out, source
               else
                 true
               end
