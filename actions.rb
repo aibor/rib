@@ -75,6 +75,8 @@ responses = {
   "calm" => "http://rib.aibor.de/images/chill.jpg",
   "nope" => "http://rib.aibor.de/images/keep-calm-and-nope.png",
   "haha" => "http://rib.aibor.de/images/haha.jpg",
+  "awesome" => ["http://rib.aibor.de/images/awesome.jpg",
+                "http://rib.aibor.de/images/awesome2.jpg"],
   "#{rib.nick}" => "hell yeah!"
 }
 
