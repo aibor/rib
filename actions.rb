@@ -162,7 +162,7 @@ rib.add_response /\A#{rib.tc}alarm(?: (\w+)(?: (\S+)(?: (.*))?)?)?\Z/ do |m,u,c,
     elsif u != alarm[:user]
       "#{u}: dafuq? Who the hell are you? oO"
     else
-      alarms[s].delete_at(m[2]).kill ? "#{u}: alarm deleted" : "#{u}: ouch, something went wrong :/"
+      alarms[s].delete(m[2]) ? "#{u}: alarm deleted" : "#{u}: ouch, something went wrong :/"
     end
   when 'add' then
     date = Time.parse(m[2])

@@ -40,7 +40,7 @@ class AlarmBucket
 
   def delete(id=nil)
     return false unless id = validate_id!(id)
-    @alarms.delete_at(id)
+    @alarms.delete_at(id).kill
   end
 
   def [](id=nil)
