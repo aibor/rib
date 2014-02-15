@@ -153,8 +153,11 @@ rib.add_response /\A#{rib.tc}alarm(?: (\w+)(?: (\S+)(?: (.*))?)?)?\Z/ do |m,u,c,
       "#{u}: Currently no alarms active."
     else
       alarms[s].map.with_index do |thread,index|
-        "#{index}. #{thread[:date]} by #{thread[:user]} - #{thread[:msg]}"
-      end.join('\n')
+        "#{index}: " + 
+          ((thread[:date].strftime('%D') == Time.new.strftime('%D')) ? 
+            "heute" : thread[:date].strftime('%v')) +
+          " #{thread[:date].strftime('%T')} by #{thread[:user]} - #{thread[:msg]}"
+      end.join(' --!!-- ')
     end
   when 'del' then
     if m[2] !~ /\A[0-9]\z/ or ! alarm = alarms[s][m[2]]
