@@ -39,18 +39,18 @@ class AlarmBucket
   end
 
   def delete(id=nil)
-    return false unless id = validate_id!(id)
+    return false unless id = validate_id(id)
     @alarms.delete_at(id)
   end
 
   def [](id=nil)
-    return false unless id = validate_id!(id)
+    return false unless id = validate_id(id)
     @alarms[id]
   end
 
   def method_missing(meth, *args, &block)
     if THREAD_VARS.include? meth
-      return false unless id = validate_id!(args[0]) and @alarms[id]
+      return false unless id = validate_id(args[0]) and @alarms[id]
       @alarms[id][meth]
     else
       super
@@ -63,7 +63,7 @@ class AlarmBucket
 
   private
 
-  def validate_id!(id=nil)
+  def validate_id(id=nil)
     (id.nil? or ! id.respond_to? "to_i") ? false : id.to_i
   end
 end
