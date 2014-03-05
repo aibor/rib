@@ -177,13 +177,10 @@ module RIB
               next unless cmd.last_param =~ trigger
               source = cmd.params[0].include?("#") ? cmd.params[0] : user
               out = action.call($~, user, cmd.last_param, source)
-              case out.class.to_s
-              when Array
-                say *out 
-              when String
-                say out, source
-              else
-                true
+              case out
+              when Array then say *out 
+              when String then say out, source
+              else true
               end
             end
           end # if cmd.command

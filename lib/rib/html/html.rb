@@ -39,7 +39,9 @@ module HTML
     when Net::HTTPRedirection then 
       # net/http has given us headaches with weird self-referencing redirects, so we'll try open-uri
       if url == resp['location']
-        open(url, {ssl_verify_mode: OpenSSL::SSL::VERIFY_NONE})
+        timeout 1 do
+          open(url, {ssl_verify_mode: OpenSSL::SSL::VERIFY_NONE})
+        end
       else
         fetch(resp['location'], limit - 1)
       end

@@ -120,27 +120,24 @@ end
 
 rib.add_response /\A#{rib.tc}(g|wolf|dict|d) (.*)\Z/i do |m,u,c|
   found = gsearch(m[1], m[2])
-  title = begin HTML.title(found) 
-          rescue 
-            ''
-          end
+  title = HTML.title(found) rescue ''
   '%s: %s\n%s' % [u, found, formattitle(title)]  
 end
 
 rib.add_response /\A#{rib.tc}(?:wiki|w) (.+)\Z/ do |m,u,c|
-  dnsrequest( m[1] + ".wp.dg.cx", %w(208.67.220.220 208.67.222.222 8.8.8.8)).join('')
+  dnsrequest( m[1].gsub(/\s/,'_') + ".wp.dg.cx", %w(208.67.220.220 208.67.222.222 8.8.8.8)).join('')
 end
 
 rib.add_response /\A((ACTION|\/me)\s+salutes()?)\Z/  do |m,u,c|
   m[1] + '\nI am Dave ! Yognaught and I have the balls!'
 end
 
-#rib.add_response /.{20,}/ do |m,u,c|
-#  rand(40).zero? ? "Wir haben es nicht leicht. :(" : nil
-#end
-
 rib.add_response /\A#{rib.tc}blame (.+)/ do |m|
-  "Was zur Hölle stimmt mit #{m[1].strip} nicht? oO"
+  "dafuq #{m[1]} oO"
+end
+
+rib.add_response /\A#{rib.tc}moar(?: (.+))?\z/ do |m|
+  "MOAR #{m[1].strip}! MOAAR!!!1 "
 end
 
 alarms = {}

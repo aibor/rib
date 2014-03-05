@@ -10,7 +10,7 @@
 # http://sam.zoy.org/wtfpl/COPYING for more details. 
 
 # add local library directory to $LOAD_PATH
-$: << File.realpath('lib')
+$: << File.expand_path('../lib', __FILE__)
 
 require 'rib/rib'
 
