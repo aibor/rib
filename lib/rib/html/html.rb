@@ -1,7 +1,6 @@
 module HTML
-  require 'net/http'
+  require 'net/https'
   require 'uri'
-  require 'open-uri'
   require File.expand_path('../entities.rb', __FILE__)
 
   def self.unentit( string, enc )
@@ -26,8 +25,16 @@ module HTML
 
   def self.fetch( url, limit )
     raise ArgumentError,'HTTP redirect too deep' if limit == 0
+
     uri = URI.parse(url)
-    http = Net::HTTP.new(uri.host)
+
+    opts = {
+      use_ssl: uri.scheme == 'https',
+      verify_mode: OpenSSL::SSL::VERIFY_NONE
+    }
+
+    http = Net::HTTP.start(uri.host, uri.port, opts)
+
     resp = http.request_get(uri.request_uri) do |res|
       if res.content_type == 'text/html'
         res.read_body
@@ -35,16 +42,11 @@ module HTML
         res.instance_eval {@body_exist = false}
       end
     end # request_get
+
     case resp
     when Net::HTTPRedirection then 
-      # net/http has given us headaches with weird self-referencing redirects, so we'll try open-uri
-      if url == resp['location']
-        timeout 1 do
-          open(url, {ssl_verify_mode: OpenSSL::SSL::VERIFY_NONE})
-        end
-      else
-        fetch(resp['location'], limit - 1)
-      end
+      raise 'Redirection Loop' if url == resp['location']
+      fetch(resp['location'], limit - 1)
     when Net::HTTPSuccess then resp 
     when Net::HTTPClientError then resp
     else raise resp.error! #"HTTP-Header failure"
@@ -53,7 +55,6 @@ module HTML
 
   def self.title( url )
     resp = fetch(url, 20)
-    resp = Struct.new(:body).new(resp.read) unless resp.class.to_s =~ /^Net::HTTP.*/
     raise "No title can be found" if resp.nil?
     enc = "utf-8"
     enc = $1 if resp.body =~ /charset=([-\w]+)/
