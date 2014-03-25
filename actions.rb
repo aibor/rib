@@ -198,7 +198,7 @@ rib.add_response /\A#{rib.tc}bs(?: (\w+)(?: (.+))?)?\z/ do |m,u,c,s|
     res = bs.find(args)
     if res.nil? or res.empty?
       "nope. try again!" 
-    elsif res.count <= 3
+    elsif res.count <= 6
       res.map(&:url).join(' --- ')
     else
       "too many results, not enough mics!"
