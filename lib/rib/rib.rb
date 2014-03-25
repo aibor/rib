@@ -196,7 +196,7 @@ module RIB
 
       @server.muc.each do |room,muc|
         muc.on_message do |time,nick,text|
-          next if nick == self.nick
+          next if (nick == self.nick) or (Time.new - @starttime < 5)
           @callbacks.each do |trigger,action|
             begin
               next unless text =~ trigger

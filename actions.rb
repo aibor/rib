@@ -183,3 +183,27 @@ rib.add_response /\A#{rib.tc}alarm(?: (\w+)(?: (\S+)(?: (.*))?)?)?\Z/ do |m,u,c,
     "#{u}: possible commands: list, del <[0-9]>, add <time> <msg>"
   end
 end
+
+require "./includes/bastelshare.rb"
+bs = Bastelshare.new
+bs.refresh
+rib.add_response /\A#{rib.tc}bs(?: (\w+)(?: (.+))?)?\z/ do |m,u,c,s|
+  cmd  = m[1]
+  #args = m[2].split if args
+  args = m[2]
+  case cmd
+  when 'refresh'
+    bs.refresh( 5 ) ? "refreshed" : "Is noch neu! Geh weg!"
+  when 'find'
+    res = bs.find(args)
+    if res.nil? or res.empty?
+      "nope. try again!" 
+    elsif res.count <= 3
+      res.map(&:url).join(' --- ')
+    else
+      "too many results, not enough mics!"
+    end
+  else
+    "possible commands: refresh, find <String>"
+  end
+end
