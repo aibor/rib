@@ -76,6 +76,7 @@ responses = {
   "nope" => "http://rib.aibor.de/images/keep-calm-and-nope.png",
   "haha" => "http://rib.aibor.de/images/haha.jpg",
   "fucky" => "http://rib.aibor.de/images/fucky.jpg",
+  "noob" => "http://rib.aibor.de/images/noob.jpg",
   "awesome" => ["http://rib.aibor.de/images/awesome.jpg",
                 "http://rib.aibor.de/images/awesome2.jpg"],
   "#{rib.nick}" => "hell yeah!"
@@ -187,6 +188,18 @@ end
 require "./includes/bastelshare.rb"
 bs = Bastelshare.new
 bs.refresh
+@buffer = []
+
+def bs_buffer
+  if @buffer.empty?
+    "no more shit to tell you!" 
+  else
+    out = @buffer.shift(5).map {|r| "#{r.url} --> #{r.size}"}
+    out << "... get more with !bs more" unless @buffer.empty?
+    out.join(' =##= ')
+  end
+end
+
 rib.add_response /\A#{rib.tc}bs(?: (\w+)(?: (.+))?)?\z/ do |m,u,c,s|
   cmd  = m[1]
   #args = m[2].split if args
@@ -195,14 +208,10 @@ rib.add_response /\A#{rib.tc}bs(?: (\w+)(?: (.+))?)?\z/ do |m,u,c,s|
   when 'refresh'
     bs.refresh( 5 ) ? "refreshed" : "Is noch neu! Geh weg!"
   when 'find'
-    res = bs.find(args)
-    if res.nil? or res.empty?
-      "nope. try again!" 
-    elsif res.count <= 6
-      res.map(&:url).join(' --- ')
-    else
-      "too many results, not enough mics!"
-    end
+    @buffer += bs.find(args).to_a
+    @buffer.empty? ? "nope. try again!" : bs_buffer
+  when 'more'
+    bs_buffer
   else
     "possible commands: refresh, find <String>"
   end

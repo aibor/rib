@@ -27,7 +27,7 @@ class Bastelshare
   end
 
   def find( string = "" )
-    return nil unless @media
+    return nil unless @media and string
     re = Regexp.new(string, true)
     @media.select {|m| m.name =~ re}
   end
@@ -49,7 +49,7 @@ private
   end
 
   def parse_xml( xml )
-    @media ||= Array.new
+    @media = Array.new
     xml.root.elements.each("file") do |file|
       general = file.elements["File/track[@type='General']"]
 
