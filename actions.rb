@@ -65,6 +65,8 @@ responses = {
   "ping" => ["pong", "peng", "mowl!"],
   "hi"   => ["hi", "Moin!", "Tag", "Ahoj!", "Servus!"],
   "bye"  => ["nein?", "orrr, nö!", "selber!", "°_°"],
+  "yolo" => ["geh weg", "zieh leine", "fuck off"],
+  "fail" => "schon wieder? --___--",
   "rage" => "(╯°□°)╯︵ ┻━┻",
   "panic" => ["http://rib.aibor.de/images/panic.gif",
               "http://rib.aibor.de/images/panic2.gif"],
