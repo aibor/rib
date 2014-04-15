@@ -142,39 +142,39 @@ rib.add_response /\A#{rib.tc}moar(?: (.+))?\z/ do |m|
   "MOAR #{m[1].strip}! MOAAR!!!1 "
 end
 
-alarms = {}
 require 'rib/alarms'
+alarms = AlarmBucket.new
+
 rib.add_response /\A#{rib.tc}alarm(?: (\w+)(?: (\S+)(?: (.*))?)?)?\Z/ do |m,u,c,s|
-  alarms[s] = AlarmBucket.new unless alarms[s].class == AlarmBucket
   case m[1]
   when 'list' then
-    if alarms[s].empty?
+    if alarms.empty?
       "#{u}: Currently no alarms active."
     else
-      alarms[s].map.with_index do |thread,index|
+      alarms.map.with_index do |alarm,index|
         "#{index}: " + 
-          ((thread[:date].strftime('%D') == Time.new.strftime('%D')) ? 
-            "heute" : thread[:date].strftime('%v')) +
-          " #{thread[:date].strftime('%T')} by #{thread[:user]} - #{thread[:msg]}"
+          ((alarm.time.strftime('%D') == Time.new.strftime('%D')) ? 
+            "heute" : alarm.time.strftime('%v')) +
+          " #{alarm.time.strftime('%T')} by #{alarm.user} - #{alarm.msg}"
       end.join(' --!!-- ')
     end
   when 'del' then
-    if m[2] !~ /\A[0-9]\z/ or ! alarm = alarms[s][m[2]]
+    if m[2] !~ /\A[0-9]\z/ or ! alarm = alarms[m[2]]
       "#{u}: No alarm found. Try again."
-    elsif u != alarm[:user]
+    elsif u != alarm.user
       "#{u}: dafuq? Who the hell are you? oO"
     else
-      alarms[s].delete(m[2]) ? "#{u}: alarm deleted" : "#{u}: ouch, something went wrong :/"
+      alarms.delete(m[2]) ? "#{u}: alarm deleted" : "#{u}: ouch, something went wrong :/"
     end
   when 'add' then
     date = Time.parse(m[2])
     if date <= Time.now
       "#{u}: This date is in the past! Try again."
-    elsif alarms[s].full?
+    elsif alarms.full?
       "#{u}: Sorry, I already have 10 alarms to handle."
-    elsif alarms[s].add(date, m[3], u, s) do |alarm|
-        rib.say("ALARM added by #{alarm[:user]}: " + alarm[:msg],
-                alarm[:source])
+    elsif alarms.add(date, m[3], u, s) do |alarm|
+        rib.say("ALARM by #{alarm.user}: " + alarm.msg,
+                alarm.source)
       end
       "#{u}: added alarm, stay tuned!"
     else
