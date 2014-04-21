@@ -12,7 +12,7 @@
 # add local library directory to $LOAD_PATH
 $: << File.expand_path('../lib', __FILE__)
 
-require 'rib/rib'
+require 'rib'
 
 rib = RIB::Bot.new do |bot|
 

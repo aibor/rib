@@ -4,6 +4,8 @@
 # ### Helper functions ###
 #
 
+require 'formattitle'
+
 def formattitle(title)
   return nil if title.nil? || title.empty?
   case title 
@@ -98,7 +100,7 @@ rib.add_response /\A#{rib.tc}(#{quotes.keys.join('|')})(?:\s(\d+))?/ do |m,u,c|
   '' + (quotes[m[1]][index] || quotes[m[1]].sample).split(/ \| /).join(': ')
 end
 
-require 'rib/html/html'
+require 'html/html'
 rib.add_response /\A(?!#{rib.tc}).*?(http[s]?:\/\/\S*)/x do |m,u,c|
   title = rib.title ? HTML.title(m[1]) : nil
   title.nil? || title.empty? ? nil : formattitle(title)
@@ -142,7 +144,7 @@ rib.add_response /\A#{rib.tc}moar(?: (.+))?\z/ do |m|
   "MOAR #{m[1].strip}! MOAAR!!!1 "
 end
 
-require 'rib/alarms'
+require 'alarms'
 alarms = AlarmBucket.new
 
 rib.add_response /\A#{rib.tc}alarm(?: (\w+)(?: (\S+)(?: (.*))?)?)?\Z/ do |m,u,c,s|
