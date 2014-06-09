@@ -67,6 +67,8 @@ responses = {
   "ping" => ["pong", "peng", "mowl!"],
   "hi"   => ["hi", "Moin!", "Tag", "Ahoj!", "Servus!"],
   "bye"  => ["nein?", "orrr, nö!", "selber!", "°_°"],
+  "yolo" => ["geh weg", "zieh leine", "fuck off"],
+  "fail" => "schon wieder? --___--",
   "rage" => "(╯°□°)╯︵ ┻━┻",
   "panic" => ["http://rib.aibor.de/images/panic.gif",
               "http://rib.aibor.de/images/panic2.gif"],
@@ -79,6 +81,8 @@ responses = {
   "haha" => "http://rib.aibor.de/images/haha.jpg",
   "fucky" => "http://rib.aibor.de/images/fucky.jpg",
   "noob" => "http://rib.aibor.de/images/noob.jpg",
+  "doh"  => "http://rib.aibor.de/images/doh.gif",
+  "notime"  => "http://rib.aibor.de/images/notime.gif",
   "awesome" => ["http://rib.aibor.de/images/awesome.jpg",
                 "http://rib.aibor.de/images/awesome2.jpg"],
   "#{rib.nick}" => "hell yeah!"
@@ -210,7 +214,7 @@ rib.add_response /\A#{rib.tc}bs(?: (\w+)(?: (.+))?)?\z/ do |m,u,c,s|
   when 'refresh'
     bs.refresh( 5 ) ? "refreshed" : "Is noch neu! Geh weg!"
   when 'find'
-    @buffer += bs.find(args).to_a
+    @buffer = bs.find(args).to_a
     @buffer.empty? ? "nope. try again!" : bs_buffer
   when 'more'
     bs_buffer
