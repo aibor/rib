@@ -2,9 +2,12 @@
 # coding = UTF-8
 # Test class for irc.rb
 
+$: << File.expand_path('../../lib', __FILE__)
+
 require 'test/unit'
-require File.expand_path('../../lib/irc.rb', __FILE__)
-require File.expand_path('../../lib/rib.rb', __FILE__)
+#require File.expand_path('../../lib/irc.rb', __FILE__)
+require 'rib'
+require 'rib/connection/irc'
 require File.expand_path('../mock/tcpsocket.rb', __FILE__)
 
 
@@ -15,10 +18,10 @@ class TestIRCConnection < Test::Unit::TestCase
   end
 
   def test_construct
-    @connex = IRC::Connection.new( "irc.quakenet.org", "#aibot",
+    @connex = ::RIB::Connection::IRC.new( "irc.quakenet.org", "#aibot",
                                     :socket_class => MockTCPSocket ) 
     assert_not_nil(@connex)
-    assert_instance_of(IRC::Connection, @connex)
+    assert_instance_of(RIB::Connection::IRC, @connex)
   end
 
   def test_recv
@@ -28,7 +31,7 @@ class TestIRCConnection < Test::Unit::TestCase
     cmd = @connex.recv
     puts cmd.inspect
     assert_not_nil(cmd)
-    assert_instance_of(IRC::Connection::Command, cmd)
+    assert_instance_of(RIB::Connection::IRC::Command, cmd)
     assert_equal("#rigged", cmd.params[0])
     assert_equal("aiBot!~aiBot@aiBot.users.quakenet.org", cmd.prefix)
     assert_equal("PRIVMSG", cmd.command)
@@ -46,7 +49,7 @@ class TestIRCConnection < Test::Unit::TestCase
     $server_responses << "TIME"
     cmd = @connex.recv
     assert_not_nil(cmd)
-    assert_instance_of(IRC::Connection::Command, cmd)
+    assert_instance_of(RIB::Connection::IRC::Command, cmd)
     assert_nil(cmd.prefix)
     assert_equal("TIME", cmd.command)
     assert_equal(Array.new, cmd.params)

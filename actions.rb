@@ -187,7 +187,7 @@ rib.add_response /\A#{rib.tc}alarm(?: (\w+)(?: (\S+)(?: (.*))?)?)?\Z/ do |m,u,c,
   end
 end
 
-require "./includes/bastelshare.rb"
+require "bastelshare"
 bs = Bastelshare.new
 bs.refresh
 @buffer = []
