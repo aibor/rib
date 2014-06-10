@@ -89,7 +89,7 @@ module RIB::Connection
       if rpl.nil? or rpl.command !~ /\A3(?:32|53)\Z/
         raise "Join error:  #{rpl.last_param}."
       end
-      channellogfile = File.expand_path("../../../log/#{@host}_#{channel}.log", __FILE__)
+      channellogfile = File.expand_path("../log/#{@host}_#{channel}.log", $0)
       logname = channel.sub(/\A#/, 'c_').to_sym
       @logs[logname] = Logger.new(channellogfile)
       @logs[logname].level = Logger::INFO

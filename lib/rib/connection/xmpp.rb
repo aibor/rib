@@ -1,6 +1,7 @@
 # encoding: utf-8
 #
 
+require 'rib/connection.rb'
 require 'xmpp4r'
 require 'xmpp4r/roster'
 require 'xmpp4r/client'
@@ -8,7 +9,7 @@ require 'xmpp4r/muc'
 
 module RIB::Connection
 
-  class XMPP < RIB::Connection
+  class XMPP < Base
 
     attr_accessor :muc
 

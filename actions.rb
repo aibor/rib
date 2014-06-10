@@ -4,8 +4,6 @@
 # ### Helper functions ###
 #
 
-require 'formattitle'
-
 def formattitle(title)
   return nil if title.nil? || title.empty?
   case title 
@@ -83,6 +81,8 @@ responses = {
   "noob" => "http://rib.aibor.de/images/noob.jpg",
   "doh"  => "http://rib.aibor.de/images/doh.gif",
   "notime"  => "http://rib.aibor.de/images/notime.gif",
+  "triplefacepalm" => "http://rib.aibor.de/images/tfp.jpg",
+  "tfp" => "https://rib.aibor.de/images/tfp.jpg",
   "awesome" => ["http://rib.aibor.de/images/awesome.jpg",
                 "http://rib.aibor.de/images/awesome2.jpg"],
   "#{rib.nick}" => "hell yeah!"
