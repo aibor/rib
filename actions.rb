@@ -76,6 +76,7 @@ responses = {
   "chill" => "┬─┬ ノ( ゜-゜ノ)",
   "calm" => "http://rib.aibor.de/images/chill.jpg",
   "nope" => "http://rib.aibor.de/images/keep-calm-and-nope.png",
+  "no"   => "http://rib.aibor.de/images/no.gif",
   "haha" => "http://rib.aibor.de/images/haha.jpg",
   "fucky" => "http://rib.aibor.de/images/fucky.jpg",
   "noob" => "http://rib.aibor.de/images/noob.jpg",
