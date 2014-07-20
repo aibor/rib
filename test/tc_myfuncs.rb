@@ -3,8 +3,8 @@
 # Test class for irc.rb
 
 require 'test/unit'
-require File.expand_path('../../lib/irc.rb', __FILE__)
-require File.expand_path('../../lib/myfuncs.rb', __FILE__)
+require 'rib'
+require 'rib/connection/irc'
 require File.expand_path('../mock/tcpsocket.rb', __FILE__)
 
 class TestMyFuncs < Test::Unit::TestCase

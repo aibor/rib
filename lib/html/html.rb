@@ -1,7 +1,9 @@
 module HTML
   require 'net/https'
   require 'uri'
-  require File.expand_path('../entities.rb', __FILE__)
+  require 'html/entities.rb'
+
+  TitleRegex = /\<title\>\s*([^<]*)\s*\<\/title\>/mi 
 
   def self.unentit( string, enc )
     string.encode!("utf-8", enc)
@@ -12,10 +14,10 @@ module HTML
         out = $1.hex
       elsif ent =~ /\A#0*(\d+)\Z/
         out = $1.to_i
-      elsif ENTITIES.has_key?(ent)
-        out = ENTITIES[ent]
-      elsif ENTITIES.has_key?(ent.downcase)
-        out = ENTITIES[ent.downcase]
+      elsif HTML::ENTITIES.has_key?(ent)
+        out = HTML::ENTITIES[ent]
+      elsif HTML::ENTITIES.has_key?(ent.downcase)
+        out = HTML::ENTITIES[ent.downcase]
       else
         return string
       end
@@ -44,22 +46,22 @@ module HTML
     end # request_get
 
     case resp
-    when Net::HTTPRedirection then 
+    when Net::HTTPRedirection
       raise 'Redirection Loop' if url == resp['location']
       fetch(resp['location'], limit - 1)
-    when Net::HTTPSuccess then resp 
-    when Net::HTTPClientError then resp
-    else raise resp.error! #"HTTP-Header failure"
+    when Net::HTTPSuccess
+      resp 
+    when Net::HTTPClientError
+      resp
+    else
+      raise resp.error! #"HTTP-Header failure"
     end # case resp
   end
 
   def self.title( url )
-    resp = fetch(url, 20)
-    raise "No title can be found" if resp.nil?
-    enc = "utf-8"
-    enc = $1 if resp.body =~ /charset=([-\w]+)/
-    resp.body =~ /\<title\>\s*([^<]*)\s*\<\/title\>/mi 
-    raise "No title can be found" if $1.nil?
+    raise "No page found" unless resp = fetch(url, 20)
+    enc = resp.body =~ /charset=([-\w]+)/ ? $1 : 'utf-8'
+    raise "No title found" unless resp.body =~ TitleRegex
     unentit($1, enc).gsub(/(\r|\n)/, " ").gsub(/(\s{2,})/, " ")
   end
 end

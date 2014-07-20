@@ -1,81 +1,17 @@
 # coding: utf-8
 
-require "net/http"
-require "uri"
+require 'rib/configuration.rb'
 require 'logger'
-load File.expand_path('../html/html.rb', __FILE__)
 
 module RIB
-
-  class Configuration
-    SSL = Struct.new(:use, :verify, :ca_path, :client_cert)
-
-    def initialize
-      @config = default
-    end
-
-    def method_missing( meth, *args )
-      meth = meth.to_s.sub(/=$/, '').to_sym
-
-      insert(meth, args.shift) unless args.empty?
-      if @config.has_key? meth 
-        @config[meth] 
-      else
-        super 
-      end
-    end
-
-    def defined?( key )
-      (@config.has_key?(key.to_sym) && ! @config[key.to_sym].nil?)
-    end
-
-    private
-
-    def default # Default Configuration
-      {
-        protocol:   :irc,
-        server:     'irc.quakenet.org',
-				port:       6667,
-        ssl:        SSL.new( false, false, '/etc/ssl/certs', '' ),
-        nick:       'rib' + rand(999).to_s,
-        jid:        'rubybot@xmpp.example.com',
-        channel:    '#rib',
-        tc:         '!',
-        password:   'rib',
-        qmsg:       'Bye!',
-        title:      true,
-        pony:       false,
-        verbose:    false
-      }
-    end
-
-    def insert( key, val )
-      @config[key.to_sym] = val
-    end
-
-  end # class Config
-
-  class ConnectionBase
-    def initialize(host, *args)
-      serverlogfile = File.expand_path("../../../log/#{host}.log", __FILE__)
-			@logs = { :server => Logger.new(serverlogfile)}
-			@logs[:server].level = Logger::INFO
-      @logging = nil
-      @me = String.new
-    end
-
-    def togglelogging
-      @logging = @logging.nil? ? true : nil
-    end
-  end
 
   class Bot
 
     def initialize
-      @config = Configuration.new
-      yield @config
       
-      # Logfile for the instance. NOT IRC log! Look into irc.rb therefore.
+      yield @config = Configuration.new
+      
+      # Logfile for the instance. NOT IRC log! Look into irc.rb for that
       logfile = "../log/#{File.basename($0)}_#{self.protocol}_#{self.server}.log"
       destination = self.verbose ? STDOUT : File.expand_path(logfile, $0)
       @log = Logger.new(destination)
@@ -105,17 +41,17 @@ module RIB
 
       @server = case self.protocol
                 when :irc then
-                  require 'rib/irc'
+                  require 'rib/connection/irc'
                   ssl_hash = {}
                   @config.ssl.each_pair {|k,v| ssl_hash[k] = v }
-                  IRC::Connection.new( @config.server, @config.nick,
+                  Connection::IRC.new( @config.server, @config.nick,
                                       { :port	=> @config.port,
                                         # ruby1.9.3 - no to_h for Structs
                                         #:ssl   => @config.ssl.to_h } )
                                         :ssl   => ssl_hash } )
                 when :xmpp then
-                  require 'rib/xmpp'
-                  XMPP::Connection.new( @config.jid, @config.server, @config.nick )
+                  require 'rib/connection/xmpp'
+                  Connection::XMPP.new( @config.jid, @config.server, @config.nick )
                 else raise "Unknown protocol '#{self.protocol}'"
                 end
 
