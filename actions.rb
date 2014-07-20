@@ -195,7 +195,7 @@ end
 
 require "bastelshare"
 bs = Bastelshare.new
-bs.refresh
+bs.refresh rescue false
 @buffer = []
 
 def bs_buffer
@@ -214,7 +214,11 @@ rib.add_response /\A#{rib.tc}bs(?: (\w+)(?: (.+))?)?\z/ do |m,u,c,s|
   args = m[2]
   case cmd
   when 'refresh'
-    bs.refresh( 5 ) ? "refreshed" : "Is noch neu! Geh weg!"
+    begin
+      bs.refresh( 5 ) ? "refreshed" : "Is noch neu! Geh weg!"
+    rescue REXML::ParseException
+      "bastelshare website kapoot!!1"
+    end
   when 'find'
     @buffer = bs.find(args).to_a
     @buffer.empty? ? "nope. try again!" : bs_buffer
