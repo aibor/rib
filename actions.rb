@@ -76,6 +76,7 @@ responses = {
   "chill" => "┬─┬ ノ( ゜-゜ノ)",
   "calm" => "http://rib.aibor.de/images/chill.jpg",
   "nope" => "http://rib.aibor.de/images/keep-calm-and-nope.png",
+  "no"   => "http://rib.aibor.de/images/no.gif",
   "haha" => "http://rib.aibor.de/images/haha.jpg",
   "fucky" => "http://rib.aibor.de/images/fucky.jpg",
   "noob" => "http://rib.aibor.de/images/noob.jpg",
@@ -85,6 +86,7 @@ responses = {
   "tfp" => "https://rib.aibor.de/images/tfp.jpg",
   "awesome" => ["http://rib.aibor.de/images/awesome.jpg",
                 "http://rib.aibor.de/images/awesome2.jpg"],
+  "panda"   => "http://www.youtube.com/watch?v=X21mJh6j9i4",
   "#{rib.nick}" => "hell yeah!"
 }
 
@@ -193,7 +195,7 @@ end
 
 require "bastelshare"
 bs = Bastelshare.new
-bs.refresh
+bs.refresh rescue false
 @buffer = []
 
 def bs_buffer
@@ -212,7 +214,11 @@ rib.add_response /\A#{rib.tc}bs(?: (\w+)(?: (.+))?)?\z/ do |m,u,c,s|
   args = m[2]
   case cmd
   when 'refresh'
-    bs.refresh( 5 ) ? "refreshed" : "Is noch neu! Geh weg!"
+    begin
+      bs.refresh( 5 ) ? "refreshed" : "Is noch neu! Geh weg!"
+    rescue REXML::ParseException
+      "bastelshare website kapoot!!1"
+    end
   when 'find'
     @buffer = bs.find(args).to_a
     @buffer.empty? ? "nope. try again!" : bs_buffer
