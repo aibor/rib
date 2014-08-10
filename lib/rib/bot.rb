@@ -1,150 +1,158 @@
 # coding: utf-8
 
 require 'rib/configuration.rb'
+require 'rib/errors.rb'
 require 'logger'
 
 module RIB
 
+  ##
+  # Main class for initializing and handling the connection after reading
+  # the configuration and initializing the callbacks. 
+  #
+  # Example:
+  #
+  #   require 'rib'
+  #
+  #   rib = RIB::Bot.new do |bot|
+  #     bot.protocol  = :irc
+  #     bot.server    = 'irc.quakenet.org'
+  #     bot.port      = 6667
+  #     bot.channel   = '#rib'
+  #     bot.tc        = '!'
+  #     bot.admin     = 'ribmaster'
+  #     bot.debug     = true
+  #   end
+  #
+  #   rib.run
+
   class Bot
 
     def initialize
-      
       yield @config = Configuration.new
       
+      protocol_path = "rib/protocol/#{@config.protocol}.rb"
+
+      require protocol_path rescue UnknownProtocol.new(@config.protocol)
+      extend RIB::Protocol.const_get(@config.protocol.to_s.upcase)
       # Logfile for the instance. NOT IRC log! Look into irc.rb for that
-      logfile = "../log/#{File.basename($0)}_#{self.protocol}_#{self.server}.log"
-      destination = self.verbose ? STDOUT : File.expand_path(logfile, $0)
-      @log = Logger.new(destination)
-      @log.level = Logger::INFO
+      init_log
 
-      callbacks_init
+      init_callbacks
     end
 
-    def method_missing( *args )
-      @config.send( *args )
+
+    ##
+    # Make configuration attributes available as bot attributes.
+
+    def method_missing(*args)
+      @config.send(*args) or super
     end
 
-    def callbacks_init
-      @callbacks = Hash.new
-      eval(IO.read('lib/rib/callbacks.rb'), binding)
-    end
 
-    def add_response( trigger, &action )
+    def add_response(trigger, &action)
       @callbacks[trigger] = action 
     end
+
+
+    ##
+    # After the bot irs configured and request handlers have been
+    # loaded, the bot can initialize the connection and go into
+    # its infinite loop.
 
     def run
       @starttime = Time.new
 
-      # Start IRC Connection
-      @log.info( "Server starts" )
+      init_server
 
-      @server = case self.protocol
-                when :irc then
-                  require 'rib/connection/irc'
-                  ssl_hash = {}
-                  @config.ssl.each_pair {|k,v| ssl_hash[k] = v }
-                  Connection::IRC.new( @config.server, @config.nick,
-                                      { :port	=> @config.port,
-                                        # ruby1.9.3 - no to_h for Structs
-                                        #:ssl   => @config.ssl.to_h } )
-                                        :ssl   => ssl_hash } )
-                when :xmpp then
-                  require 'rib/connection/xmpp'
-                  Connection::XMPP.new( @config.jid, @config.server, @config.nick )
-                else raise "Unknown protocol '#{self.protocol}'"
-                end
-
-      @server.togglelogging
-      @log.info( @server.login(@config.defined?("auth") ? auth : nil) )
-
-      # iterate through channel list and join them
-      @config.channel.split( /\s+|\s*,\s*/ ).each do |chan|
-        @server.join_channel( chan )
-        @log.info( "Connected to #{@config.server} as #{@config.nick} in #{chan}" )
-      end
-
-      # make the bot aware of himself
-      @server.setme( @config.nick )
-
-      case self.protocol
-      when :irc then run_irc
-      when :xmpp then run_xmpp
-      else raise "Unknown protocol '#{self.protocol}'"
-      end
-
-    rescue
+      run_loop
+    rescue => e
       @log.fatal($!)
     ensure
       @log.info("EXITING")
       @log.close
-    end # method run
+    end
 
-    def say( text, target )
+
+    def say(text, target)
       return if text.nil?
       text.split('\n').each do |line|
         next if line.empty?
-        case self.protocol 
-        when :irc then 
-          @server.privmsg( target, ":" + line )
-        when :xmpp then
-          line.gsub!(/(\|\[0-9,]+)/,'')
-          line.gsub!(/\/,':')
-          line.encode("utf-8")
-          target.say(line) if target.is_a? Jabber::MUC::SimpleMUCClient 
-        end
+        server_say line, target
       end
     end
+
 
     private
 
-    def run_irc
+    ##
+    # After successful connection start with server response loop.
 
-      # After successful connection start with server response loop.
-      while cmd = @server.recv
-        begin
-
-          @log.info(cmd.to_a[0..-2].join(' ')) if self.verbose
-
-          # If a message is received check for triggers and response properly.
-          if cmd.command == "PRIVMSG"
-            user = cmd.prefix.match(/\A(.*?)!/)[1]
-            @callbacks.each do |trigger,action|
-              next unless cmd.last_param =~ trigger
-              source = cmd.params[0].include?("#") ? cmd.params[0] : user
-              out = action.call($~, user, cmd.last_param, source)
-              case out
-              when Array then say *out 
-              when String then say out, source
-              else true
-              end
-            end
-          end # if cmd.command
-        rescue
-          @log.error($!)
-        end # begin
-      end # while
+    def log_path
+      file_path =  File.expand_path('..', $0)
+      file_path << @config.logdir.sub(/\A\/?(.*?)\/?\z/, '/\1/')
     end
 
-    def run_xmpp
 
-      Jabber::debug = true if self.verbose
+    def init_log
+      destination, level = if self.debug
+                             [STDOUT, Logger::DEBUG]
+                           else
+                             file_path =  log_path
+                             file_path << File.basename($0)
+                             file_path << "_#{self.protocol}"
+                             file_path << "_#{self.server}.log"
+                             [file_path, Logger::INFO]
+                           end
 
-      @server.muc.each do |room,muc|
-        muc.on_message do |time,nick,text|
-          next if (nick == self.nick) or (Time.new - @starttime < 5)
-          @callbacks.each do |trigger,action|
-            begin
-              next unless text =~ trigger
-              say( action.call($~, nick, text, muc), muc )
-            rescue
-              @log.error($!)
-            end # begin
-          end
-        end
+      @log = Logger.new(destination)
+      @log.level = level
+    end
+
+
+    def init_callbacks
+      @callbacks = Hash.new
+      eval(IO.read('lib/rib/callbacks.rb'), binding)
+    end
+
+
+    ##
+    # Start IRC Connection, authenticate and join all channels.
+
+    def init_server
+      @log.info "Server starts"
+
+
+      @server = init_connection
+
+      # Once the connection is established and the motd is done, all
+      # further suff hould be logged
+      @server.togglelogging
+      auth_to_server
+      join_channels
+
+      # make the bot aware of himself
+      @server.setme @config.nick
+    end
+
+
+    ##
+    # Iterate through channel list and join all of them.
+
+    def join_channels
+      @config.channel.split( /\s+|\s*,\s*/ ).each do |chan|
+        @server.join_channel( chan )
+        @log.info("Connected to #{@config.server} as #{@config.nick} in #{chan}")
       end
-
-      Thread.stop
     end
+
+
+    ##
+    # Send the authentication string to the server if one is configured.
+
+    def auth_to_server
+      @log.info(@server.login(@config.defined?("auth") ? auth : nil))
+    end
+
   end # class Bot
 end # module RIB

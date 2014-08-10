@@ -5,9 +5,11 @@ module RIB
   class Configuration
     SSL = Struct.new(:use, :verify, :ca_path, :client_cert)
 
+
     def initialize
       @config = default
     end
+
 
     def method_missing( meth, *args )
       meth = meth.to_s.sub(/=$/, '').to_sym
@@ -20,9 +22,11 @@ module RIB
       end
     end
 
+
     def defined?( key )
       (@config.has_key?(key.to_sym) && ! @config[key.to_sym].nil?)
     end
+
 
     private
 
@@ -40,13 +44,15 @@ module RIB
         qmsg:       'Bye!',
         title:      true,
         pony:       false,
-        verbose:    false
+        logdir:     'log/',
+        debug:      false,
+        modules:     []
       }
     end
+
 
     def insert( key, val )
       @config[key.to_sym] = val
     end
-
   end
 end

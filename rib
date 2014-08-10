@@ -15,7 +15,6 @@ $: << File.expand_path('../lib', __FILE__)
 require 'rib'
 
 rib = RIB::Bot.new do |bot|
-
   bot.protocol = :irc               # which protcoll to use? :irc or :xmpp
   bot.server = 'irc.quakenet.org'   # IRC/XMPP-Server to join
   bot.port = 6667
@@ -36,9 +35,8 @@ rib = RIB::Bot.new do |bot|
   bot.helplink = 'https://github.com/aibor/rib'
   bot.title = true                  # Print HTML-title of a posted url if set.
   #bot.pony = false                 # Appreciate ponies
-  bot.verbose = true                # Debuging time
+  bot.debug = true                # Debuging time
   bot.admin = 'aibo'
-
 end
 
 eval(IO.read('actions.rb'), binding)
