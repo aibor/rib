@@ -3,6 +3,7 @@
 require 'rib/configuration.rb'
 require 'rib/errors.rb'
 require 'logger'
+require 'rib/module'
 
 module RIB
 
@@ -28,17 +29,23 @@ module RIB
 
   class Bot
 
+    ##
+    # All currently defined commands
+
+    attr_accessor :modules, :starttime, :connection
+
+
     def initialize
       yield @config = Configuration.new
       
-      protocol_path = "rib/protocol/#{@config.protocol}.rb"
+      load_protocol_module
 
-      require protocol_path rescue UnknownProtocol.new(@config.protocol)
-      extend RIB::Protocol.const_get(@config.protocol.to_s.upcase)
       # Logfile for the instance. NOT IRC log! Look into irc.rb for that
       init_log
 
-      init_callbacks
+      #init_callbacks
+      load_modules
+
     end
 
 
@@ -83,7 +90,23 @@ module RIB
     end
 
 
+    def reload_modules
+      load_modules
+    end
+
+
     private
+
+    def load_protocol_module
+      protocol_path = "#{__dir__}/protocol/#{@config.protocol}.rb"
+
+      require protocol_path
+
+      extend RIB::Protocol.const_get(@config.protocol.to_s.upcase)
+    #rescue LoadError
+    #  raise UnknownProtocol.new(@config.protocol)
+    end
+
 
     ##
     # After successful connection start with server response loop.
@@ -116,23 +139,31 @@ module RIB
     end
 
 
+    def load_modules
+      @modules = []
+
+      Module.bot = self
+
+      Dir.glob("#{__dir__}/modules/*.rb").each {|f| load f}
+    end
+
+
     ##
     # Start IRC Connection, authenticate and join all channels.
 
     def init_server
       @log.info "Server starts"
 
-
-      @server = init_connection
+      @connection = init_connection
 
       # Once the connection is established and the motd is done, all
       # further suff hould be logged
-      @server.togglelogging
+      @connection.togglelogging
       auth_to_server
       join_channels
 
       # make the bot aware of himself
-      @server.setme @config.nick
+      @connection.setme @config.nick
     end
 
 
@@ -141,7 +172,7 @@ module RIB
 
     def join_channels
       @config.channel.split( /\s+|\s*,\s*/ ).each do |chan|
-        @server.join_channel( chan )
+        @connection.join_channel( chan )
         @log.info("Connected to #{@config.server} as #{@config.nick} in #{chan}")
       end
     end
@@ -151,7 +182,7 @@ module RIB
     # Send the authentication string to the server if one is configured.
 
     def auth_to_server
-      @log.info(@server.login(@config.defined?("auth") ? auth : nil))
+      @log.info(@connection.login(@config.defined?("auth") ? auth : nil))
     end
 
   end # class Bot

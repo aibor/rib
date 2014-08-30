@@ -87,6 +87,7 @@ responses = {
   "awesome" => ["http://rib.aibor.de/images/awesome.jpg",
                 "http://rib.aibor.de/images/awesome2.jpg"],
   "panda"   => "http://www.youtube.com/watch?v=X21mJh6j9i4",
+  "cheese" => "https://www.youtube.com/watch?v=bVKCHZqax84",
   "#{rib.nick}" => "hell yeah!"
 }
 

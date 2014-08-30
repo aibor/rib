@@ -25,33 +25,57 @@ module RIB
       private
 
       def run_loop
-        while cmd = @server.recv
-          begin
-            @log.info(cmd.to_a[0..-2].join(' ')) if self.debug
+        while cmd = @connection.recv 
+          process_cmd cmd
+        end
+      end
 
-            # If a message is received check for triggers and response properly.
-            if cmd.command == "PRIVMSG"
-              user = cmd.prefix.match(/\A(.*?)!/)[1]
-              @callbacks.each do |trigger,action|
-                next unless cmd.last_param =~ trigger
-                source = cmd.params[0].include?("#") ? cmd.params[0] : user
-                out = action.call($~, user, cmd.last_param, source)
-                case out
-                when Array then say *out 
-                when String then say out, source
-                else true
-                end
-              end
-            end # if cmd.command
-          rescue
-            @log.error($!)
-          end # begin
-        end # while
+
+      def process_cmd(cmd)
+        @log.info(cmd.to_a[0..-2].join(' ')) if self.debug
+        # If a message is received check for triggers and response properly.
+        process_privmsg cmd if cmd.command == "PRIVMSG"
+      end
+
+
+      def process_privmsg(cmd)
+        command, params = find_command cmd
+
+        @log.info(cmd.to_a[0..-2].join(' ')) if self.debug
+
+        return false unless command
+
+        user, source = parse_cmd cmd
+
+        case out = command.call(params, user, source)
+        when Array  then say *out 
+        when String then say out, source
+        else true
+        end
+      rescue
+        @log.error($!)
+      end
+
+
+      def parse_cmd(cmd)
+        user    = cmd.prefix.match(/\A(.*?)!/)[1]
+        source  = cmd.params[0][0] == '#' ? cmd.params[0] : user
+      end
+
+
+      def find_command(cmd)
+        @modules.map(&:commands).flatten.each do |command|
+          if cmd.last_param =~ /\A#{tc}#{command.name}\s+(.*)\z/
+            return command, $1.split
+          end
+        end
+
+        return false, []
       end
 
 
       def server_say(line, target)
-        @server.privmsg( target, ":" + line )
+        @connection.privmsg( target, ":" + line )
       end
 
     end

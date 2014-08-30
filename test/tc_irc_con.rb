@@ -5,10 +5,9 @@
 $: << File.expand_path('../../lib', __FILE__)
 
 require 'test/unit'
-#require File.expand_path('../../lib/irc.rb', __FILE__)
 require 'rib'
 require 'rib/connection/irc'
-require File.expand_path('../mock/tcpsocket.rb', __FILE__)
+require "#{__dir__}/mock/tcpsocket.rb'"
 
 
 class TestIRCConnection < Test::Unit::TestCase

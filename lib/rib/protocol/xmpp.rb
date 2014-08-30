@@ -21,7 +21,7 @@ module RIB
       def run_xmpp
         Jabber::debug = true if self.debug
 
-        @server.muc.each do |room,muc|
+        @connection.muc.each do |room,muc|
           muc.on_message do |time,nick,text|
             next if (nick == self.nick) or (Time.new - @starttime < 5)
             @callbacks.each do |trigger,action|
@@ -33,7 +33,7 @@ module RIB
               end # begin
             end # @callbacks.each
           end # muc.on_message
-        end # @server.muc.each
+        end # @connection.muc.each
 
         Thread.stop
       end
