@@ -1,5 +1,7 @@
 # coding: utf-8
 
+require 'rib/message'
+
 module RIB
 
   class Command
@@ -57,13 +59,13 @@ module RIB
 
     def parse_params(params)
       @params.each_with_index.inject({}) do |hash, (name, index)|
-        hash[name] = params[index]
+        hash.merge(name => params[index])
       end
     end
 
 
     def call(params, user, source)
-      @actions[:on_call].call Message.new(parse_params, user, source)      
+      @actions[:on_call].call Message.new(parse_params(params), user, source)      
     end
 
 

@@ -10,7 +10,7 @@ RIB::Module.new :core do
     desc = 'Quits the connection'
     on_call do |msg|
       if msg.user == bot.admin and Time.now - bot.starttime > 5
-        connection.quit(bot.qmsg)
+        bot.connection.quit(bot.qmsg)
       end
     end
   end
@@ -20,7 +20,7 @@ RIB::Module.new :core do
     command :join, :channel do
       desc 'Join a new channel'
       on_call do |msg|
-        connection.join(msg.param[:channel]) if msg.user == bot.admin
+        bot.connection.join(msg.params[:channel]) if msg.user == bot.admin
       end
     end
 
@@ -29,7 +29,7 @@ RIB::Module.new :core do
     command :part, :channel do
       desc 'Leave a channel'
       on_call do |msg|
-        connection.part(msg.param[:channel]) if msg.user == bot.admin
+        bot.connection.part(msg.params[:channel]) if msg.user == bot.admin
       end
     end
   end
@@ -60,9 +60,9 @@ RIB::Module.new :core do
   command :list, :module do
     desc = 'List all available Modules or commands for a specific Module'
     on_call do |msg|
-      if msg.params[0] =~ /\A\w+\z/
+      if msg.params[:module]
         mod = bot.modules.select do |m|
-          m.name.downcase == msg.param[:module].downcase
+          m.name.downcase == msg.params[:module].downcase
         end.first
         mod ? 'Module commands: ' + mod.commands.map(&:name).join(', ') : 'Unknown module'
       else

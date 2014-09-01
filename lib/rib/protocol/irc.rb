@@ -32,7 +32,7 @@ module RIB
 
 
       def process_cmd(cmd)
-        @log.info(cmd.to_a[0..-2].join(' ')) if self.debug
+        @log.debug cmd.to_a[0..-2].join(' ')
         # If a message is received check for triggers and response properly.
         process_privmsg cmd if cmd.command == "PRIVMSG"
       end
@@ -41,13 +41,15 @@ module RIB
       def process_privmsg(cmd)
         command, params = find_command cmd
 
-        @log.info(cmd.to_a[0..-2].join(' ')) if self.debug
+        @log.debug "found command: #{command}; params: #{params.join(', ')}"
 
         return false unless command
 
         user, source = parse_cmd cmd
 
-        case out = command.call(params, user, source)
+        out = command.call(params, user, source)
+        @log.debug out
+        case out
         when Array  then say *out 
         when String then say out, source
         else true
@@ -60,13 +62,15 @@ module RIB
       def parse_cmd(cmd)
         user    = cmd.prefix.match(/\A(.*?)!/)[1]
         source  = cmd.params[0][0] == '#' ? cmd.params[0] : user
+
+        return user, source
       end
 
 
       def find_command(cmd)
         @modules.map(&:commands).flatten.each do |command|
-          if cmd.last_param =~ /\A#{tc}#{command.name}\s+(.*)\z/
-            return command, $1.split
+          if cmd.last_param =~ /\A#{tc}#{command.name}(?:\s+(.*))?\z/
+            return command, $1 ? $1.split : []
           end
         end
 
@@ -75,7 +79,8 @@ module RIB
 
 
       def server_say(line, target)
-        @connection.privmsg( target, ":" + line )
+        @log.debug "server_say: '#{line}' to '#{target}'"
+        @connection.privmsg target, ":" + line
       end
 
     end
