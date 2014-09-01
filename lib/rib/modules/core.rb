@@ -17,21 +17,25 @@ RIB::Module.new :core do
 
 
   protocol :irc do
+
     command :join, :channel do
       desc 'Join a new channel'
       on_call do |msg|
-        bot.connection.join(msg.params[:channel]) if msg.user == bot.admin
+        puts msg.user
+        bot.connection.join_channel(msg.params[:channel]) if msg.user == bot.admin
       end
     end
-
 
 
     command :part, :channel do
       desc 'Leave a channel'
       on_call do |msg|
-        bot.connection.part(msg.params[:channel]) if msg.user == bot.admin
+        channel = msg.params[:channel]
+        channel ||= msg.source
+        bot.connection.part(channel) if msg.user == bot.admin
       end
     end
+
   end
 
 

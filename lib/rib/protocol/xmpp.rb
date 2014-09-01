@@ -3,7 +3,9 @@
 require 'rib/protocol/xmpp/connection'
 
 module RIB
+
   module Protocol
+
     module XMPP
 
       def init_connection
@@ -47,6 +49,8 @@ module RIB
       end
 
     end
+
   end
+
 end
 

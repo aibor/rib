@@ -5,6 +5,7 @@ require 'logger'
 module RIB::Connection
 
   Logging = Struct.new(:active, :path, :server, :channels, :level) do
+
     def add_channel_log(host, channel, loglevel = nil)
       self.channels ||= Hash.new
 
@@ -13,6 +14,7 @@ module RIB::Connection
 
       self.channels[channel] = logger
     end
+
   end
 
 

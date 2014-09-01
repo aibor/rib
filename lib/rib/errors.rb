@@ -30,10 +30,14 @@ module RIB
   end
 
 
-  class LoginError       < StandardError; end
+  class LoginError            < StandardError; end
 
-  class AuthError        < StandardError; end
+  class AuthError             < StandardError; end
 
-  class ChannelJoinError < StandardError; end
+  class ChannelJoinError      < StandardError; end
+
+  class MalformedMessageError < StandardError; end
+
+  class ReceivedError         < StandardError; end
 
 end

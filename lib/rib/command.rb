@@ -52,20 +52,8 @@ module RIB
     end
 
 
-    ##
-    # Return a Hash with the parameters mapped to their names.
-    #
-    # @return [Hash] with paramter values mapped to their names
-
-    def parse_params(params)
-      @params.each_with_index.inject({}) do |hash, (name, index)|
-        hash.merge(name => params[index])
-      end
-    end
-
-
     def call(params, user, source)
-      @actions[:on_call].call Message.new(parse_params(params), user, source)      
+      @actions[:on_call].call Message.new(params, user, source)      
     end
 
 

@@ -3,7 +3,9 @@
 require 'rib/protocol/irc/connection'
 
 module RIB
+
   module Protocol
+
     module IRC
 
       def init_connection
@@ -25,33 +27,32 @@ module RIB
       private
 
       def run_loop
-        while cmd = @connection.recv 
-          process_cmd cmd
+        while msg = @connection.receive 
+          process_msg msg
         end
       end
 
 
-      def process_cmd(cmd)
-        @log.debug cmd.to_a[0..-2].join(' ')
-        # If a message is received check for triggers and response properly.
-        process_privmsg cmd if cmd.command == "PRIVMSG"
+      def process_msg(msg)
+        @log.debug msg.to_a[0..-2].join(' ')
+        process_privmsg msg if msg.command == "PRIVMSG"
       end
 
 
-      def process_privmsg(cmd)
-        command, params = find_command cmd
+      def process_privmsg(msg)
+        command, params = find_command msg
 
-        @log.debug "found command: #{command}; params: #{params.join(', ')}"
+        @log.debug "found command: #{command}; params: " + 
+        params.map{|k,v| "#{k}: #{v}"} * ', '
 
         return false unless command
 
-        user, source = parse_cmd cmd
-
-        out = command.call(params, user, source)
+        @log.debug msg
+        out = command.call(params, msg.user, msg.source)
         @log.debug out
         case out
         when Array  then say *out 
-        when String then say out, source
+        when String then say out, msg.source
         else true
         end
       rescue
@@ -59,18 +60,17 @@ module RIB
       end
 
 
-      def parse_cmd(cmd)
-        user    = cmd.prefix.match(/\A(.*?)!/)[1]
-        source  = cmd.params[0][0] == '#' ? cmd.params[0] : user
-
-        return user, source
-      end
-
-
-      def find_command(cmd)
+      def find_command(msg)
         @modules.map(&:commands).flatten.each do |command|
-          if cmd.last_param =~ /\A#{tc}#{command.name}(?:\s+(.*))?\z/
-            return command, $1 ? $1.split : []
+          if msg.data =~ /\A#{tc}#{command.name}(?:\s+(.*))?\z/
+            params = $1.to_s.split
+
+            enum = command.params.each_with_index
+            params_mapped = enum.inject({}) do |hash, (name, index)|
+              hash.merge(name => params[index])
+            end
+
+            return command, params_mapped
           end
         end
 
@@ -84,6 +84,7 @@ module RIB
       end
 
     end
-  end
-end
 
+  end
+
+end
