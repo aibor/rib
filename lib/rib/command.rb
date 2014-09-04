@@ -9,19 +9,13 @@ module RIB
     ##
     # Command name
 
-    attr_accessor :name
-
-
-    ##
-    # Our Bot instance
-
-    attr_reader :bot
+    attr_reader :name
 
 
     ##
     # Command params
 
-    attr_accessor :params
+    attr_reader :params
 
 
     ##
@@ -32,28 +26,55 @@ module RIB
 
 
     ##
-    # Action to perform if command was triggered.
+    # Actions to perform if command was triggered.
 
     attr_reader :actions
 
+
     ##
-    # Module name this command belongs to.
+    # Name of the Module this command belongs to.
 
-    attr_accessor :module
-    alias :module :module=
+    attr_reader :module
 
 
-    def initialize(name, bot, params = [], &block)
-      @name   = name
-      @bot    = bot
-      @params = params
+    ##
+    # Protocols this command is able to work with.
+
+    attr_reader :protocol
+
+
+    def initialize(name, mod_name, params = [], protocol = nil, &block)
+      @name     = name
+      @params   = params
+      @module   = mod_name
+      @protocol = protocol
 
       instance_eval &block
+
+      @init = true
     end
 
 
-    def call(params, user, source)
-      @actions[:on_call].call Message.new(params, user, source)      
+    def call(data, user, source, bot)
+      # Shall not be called from within the command definition itself.
+      return false unless @init
+
+      msg     = Message.new data, user, source
+      params  = map_params data.split[1..-1]
+
+      @actions[:on_call].call msg, params, bot
+    end
+
+
+    def speaks?(protocol)
+      raise TypeError, 'not a Symbol' unless protocol.is_a? Symbol
+
+      case self.protocol
+      when nil then true
+      when Symbol then self.protocol == protocol
+      when Array then self.protocol.include? protocol
+      else false
+      end
     end
 
 
@@ -63,5 +84,15 @@ module RIB
       @actions[:on_call] = block
     end
 
+
+    private
+
+    def map_params(data)
+      @params.each_with_index.inject({}) do |hash, (name, index)|
+        hash.merge(name => data[index])
+      end
+    end
+
   end
+
 end

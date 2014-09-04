@@ -15,12 +15,10 @@ module RIB
           hash
         end
 
-        Connection.new(
-          log_path,
-          @config.server,
-          @config.nick,
-          {port: @config.port, ssl: ssl_hash}
-        )
+        Connection.new(log_path,
+                       @config.server,
+                       @config.nick,
+                       {port: @config.port, ssl: ssl_hash})
       end
 
 
@@ -40,17 +38,11 @@ module RIB
 
 
       def process_privmsg(msg)
-        command, params = find_command msg
+        return false unless command = find_command(msg)
 
-        @log.debug "found command: #{command}; params: " + 
-        params.map{|k,v| "#{k}: #{v}"} * ', '
+        @log.debug "found command: #{command}; data: #{msg.data}"
 
-        return false unless command
-
-        @log.debug msg
-        out = command.call(params, msg.user, msg.source)
-        @log.debug out
-        case out
+        case out = command.call(msg.data, msg.user, msg.source, self)
         when Array  then say *out 
         when String then say out, msg.source
         else true
@@ -61,20 +53,9 @@ module RIB
 
 
       def find_command(msg)
-        @modules.map(&:commands).flatten.each do |command|
-          if msg.data =~ /\A#{tc}#{command.name}(?:\s+(.*))?\z/
-            params = $1.to_s.split
-
-            enum = command.params.each_with_index
-            params_mapped = enum.inject({}) do |hash, (name, index)|
-              hash.merge(name => params[index])
-            end
-
-            return command, params_mapped
-          end
+        self.commands.find do |cmd|
+          msg.data[/\A#{tc}#{cmd.name}/]
         end
-
-        return false, []
       end
 
 

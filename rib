@@ -37,6 +37,7 @@ rib = RIB::Bot.new do |bot|
   #bot.pony = false                 # Appreciate ponies
   bot.debug = true                # Debuging time
   bot.admin = 'Crapedia'
+  bot.modules = [:core]
 end
 
 #eval(IO.read('actions.rb'), binding)

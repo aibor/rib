@@ -62,6 +62,13 @@ module RIB
     end
 
 
+    def commands
+      @modules.map(&:commands).flatten.select do |command|
+        command.speaks? @config.protocol
+      end
+    end
+
+
     ##
     # After the bot irs configured and request handlers have been
     # loaded, the bot can initialize the connection and go into
@@ -142,9 +149,11 @@ module RIB
     def load_modules
       @modules = []
 
-      Module.bot = self
+      Module.load "#{__dir__}/modules/*.rb"
 
-      Dir.glob("#{__dir__}/modules/*.rb").each {|f| load f}
+      @modules = Module.loaded.select do |mod|
+        @config.modules.include?(mod.name) && mod.speaks?(self.protocol)
+      end
     end
 
 

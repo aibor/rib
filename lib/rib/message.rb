@@ -11,27 +11,20 @@ module RIB
     ##
     # All message attributes.
 
-    attr_reader :params, :user, :source
+    attr_reader :message, :user, :source
 
 
     ##
-    # @param [Hash] params
-    #   Hash with params for the command. Keys depend on the command.
+    # @param [String] message
+    #   message that was sent
     # @param [String] user
     #   name of the user who sent the message
     # @param [String] source
     #   where did the message came from?
     #
-    # @raise [TypeError] if the first argument is not a Hash
-    # @raise [TypeError] if the second argument is not an Array
 
-    def initialize(params, user, source)
-      if params.is_a? Hash
-        @params = params
-      else
-        raise TypeError, 'first argument is not a Hash'
-      end
-
+    def initialize(message, user, source)
+      @message = message
       @user   = user
       @source = source
     end
