@@ -66,11 +66,9 @@ module RIB
           end
 
           ssl_context.ca_path = options[:ca_path]
-          ssl_context.verify_mode = if options[:verify]
-                                      OpenSSL::SSL::VERIFY_PEER
-                                    else
-                                      OpenSSL::SSL::VERIFY_NONE
-                                    end
+
+          const = options[:verify] ? VERIFY_PEER : VERIFY_NONE
+          ssl_context.verify_mode = OpenSSL::SSL.const_get(const)
 
           ssl_socket = OpenSSL::SSL::SSLSocket.new(socket, ssl_context)
           ssl_socket.sync = true
@@ -80,14 +78,15 @@ module RIB
         end
 
 
-        def login(authdata = nil)
+        def login
           nick @nick
           user @nick, 'hostname', 'servername', ":#{@nick}"
 
-          rpl = receive_until {|c| c.command =~ /\A(?:43[1236]|46[12]|001)\Z/}
-          raise LoginError, rpl.data unless rpl and rpl.command == "001"
+          rpl = receive_until do |c|
+            c.command =~ /\A(?:43[1236]|46[12]|001)\Z/
+          end
 
-          auth_nick authdata if authdata
+          raise LoginError, rpl.data unless rpl and rpl.command == "001"
         end
 
 
@@ -196,9 +195,9 @@ module RIB
         private
 
         def receive_message
-          msg = @irc_server.gets.strip
+          msg = @irc_server.gets
 
-          if msg.nil? or msg.empty?
+          if msg.nil? or msg.strip!.empty?
             msg
           elsif msg =~ /ERROR:.*/
             raise ReceivedError, msg 

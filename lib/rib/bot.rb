@@ -1,9 +1,11 @@
 # coding: utf-8
 
-require 'rib/configuration.rb'
-require 'rib/errors.rb'
 require 'logger'
+require 'yaml'
+require 'rib/configuration.rb'
+require 'rib/exceptions.rb'
 require 'rib/module'
+
 
 module RIB
 
@@ -11,8 +13,7 @@ module RIB
   # Main class for initializing and handling the connection after reading
   # the configuration and initializing the callbacks. 
   #
-  # Example:
-  #
+  # @example
   #   require 'rib'
   #
   #   rib = RIB::Bot.new do |bot|
@@ -32,7 +33,7 @@ module RIB
     ##
     # All currently defined commands
 
-    attr_accessor :modules, :starttime, :connection
+    attr_reader :config, :modules, :replies, :starttime, :connection
 
 
     def initialize
@@ -43,9 +44,8 @@ module RIB
       # Logfile for the instance. NOT IRC log! Look into irc.rb for that
       init_log
 
-      #init_callbacks
       load_modules
-
+      load_replies
     end
 
 
@@ -57,14 +57,16 @@ module RIB
     end
 
 
-    def add_response(trigger, &action)
-      @callbacks[trigger] = action 
-    end
-
-
     def commands
       @modules.map(&:commands).flatten.select do |command|
         command.speaks? @config.protocol
+      end
+    end
+
+
+    def responses
+      @modules.map(&:responses).flatten.select do |response|
+        response.speaks? @config.protocol
       end
     end
 
@@ -73,6 +75,8 @@ module RIB
     # After the bot irs configured and request handlers have been
     # loaded, the bot can initialize the connection and go into
     # its infinite loop.
+    #
+    # @return [void]
 
     def run
       @starttime = Time.new
@@ -99,6 +103,35 @@ module RIB
 
     def reload_modules
       load_modules
+    rescue => e
+      @log.error 'Exception catched while reloading modules:'
+      @log.error e
+      false
+    end
+
+
+    def reload_replies
+      load_replies
+    rescue => e
+      @log.error 'Exception catched while reloading replies:'
+      @log.error e
+      false
+    end
+
+
+    def add_reply(trigger, value)
+      return false unless reply_validation.call(trigger, value.to_s)
+
+      @replies[trigger] = [@replies[trigger], value].flatten.compact
+      save_replies
+    end
+
+
+    def delete_reply(trigger, index)
+      return false unless @replies[trigger] and @replies[trigger][index]
+
+      @replies[trigger].delete_at(index)
+      save_replies
     end
 
 
@@ -124,41 +157,86 @@ module RIB
     end
 
 
+    def log_file_path
+      log_path + "#{File.basename($0)}_#{self.protocol}_#{self.server}.log"
+    end
+
+
     def init_log
-      destination, level = if self.debug
-                             [STDOUT, Logger::DEBUG]
-                           else
-                             file_path =  log_path
-                             file_path << File.basename($0)
-                             file_path << "_#{self.protocol}"
-                             file_path << "_#{self.server}.log"
-                             [file_path, Logger::INFO]
-                           end
+      destination, level =
+        if self.debug
+          [STDOUT, Logger::DEBUG]
+        else
+          [log_file_path, Logger::INFO]
+        end
 
       @log = Logger.new(destination)
       @log.level = level
     end
 
 
-    def init_callbacks
-      @callbacks = Hash.new
-      eval(IO.read('lib/rib/callbacks.rb'), binding)
+    ##
+    # Load all modules in a file or a directory - specified in
+    # \@config.modules.
+    #
+    # @return [void]
+
+    def load_modules
+      Module.load_path "#{__dir__}/modules/*.rb"
+
+      modules = Module.loaded.select do |mod|
+        @config.modules.include?(mod.name) && mod.speaks?(self.protocol)
+      end
+
+      @modules = modules
     end
 
 
-    def load_modules
-      @modules = []
+    def load_replies
+      hash = YAML.load_file(@config.replies)
 
-      Module.load "#{__dir__}/modules/*.rb"
+      @replies = hash.select &reply_validation
+      sanitize_replies
+    end
 
-      @modules = Module.loaded.select do |mod|
-        @config.modules.include?(mod.name) && mod.speaks?(self.protocol)
+
+    def sanitize_replies
+      @replies = @replies.sort.to_h.inject({}) do |hash, (key, value)|
+        value.compact! if value.respond_to?(:compact)
+        hash[key] = [value].flatten if value && !value.empty?
+        hash
+      end
+    end
+
+
+    def save_replies
+      sanitize_replies
+
+      if File.writable?(@config.replies)
+        File.write(@config.replies, @replies.to_yaml)  
+      else
+        false
+      end
+    end
+
+
+    def reply_validation
+      ->(name, value) do
+        return false unless name.is_a? String
+
+        if value.is_a? Array
+          value.all? { |element| element.is_a? String }
+        else
+          value.is_a?(String)
+        end
       end
     end
 
 
     ##
     # Start IRC Connection, authenticate and join all channels.
+    #
+    # @return [void]
 
     def init_server
       @log.info "Server starts"
@@ -168,7 +246,10 @@ module RIB
       # Once the connection is established and the motd is done, all
       # further suff hould be logged
       @connection.togglelogging
-      auth_to_server
+
+      @connection.login
+      @connection.auth_nick @config.auth if @config.defined?(:auth)
+
       join_channels
 
       # make the bot aware of himself
@@ -178,6 +259,8 @@ module RIB
 
     ##
     # Iterate through channel list and join all of them.
+    #
+    # @return [void]
 
     def join_channels
       @config.channel.split( /\s+|\s*,\s*/ ).each do |chan|
@@ -186,13 +269,6 @@ module RIB
       end
     end
 
-
-    ##
-    # Send the authentication string to the server if one is configured.
-
-    def auth_to_server
-      @log.info(@connection.login(@config.defined?("auth") ? auth : nil))
-    end
-
   end # class Bot
+
 end # module RIB

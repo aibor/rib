@@ -5,14 +5,12 @@ require 'rib/action'
 
 module RIB
 
-  class Command < Action
+  class Response < Action
 
     ##
-    # Command params
-    #
-    # @return [Array<Symbol>]
+    # @return [Regexp]
 
-    attr_reader :params
+    attr_reader :trigger
 
 
     ##
@@ -20,13 +18,13 @@ module RIB
     #   name of the Command
     # @param [Symbol] mod_name
     #   name of the Module that Command belongs to
-    # @param [Array<Symbol>] params
-    #   params that command can take
+    # @param [Regexp] trigger
+    #   regular expression that triggers this Response
     # @param [Symbol, Array<Symbol>] protocol
     #   none or several protocols this command is limited to
 
-    def initialize(name, mod_name, params = [], protocol = nil, &block)
-      @params   = params.map(&:to_sym)
+    def initialize(name, mod_name, trigger, protocol = nil, &block)
+      @trigger   = trigger
 
       super(name, mod_name, protocol, &block)
     end
@@ -40,32 +38,16 @@ module RIB
     # @param [String] source source of the message, e.g. the channel
     # @param [Bot] bot the bot which received the message
     #
-    # @return [String] response to send back
-    # @return [String, String] response and target to send back to
-    # @return [nil] if nothing should be sent back
+    # @return [String]            response to send back
+    # @return [(String, String)]  response and target to send back to
+    # @return [nil]               if nothing should be sent back
 
     def call(data, user, source, bot)
       super(msg:    data,
             user:   user,
             source: source,
-            params: map_params(data.split[1..-1]),
+            match:  data.match(@trigger),
             bot:    bot)
-    end
-
-
-    private
-
-    ##
-    # Map passed values to the params names of the command.
-    #
-    # @param [Array<String>] data passed params
-    #
-    # @return [Hash]
-
-    def map_params(data)
-      @params.each_with_index.inject({}) do |hash, (name, index)|
-        hash.merge(name => data[index])
-      end
     end
 
   end

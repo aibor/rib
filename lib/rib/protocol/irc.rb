@@ -38,24 +38,59 @@ module RIB
 
 
       def process_privmsg(msg)
-        return false unless command = find_command(msg)
+        return false unless action = get_action(msg)
 
-        @log.debug "found command: #{command}; data: #{msg.data}"
+        @log.debug "found action: #{action}; data: #{msg.data}"
 
-        case out = command.call(msg.data, msg.user, msg.source, self)
+        case out = get_reply(action, msg)
         when Array  then say *out 
         when String then say out, msg.source
         else true
         end
-      rescue
-        @log.error($!)
+      rescue => e
+        @log.error e
       end
 
 
-      def find_command(msg)
-        self.commands.find do |cmd|
-          msg.data[/\A#{tc}#{cmd.name}/]
+      def get_action(msg)
+        msg.data[0] == @config.tc ? find_handler(msg) : find_response(msg.data)
+      end
+
+
+      def get_reply(action, msg)
+        if [Command, Response].include? action.class
+          action.call(msg.data, msg.user, msg.source, self)
+        elsif action.respond_to?(:sample)
+          action.sample
+        else
+          action
         end
+      end
+
+
+      def find_handler(msg)
+        name = msg.data[/\A#{tc}(\S+)(?:\s+(\d+))?/, 1]
+        find_command(name) || find_reply(name, $2)
+      end
+
+
+      def find_command(name)
+        commands.find { |cmd| cmd.name == name.to_sym }
+      end
+
+
+      def find_reply(name, index = nil)
+        reply = @replies[name]
+        if index && reply.is_a?(Array) && reply.size > index.to_i
+          reply[index.to_i]
+        else
+          reply
+        end
+      end
+
+
+      def find_response(msg)
+        responses.find { |resp| msg.match(resp.trigger) }
       end
 
 

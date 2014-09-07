@@ -1,6 +1,10 @@
 # coding: utf-8
 
-require 'rib/bot.rb'
+require 'rib/bot'
+require 'rib/exceptions'
 
 module RIB
+
+  include Exceptions
+
 end

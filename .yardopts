@@ -1,0 +1,8 @@
+--protected
+--private
+--title RIB Documentation
+--output-dir doc
+--markup markdown
+--charset utf-8
+--hide-void-return
+lib/**/*.rb
