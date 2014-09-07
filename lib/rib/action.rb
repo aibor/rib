@@ -10,7 +10,7 @@ module RIB
     include Helpers
 
     ##
-    # Command name
+    # This instance's name. Should be unique for its Class.
     #
     # @return [Symbol]
 
@@ -18,7 +18,7 @@ module RIB
 
 
     ##
-    # Command description
+    # Short description of this instance for help texts.
     #
     # @return [String]
 
@@ -26,7 +26,10 @@ module RIB
 
 
     ##
-    # Action to perform if action was triggered.
+    # Action block to call, if instance is invoked. See {#call} for
+    # available methods and their values and also #call of the
+    # instance's Class documentation for available additional Class
+    # specific methods and values.
     #
     # @return [Proc]
 
@@ -34,7 +37,7 @@ module RIB
 
 
     ##
-    # Name of the Module this command belongs to.
+    # Name of the Module this instance belongs to.
     #
     # @return [Symbol]
 
@@ -42,7 +45,7 @@ module RIB
 
 
     ##
-    # Protocols this command is able to work with.
+    # Protocols this instance is able to work with.
     #
     # @return [Symbol]
 
@@ -50,6 +53,8 @@ module RIB
 
 
     ##
+    # Time of the last invocation of this instance's action block.
+    #
     # @return [Time]
 
     attr_reader :last_call
@@ -79,7 +84,7 @@ module RIB
     #
     # @param [#to_s] description
     #
-    # @return [void]
+    # @return [String]
 
     def desc(description)
       if description.respond_to? :to_s
@@ -93,8 +98,15 @@ module RIB
     private
 
     ##
-    # @param [Proc] block block to call on invocation of this Command
-    # @return [void]
+    # @yield a block that is called on invocation of this instance.
+    # @yieldreturn [String]            response to send back to the
+    #                                  source the message was received
+    #                                  from
+    # @yieldreturn [(String, String)]  response and target to send back
+    #                                  to
+    # @yieldreturn [nil]               if nothing should be sent back
+    #
+    # @return [Proc]
 
     def on_call(&block)
       @action = block
@@ -102,16 +114,19 @@ module RIB
 
 
     ##
-    # Call the block mapped to the action for this Command.
+    # Call the block mapped to the action attribute of this instance.
+    # The values passed as in the Hash will be available inside the
+    # {Action::Handler} as methods with the name of the keys.
     #
     # @param [Hash] hash values that should be available in the Handler
-    # @option hash [String] :msg    message that has been sent
+    # @option hash [String] :msg    message that has been received
     # @option hash [String] :user   user that sent the message
-    # @option hash [String] :source source of the message,
-    #   e.g. the channel
+    # @option hash [String] :source source of the message, e.g. the
+    #                               channel
     # @option hash [Bot] :bot       the bot which received the message
     #
-    # @return [String]            response to send back
+    # @return [String]            response to send back to the source
+    #                             the message was received from
     # @return [(String, String)]  response and target to send back to
     # @return [nil]               if nothing should be sent back
 

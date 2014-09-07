@@ -53,13 +53,20 @@ module RIB
 
 
       def get_action(msg)
-        msg.data[0] == @config.tc ? find_handler(msg) : find_response(msg.data)
+        if msg.data[0] == @config.tc
+          find_handler(msg)
+        else
+          find_response(msg.data)
+        end
       end
 
 
       def get_reply(action, msg)
         if [Command, Response].include? action.class
-          action.call(msg.data, msg.user, msg.source, self)
+          action.call(msg: msg.data,
+                      user: msg.user,
+                      source: msg.source,
+                      bot: self)
         elsif action.respond_to?(:sample)
           action.sample
         else
@@ -69,7 +76,7 @@ module RIB
 
 
       def find_handler(msg)
-        name = msg.data[/\A#{tc}(\S+)(?:\s+(\d+))?/, 1]
+        name = msg.data[/\A#{@config.tc}(\S+)(?:\s+(\d+))?/, 1]
         find_command(name) || find_reply(name, $2)
       end
 

@@ -5,10 +5,16 @@ require 'rib/action'
 
 module RIB
 
+  ##
+  # A Command is an object which handles a {Bot} command. If its name is
+  # called, its action block is called. If it returns a String it is
+  # sent back to the server.
+
   class Command < Action
 
     ##
-    # Command params
+    # Command params names. When a command is called, the params then
+    # can be called by name from within the block.
     #
     # @return [Array<Symbol>]
 
@@ -16,14 +22,9 @@ module RIB
 
 
     ##
-    # @param [#to_sym] name
-    #   name of the Command
-    # @param [Symbol] mod_name
-    #   name of the Module that Command belongs to
+    # (see Action#initialize)
     # @param [Array<Symbol>] params
     #   params that command can take
-    # @param [Symbol, Array<Symbol>] protocol
-    #   none or several protocols this command is limited to
 
     def initialize(name, mod_name, params = [], protocol = nil, &block)
       @params   = params.map(&:to_sym)
@@ -33,23 +34,14 @@ module RIB
 
 
     ##
-    # Call the block mapped to the :on_call action for this Command.
+    # (see Action#call)
     #
-    # @param [String] data message that has been sent
-    # @param [String] user user that sent the message
-    # @param [String] source source of the message, e.g. the channel
-    # @param [Bot] bot the bot which received the message
+    # This is also the case for the params defined for the {Command}
+    # instance.
     #
-    # @return [String] response to send back
-    # @return [String, String] response and target to send back to
-    # @return [nil] if nothing should be sent back
 
-    def call(data, user, source, bot)
-      super(msg:    data,
-            user:   user,
-            source: source,
-            params: map_params(data.split[1..-1]),
-            bot:    bot)
+    def call(hash)
+      super hash.merge(params: map_params(hash[:msg].split[1..-1]))
     end
 
 
@@ -58,13 +50,13 @@ module RIB
     ##
     # Map passed values to the params names of the command.
     #
-    # @param [Array<String>] data passed params
+    # @param [Array<String>] msg passed params
     #
     # @return [Hash]
 
-    def map_params(data)
+    def map_params(msg)
       @params.each_with_index.inject({}) do |hash, (name, index)|
-        hash.merge(name => data[index])
+        hash.merge(name => msg[index])
       end
     end
 

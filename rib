@@ -28,17 +28,13 @@ rib = RIB::Bot.new do |bot|
   # Authentification command for IRC or password for the XMPP user
   #bot.auth = 'Q@CServe.quakenet.org auth rubybot sEcReTpAsSwOrD'
   bot.tc = '!'                # Character which triggers the bot to do something
-  bot.password = 'rib'              # password for interacting with the bot 
   bot.qmsg = 'See you later, shitlords!'    # Message when bot leaves
-  bot.linkdump = './yaylinks'
-  bot.dumplink = 'https://www.linkdumpiorrrr.de'
-  bot.helplink = 'https://github.com/aibor/rib'
-  bot.title = true                  # Print HTML-title of a posted url if set.
   #bot.pony = false                 # Appreciate ponies
   bot.debug = true                # Debuging time
   bot.admin = 'Crapedia'
+  #bot.modules_dir = nil
   bot.modules = [:core, :link_title, :quotes, :search, :fun, :alarm]
-  bot.replies = 'replies.yml'
+  bot.replies_file = 'replies.yml'
 end
 
 rib.run

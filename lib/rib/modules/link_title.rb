@@ -5,6 +5,11 @@ require 'html/html'
 RIB::Module.new :link_title do
   desc 'HTML title parser for URLs'
 
+  on_load do |bot|
+    bot.config.register(:title, true) unless bot.config.has_attr?(:title)
+  end
+
+    
   helpers do
 
     def formattitle(title)

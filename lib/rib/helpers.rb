@@ -6,22 +6,35 @@ module RIB
 
     ##
     # Test if the instance is limited to specific protocols and if these
-    # include a specific one.
+    # include one or several specific ones. This is useful for checking
+    # if a {Module}, {Command} or {Response} are able to handle one
+    # or several protocols.
     #
-    # @param [Symbol] protocol
+    # @param [Symbol, Array<Symbol>] protocols  one or several protocol
+    #   names to check
     #
-    # @raise [TypeError] if protocol is not a Symbol
+    # @raise [TypeError] if protocols isn't a Symbol or Array of Symbols
     # @raise [NoMethodError] if self doesn't respond to #protocol
     #
-    # @return [Boolean]
+    # @return [Boolean] self is able to handle all of the passed
+    #   protocols?
 
-    def speaks?(protocol)
-      raise TypeError, 'not a Symbol' unless protocol.is_a? Symbol
+    def speaks?(protocols)
+      ensure_symbol_or_array_of_symbols protocols
 
       case self.protocol
-      when nil    then true
-      when Symbol then self.protocol == protocol
-      when Array  then self.protocol.include? protocol
+      when nil
+        true
+      when Symbol
+        case protocols
+        when Symbol then self.protocol == protocols
+        when Array  then protocols.include? self.protocol
+        end
+      when Array
+        case protocols
+        when Symbol then self.protocol.include? protocol
+        when Array  then (protocols - self.protocol).empty?
+        end
       else false
       end
     end
@@ -38,7 +51,7 @@ module RIB
     # @raise [TypeError] if array is not an Array
     # @raise [TypeError] if method is not a Symbol
     #
-    # @return [Boolean] Array includes an element with this value
+    # @return [Boolean] Array includes an element with this value?
 
     def array_has_value?(array, method, value)
       raise TypeError, 'not an Array' unless array.is_a? Array
@@ -54,7 +67,7 @@ module RIB
     ##
     # @param [Object] object  an object to check
     #
-    # @return [TrueClass]
+    # @return [TrueClass] object passed the check
     #
     # @raise [TypeError] if object isn't a Symbol or Array of Symbols
 

@@ -5,4 +5,6 @@
 --markup markdown
 --charset utf-8
 --hide-void-return
+--type-name-tag protocol:"Protocol specific behaviour"
+--tag protocol_only:"Only used by these protocols"
 lib/**/*.rb

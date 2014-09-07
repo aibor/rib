@@ -9,8 +9,8 @@ RIB::Module.new :core do
   command :quit do
     desc 'Quits the connection'
     on_call do
-      if user == bot.admin and Time.now - bot.starttime > 5
-        bot.connection.quit(bot.qmsg)
+      if user == bot.config.admin and Time.now - bot.starttime > 5
+        bot.connection.quit(bot.config.qmsg)
       end
     end
   end
@@ -21,7 +21,9 @@ RIB::Module.new :core do
     command :join, :channel do
       desc 'Join a new channel'
       on_call do
-        bot.connection.join_channel(params[:channel]) if user == bot.admin
+        if user == bot.config.admin
+          bot.connection.join_channel(params[:channel])
+        end
       end
     end
 
@@ -31,7 +33,7 @@ RIB::Module.new :core do
       on_call do
         channel = params[:channel]
         channel ||= msg.source
-        bot.connection.part(channel) if user == bot.admin
+        bot.connection.part(channel) if user == bot.config.admin
       end
     end
 
@@ -48,7 +50,7 @@ RIB::Module.new :core do
       time << diff.modulo(3600)/60
       time << diff.modulo(60)
 
-      case bot.protocol
+      case bot.config.protocol
       when :irc
         "Uptime: #{'%3dd %02d:%02d:%02d' % time}   " +
         "Started: #{bot.starttime.strftime("%d.%m.%Y %T %Z")}"
@@ -114,7 +116,7 @@ RIB::Module.new :core do
   command :reload, :what do
     desc 'Reload all Modules'
     on_call do
-      if user = bot.admin
+      if user = bot.config.admin
         case what
         when 'modules' then bot.reload_modules ? 'done' : 'Me failed q.q'
         when 'replies' then bot.reload_replies ? 'done' : 'Me failed q.q'
@@ -158,7 +160,7 @@ RIB::Module.new :core do
       if trigger
         if bot.replies.has_key?(trigger)
           if command
-            if user = bot.admin
+            if user = bot.config.admin
               case command
               when 'add' then add_reply(trigger, msg.split[3..-1])
               when 'del' then delete_reply(trigger, msg.split[3])

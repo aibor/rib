@@ -6,6 +6,85 @@ require 'rib/helpers'
 
 module RIB
 
+  ##
+  # A bot framework needs to have a simple way to add functionality to
+  # it. The Module class is inteded to provide a DSL for writing
+  # Modules for the bot. It handles definition of Commands, Responses
+  # and Helpers, either for all protocols or only for specific ones.
+  #
+  # ## Commands
+  #
+  # Commands are called by name with optional parameters, which can have
+  # names defined. Commands should have a short description which is
+  # used for help texts. They need to have a block that is called on
+  # invocation, otherwise there would be no point for a Command.
+  # See {Command#call} for available methods in {Action#on_call
+  # Command#on_call} blocks.
+  #
+  # ## Responses
+  #
+  # Responses are very similar to Commands, but are not called by name.
+  # They are triggered, if a message matches their trigger regular
+  # expression. Definition is almost the same as for Commands, but take
+  # a trigger regular expression instead of parameters. See below for
+  # an example.
+  # See {Response#call} for available methods in {Action#on_call 
+  # Response#on_call} blocks.
+  #
+  # @example HTML title fetching module
+  #   RIB::Module.new :title do
+  #     desc 'Handle automatic HTML title fetching for received URLs.'
+  #
+  #     helpers do
+  #       def fetch_title(url)
+  #         # code for fetching and parsing web pages for HTML titles
+  #       end
+  #     end
+  #
+  #
+  #     command :title, :on_off do
+  #       desc 'De-/Activate automatic HTML title fetching'
+  #       on_call do
+  #         case on_off
+  #         when on
+  #           bot.config.title = true
+  #           "HTML title fetching activated"
+  #         when off
+  #           bot.config.title = false
+  #           "HTML title fetching deactivated"
+  #         else
+  #           "#{user}, I don't understand you"
+  #         end
+  #       end
+  #     end
+  #
+  #
+  #     response :title, %r((http://\S+)) do
+  #       desc 'automatically fetch and send the HTML title'
+  #       on_call do
+  #         "Title: #{fetch_title(match[1])}"
+  #       end
+  #     end
+  #
+  #
+  #     protocol_only :irc do
+  #
+  #       command :formating do
+  #         desc 'A Command that only works in IRC, maybe due to' +
+  #           ' formatting special characters'
+  #         on_call do
+  #           # fancy stuff
+  #         end
+  #       end
+  #
+  #     end
+  #
+  #   end
+  #
+  # @see Action
+  # @see Command
+  # @see Response
+
   class Module
 
     include Helpers
@@ -15,7 +94,7 @@ module RIB
     class << self
 
       ##
-      # All loaded Modules.
+      # All Modules that have been loaded and can be used by {Bot}.
       #
       # @return [Array<Module>]
 
@@ -28,25 +107,25 @@ module RIB
       #
       # @param [String] path
       #
-      # @return [void]
+      # @return [Array<String>] found and loaded files
 
       def load_path(path)
         @loaded = []
 
-        Dir.glob(path).each {|f| load f}
+        Dir.glob(path).each {|f| load f if File.file?(f)}
       end
 
 
       ##
-      # Add a module to the 'loaded' attribute. If it already has a Module with
-      # that name, an exception is raised.
+      # Add a module to the 'loaded' attribute. If it already has a
+      # Module with that name, an exception is raised.
       #
       # @param [Module] mod
       #
-      # @raise [DuplicateModuleError] if there already is a Module with that
-      #   name
+      # @raise [DuplicateModuleError] if there already is a Module with
+      #   that name
       #
-      # @return [void]
+      # @return [Array<Module>] current value of lodaded attribute
 
       def add_to_loaded_modules(mod)
         @loaded ||= []
@@ -62,7 +141,8 @@ module RIB
 
 
     ##
-    # Name of the Module. Must be unique.
+    # Name of the Module. Must be unique. Otherwise an exception will
+    # be raised when tryiung to add it to the loaded attribute.
     #
     # @return [Symbol]
 
@@ -70,7 +150,8 @@ module RIB
 
 
     ##
-    # Short description of the purpose of this module.
+    # Short description of the purpose of this module. Will be used in
+    # help texts.
     #
     # @return [String]
 
@@ -78,7 +159,7 @@ module RIB
 
 
     ##
-    # If the module can only be used with specific protocols, these 
+    # If the module can only be used with specific protocols, these
     # can be set in this attribute. If it works with all protocols,
     # it is nil.
     #
@@ -87,25 +168,34 @@ module RIB
     # @return [nil]           if it works with all protocols
 
     attr_reader :protocol
-    
-    
+
+
     ##
-    # All commands this module provides.
+    # All commands this module provides. Names of the Commands are
+    # unique within a module. If a {Command} is tried to be added with a
+    # name that an already added {Command} has, an exception is raised.
     #
-    # @return [Array<Command>]
+    # @return [Array<Command>] all currently known Commands
 
     attr_reader :commands
 
-    
+
     ##
-    # All responses this module provides.
+    # All responses this module provides. Names of the Responses are
+    # unique within a module. If a {Response} is tried to be added with
+    # a name that an already added {Response} has, an exception is
+    # raised.
     #
-    # @return [Array<Response>]
+    # @return [Array<Response>] all currently known Responses.
 
     attr_reader :responses
 
 
     ##
+    # New Modules need to be instantiated with a name and a block.
+    # The block is evaluated in the instance namespace of the new
+    # Module object.
+    #
     # @example
     #   RIB::Module.new :my_module do
     #     desc 'so awesome'
@@ -119,6 +209,8 @@ module RIB
     #   end
     #
     # @param [#to_sym] name  the module name
+    # @param [Proc] block  definition of available commands, responses
+    #   and helpers
 
     def initialize(name, &block)
       @name       = name.to_sym.downcase
@@ -132,14 +224,26 @@ module RIB
     end
 
 
+    ##
+    # Calls the block set by {#on_load}. Should be called by a {Bot}
+    # instance passing itself as argument.
+    #
+    # @param [Bot] bot
+
+    def init(bot)
+      raise TypeError, 'not a Bot' unless bot.is_a? Bot
+      @on_load.call(bot) if @on_load
+    end
+
+
     private
 
     ##
-    # Set description for this module
+    # Set a description for this module
     #
     # @param [#to_s] description
     #
-    # @return [void]
+    # @return [String] the description that has been set
 
     def desc(description)
       if description.respond_to? :to_s
@@ -151,13 +255,30 @@ module RIB
 
 
     ##
-    # Define a command a bot should respond to. The name and the optional
-    # parameter names are passed as attributes. Further attributes are set
-    # in the mandatory block. This block is evaluated in the instance namespace
-    # of the freshly created {Command} object.
+    # Pass a block that will be invoked when the Module is loaded by a
+    # {Bot} instance. It is intended to {Configuration#register register
+    # new Configuration attributes} which can be dynamically changed
+    # in runtime by {Command Commands}.
     #
-    # @see Action#desc
-    # @see Action#on_call
+    # @yieldparam [Bot] bot {Bot} instance the module is loaded by
+    # @yieldreturn [void]
+    #
+    # @return [Proc]
+
+    def on_load(&block)
+      @on_load = block 
+    end
+
+
+    ##
+    # Define a command a bot should respond to. The name and the
+    # optional parameter names are passed as attributes. Further
+    # attributes are set in the mandatory block. This block is evaluated
+    # in the instance namespace of the new {Command} object. The on_call
+    # block will be evluated in an {Action::Handler} instance namespace
+    # and therefor has a very limited method list.
+    #
+    # @see Command#call for available methods in the on_call block
     #
     # @example
     #   command :tell, :who, :what do
@@ -167,19 +288,24 @@ module RIB
     #     end
     #   end
     #
-    # @param [#to_sym] name   name of the command
+    # @param [#to_sym]        name    name of the {Command}
     # @param [Array<#to_sym>] params  name of none or several params
-    #   for this command
-    # @param [Proc] block  block to call on instantiation of Command           
+    #                                 for this {Command}
+    # @param [Proc]           block   block to call on instantiation of
+    #                                 this {Command}
     #
     # @raise [TypeError] if name is not a Symbol
-    # @raise [DuplicateCommandError] if name is not unique for this Module
+    # @raise [DuplicateCommandError] if name is not unique for this
+    #                                Module
     #
-    # @return [Command]
+    # @return [Command] the created and added {Command}
 
     def command(name, *params, &block)
       raise TypeError, 'not a Symbol' unless name.is_a? Symbol
-      raise DuplicateCommandError if @commands.find { |c| c.name == name }
+
+      if array_has_value?(@commands, :name, name)
+        raise DuplicateCommandError
+      end
 
       cmd = Command.new name, @name, params, @protocol, &block
       @commands << cmd
@@ -188,11 +314,43 @@ module RIB
 
 
     ##
-    # @return [Response]
+    # Define a response a bot should send if a message matches its
+    # trigger. The name and the trigger regular expression are passed as
+    # attributes. Further attributes are set in the mandatory block.
+    # This block is evaluated in the instance namespace of the new
+    # {Response} object. The on_call block will be evluated in an
+    # {Action::Handler} instance namespace and therefor has a very
+    # limited method list.
+    #
+    # @see Response#call for available methods in the on_call block
+    #
+    # @example
+    #   response :marvin, /\bcrap\b/ do
+    #     desc 'This bot is rather depressed'
+    #     on_call do
+    #       "#{user}: oh yes, everything is crap!"
+    #     end
+    #   end
+    #
+    # @param [#to_sym]  name    name of the {Response}
+    # @param [Regexp]   trigger when this {Response} should be called
+    # @param [Proc]     block   block to call on instantiation of the
+    #                           {Response}
+    #
+    # @raise [TypeError] if name is not a Symbol
+    # @raise [TypeError] if name is not a Symbol
+    # @raise [DuplicateResponseError] if name is not unique for this
+    #                                 Module
+    #
+    # @return [Response] the created and added {Response}
 
     def response(name, trigger, &block)
       raise TypeError, 'not a Symbol' unless name.is_a? Symbol
       raise TypeError, 'not a Regexp' unless trigger.is_a? Regexp
+
+      if array_has_value?(@responses, :name, name)
+        raise DuplicateResponseError
+      end
 
       resp = Response.new name, @name, trigger, @protocol, &block
       @responses << resp
@@ -201,6 +359,12 @@ module RIB
 
 
     ##
+    # Add some Code like constants and method definition to the
+    # {Action::Handler} namespace. This will be available for all
+    # Modules' Commands and Responses.
+    #
+    # @param [Proc] block code that should be injected
+    #
     # @return [void]
 
     def helpers(&block)
@@ -209,19 +373,31 @@ module RIB
 
 
     ##
-    # Limit the availability for a commands to one or mor protocols.
-    # This only works, if the Module itself isn't limited to one
-    # specific protocol.
+    # Limit the availability for the Module, Commands and Responses to
+    # one or more protocols. When the Module itself is limited to
+    # specific protocols, all of the passed ones need to be included in
+    # the Module protocols.
+    #
+    # If no block is passed, the Module itself is limited to the passed
+    # protocols.  
     #
     # @param [Symbol, Array<Symbol>] protocol
+    #
+    # @yield limits the definitions within the block to protocol instead
+    #   of the whole Module
+    #
+    # @raise [ProtocolMismatch] if the Module protocols doesn't contain
+    #   one or more of the protocols passed
     #
     # @return [void]
 
     def protocol_only(protocol)
       ensure_symbol_or_array_of_symbols protocol
 
+      raise ProtocolMismatchError unless speaks?(protocol)
+
       before = @protocol
-      @protocol ||= protocol
+      @protocol = protocol
 
       if block_given?
         yield

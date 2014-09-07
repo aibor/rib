@@ -8,6 +8,11 @@ module RIB
   class Response < Action
 
     ##
+    # The regular expression that triggers invocation of this instance.
+    # Just like with any regular expression, it can have capture groups.
+    # These will be available in the {Action#action #on_call} block via
+    # the method `#match`.
+    #
     # @return [Regexp]
 
     attr_reader :trigger
@@ -31,23 +36,17 @@ module RIB
 
 
     ##
-    # Call the block mapped to the :on_call action for this Command.
+    # (see Action#call)
     #
-    # @param [String] data message that has been sent
-    # @param [String] user user that sent the message
-    # @param [String] source source of the message, e.g. the channel
-    # @param [Bot] bot the bot which received the message
+    # Also the match data, and therefore any capture groups from the
+    # trigger's regular expression, can be called via #match inside the
+    # block. This method returns a MatchData object.
     #
-    # @return [String]            response to send back
-    # @return [(String, String)]  response and target to send back to
-    # @return [nil]               if nothing should be sent back
+    # @see http://www.ruby-doc.org/core-2.1.2/MatchData.html MatchData
+    #   Documentation
 
-    def call(data, user, source, bot)
-      super(msg:    data,
-            user:   user,
-            source: source,
-            match:  data.match(@trigger),
-            bot:    bot)
+    def call(hash)
+      super(hash.merge(match: hash[:msg].match(@trigger)))
     end
 
   end
