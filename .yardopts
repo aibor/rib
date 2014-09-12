@@ -1,5 +1,6 @@
 --protected
 --private
+--no-private
 --title RIB Documentation
 --output-dir doc
 --markup markdown
@@ -7,4 +8,5 @@
 --hide-void-return
 --type-name-tag protocol:"Protocol specific behaviour"
 --tag protocol_only:"Only used by these protocols"
+--exclude 'lib\/rib\/modules\/.*\.rb'
 lib/**/*.rb

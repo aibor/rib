@@ -48,8 +48,8 @@ RIB knows three kinds of actions.
 Commands can be called with preceding them with the trigger character
 (tc), which defaults to `!`.
 
-  !list
-  !help list
+    !list
+    !help list
 
 
 #### Responses
@@ -95,8 +95,8 @@ for more examples.
 
 ## Contribution
 
-Bug reports, feature requests, rants and code moking are higly welcome.
-Just open a Issue/Ticket or contact me directly.
+Bug reports, feature requests, rants and code mocking are highly
+welcome. Just open a Issue/Ticket or contact me directly.
 
 
 ## Copyright
@@ -107,8 +107,8 @@ GPLv2 license can be found in `LICENSE`
 Copyright (C) 2011-2014    Tobias Böhm <tobias@aibor.de>
 
 This program is free software; you can redistribute it and/or modify
-it under the terms of the GNU General Public License as published by
-the Free Software Foundation; either version 2 of the License.
+it under the terms of the GNU General Public License version 2 as
+published by the Free Software Foundation.
 
 This program is distributed in the hope that it will be useful,
 but WITHOUT ANY WARRANTY; without even the implied warranty of

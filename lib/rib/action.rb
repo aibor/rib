@@ -98,7 +98,8 @@ module RIB
     private
 
     ##
-    # @yield a block that is called on invocation of this instance.
+    # @yield a block that is called on invocation of this {Action}
+    #
     # @yieldreturn [String]            response to send back to the
     #                                  source the message was received
     #                                  from
@@ -118,17 +119,19 @@ module RIB
     # The values passed as in the Hash will be available inside the
     # {Action::Handler} as methods with the name of the keys.
     #
-    # @param [Hash] hash values that should be available in the Handler
-    # @option hash [String] :msg    message that has been received
-    # @option hash [String] :user   user that sent the message
-    # @option hash [String] :source source of the message, e.g. the
+    # @!macro handler_tags
+    #   @param [Hash] hash values that should be available in the Handler
+    #   @option hash [String] :msg    message that has been received
+    #   @option hash [String] :user   user that sent the message
+    #   @option hash [String] :source source of the message, e.g. the
     #                               channel
-    # @option hash [Bot] :bot       the bot which received the message
+    #   @option hash [Bot] :bot       the bot instance that received the
+    #                               message
     #
-    # @return [String]            response to send back to the source
-    #                             the message was received from
-    # @return [(String, String)]  response and target to send back to
-    # @return [nil]               if nothing should be sent back
+    #   @return [String]            response to send back to the source
+    #                               the message was received from
+    #   @return [(String, String)]  response and target to send back to
+    #   @return [nil]               if nothing should be sent back
 
     def call(hash)
       # Shall not be called from within the command definition itself.

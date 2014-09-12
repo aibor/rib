@@ -5,16 +5,18 @@ module RIB
   class Action
 
     ##
-    # In order to run the Command blocks in an environment as clean as possible,
-    # it is called from within a class, which inherited from BasicObject.
-    # So the only method available are the one handled by {#method_missing},
-    # which allows access to the values of the Hash passed on instantiation.
+    # In order to run the iaction blocks in an environment as clean as
+    # possible, they are called from within a class, which inherited
+    # from BasicObject.
+    # So the only additonal methods available are the one handled by
+    # {#method_missing}, which allows access to the values of the Hash
+    # passed on instantiation.
 
     class Handler < BasicObject
 
       ##
-      # @param [Hash] hash  values which will be available to executed blocks
-      #   by {#exec}
+      # @param [Hash] hash  values which will be available to executed
+      #   blocks by {#exec}
 
       def initialize(hash = {})
         @hash = hash
@@ -25,6 +27,10 @@ module RIB
       ##
       # Run a block in our clean Handler environment and return its return
       # value.
+      #
+      # @param [Proc] action block to call in the instances namespace
+      #
+      # @return[Object] return value of the block
 
       def exec(&action)
         instance_eval &action

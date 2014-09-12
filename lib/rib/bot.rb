@@ -25,13 +25,13 @@ module RIB
   # @example Basic Bot configuration
   #   require 'rib'
   #
-  #   rib = RIB::Bot.new do
-  #     protocol  = :irc
-  #     server    = 'irc.quakenet.org'
-  #     port      = 6667
-  #     channel   = '#rib'
-  #     admin     = 'ribmaster'
-  #     modules   = [:core, :fun]
+  #   rib = RIB::Bot.new do |bot|
+  #     bot.protocol  = :irc
+  #     bot.server    = 'irc.quakenet.org'
+  #     bot.port      = 6667
+  #     bot.channel   = '#rib'
+  #     bot.admin     = 'ribmaster'
+  #     bot.modules   = [:core, :fun]
   #   end
   #
   #   rib.run
@@ -106,7 +106,6 @@ module RIB
     #
     # @see #configure
     #
-    # @yield
     # @yield [config]
 
     def initialize(&block)
@@ -450,7 +449,7 @@ module RIB
     # @example for a single pair
     #   reply_validation.call('moo', 'mooo000ooo')
     #
-    # @example eith Enumerator
+    # @example with Enumerator
     #   hash = {'one' => 'silence', 'two' => 3}
     #   hash.select &reply_validation #=> {'one' => 'silence'} 
     #
@@ -503,6 +502,163 @@ module RIB
         @connection.join_channel( chan )
         @log.info("Connected to #{@config.server} as #{@config.nick} in #{chan}")
       end
+    end
+
+
+    ##
+    # For each received message, check if it matches an Action the instance
+    # has loaded. If a matching {Command}, {Response} or Reply is found,
+    # process it.
+    #
+    # @!macro handler_tags
+    #   @param [Hash] msg values that should be available in the Handler
+    #   @option msg [String] :msg    message that has been received
+    #   @option msg [String] :user   user that sent the message
+    #   @option msg [String] :source source of the message, e.g. the
+    #                               channel
+    #   @option msg [Bot] :bot       the bot instance that received the
+    #                               message
+    #
+    #   @return [String]            response to send back to the source
+    #                               the message was received from
+    #   @return [(String, String)]  response and target to send back to
+    #   @return [nil]               if nothing should be sent back
+
+    def process_msg(msg)
+      return false unless action = get_action(msg[:msg])
+
+      @log.debug "found action: #{action}; data: #{msg[:msg]}"
+
+      get_reply(action, msg)
+    end
+
+
+    ##
+    # Analyze the message and if it looks like a {Command} or a Reply
+    # find it, else check if a {Response} trigger matches.
+    #
+    # @param [String] msg message that has been received
+    #
+    # @return [Command, Response] 
+    # @return [String, Array<String>] if a Reply is found
+    
+    def get_action(msg)
+      if msg[0] == @config.tc
+        find_handler(msg)
+      else
+        find_response(msg)
+      end
+    end
+
+
+    ##
+    # Evaluate the found action. For childs of {Action} that means to
+    # run their {Action#action `action`} block. For Replies this means
+    # to pick a random one from the found array or using them as is, if
+    # a single one was found and passed.
+    #
+    # @param [Command,Response,String,Array<String>] action
+    # @!macro handler_tags
+
+    def get_reply(action, msg)
+      if [Command, Response].include? action.class
+        action.call(msg.merge(bot: self))
+      elsif action.respond_to?(:sample)
+        action.sample
+      else
+        action
+      end
+    end
+
+
+    ##
+    # If the message starts with the defined trigger character, look if
+    # there is a {Command} or Reply witch a matching name.
+    #
+    # @param (see #get_action)
+    #
+    # @return [Command, String, Array<String>] if something is found
+    # @return [nil] if nothing is found
+
+    def find_handler(msg)
+      name = msg[/\A#{@config.tc}(\S+)(?:\s+(\d+))?/, 1]
+      find_command(name) || find_reply(name, $2)
+    end
+
+
+    ##
+    # Search the loaded {Command Commands} for one that has the
+    # requested name.
+    #
+    # @param [String] name name to search for
+    #
+    # @return[Command, nil] {Command} or nil if none found
+
+    def find_command(name)
+      commands.find { |cmd| cmd.name == name.to_sym }
+    end
+
+
+    ##
+    # Search the loaded Replies for one that has the requested name.
+    # If an `index` is passed, than return that element of the array.
+    # Otherwise pick a random one.
+    #
+    # @param [String] name name to search for
+    # @param [Fixnum] index index of element to return
+    #
+    # @return [String, Array<String>, nil] nil if none matches
+
+    def find_reply(name, index = nil)
+      reply = @replies[name]
+      if index && reply.is_a?(Array) && reply.size > index.to_i
+        reply[index.to_i]
+      else
+        reply
+      end
+    end
+
+
+    ##
+    # Search the loaded {Response Responses} for one that has a trigger
+    # that matches.
+    #
+    # @param [String] msg message that has been received
+    #
+    # @return [Response, nil] {Response} or nil if none found
+
+    def find_response(msg)
+      responses.find { |resp| msg.match(resp.trigger) }
+    end
+
+
+    ##
+    # Wrapper for {Protocol} specific {Connection} instantiation. This
+    # dummy method is replaced by the loaded {Protocol} module's method.
+
+    def init_connection
+      # dummy replaced by a {Protocol} module
+    end
+
+
+    ##
+    # Wrapper for {Protocol} specific message processing loop. This
+    # dummy method is replaced by the loaded {Protocol} module's method.
+
+    def run_loop(msg)
+      # dummy replaced by a {Protocol} module
+    end
+
+
+    ##
+    # Wrapper for {Protocol} specific message sending. This dummy method
+    # is replaced by the loaded {Protocol} module's method.
+    #
+    # @param [String] line message to send
+    # @param [String] target recipient of the message (user or channel)
+
+    def server_say(line, target)
+      # dummy replaced by a {Protocol} module
     end
 
   end # class Bot

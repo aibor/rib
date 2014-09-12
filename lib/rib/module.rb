@@ -35,18 +35,28 @@ module RIB
   #   RIB::Module.new :title do
   #     desc 'Handle automatic HTML title fetching for received URLs.'
   #
+  #     # add a new config attribute and pass it a value
+  #     on_load do |bot|
+  #       bot.config.register(:title, true)
+  #     end
+  #
+  #     # define some helper methods which can be used in on_call
+  #     # blocks
   #     helpers do
   #       def fetch_title(url)
   #         # code for fetching and parsing web pages for HTML titles
   #       end
   #     end
   #
-  #
+  #     # define a new command '!title' which takes one named argument
   #     command :title, :on_off do
   #       desc 'De-/Activate automatic HTML title fetching'
+  #       # what will be done when the command is called?
   #       on_call do
+  #         # call the argument by its name
   #         case on_off
   #         when on
+  #           # use your added config attribute
   #           bot.config.title = true
   #           "HTML title fetching activated"
   #         when off
@@ -58,15 +68,16 @@ module RIB
   #       end
   #     end
   #
-  #
+  #     # define a new response for messages that contain an URL
   #     response :title, %r((http://\S+)) do
   #       desc 'automatically fetch and send the HTML title'
   #       on_call do
+  #         # get the value of the regexp's MatchData with match
   #         "Title: #{fetch_title(match[1])}"
   #       end
   #     end
   #
-  #
+  #     # some stuff might only work with a particular protocol
   #     protocol_only :irc do
   #
   #       command :formating do
@@ -291,8 +302,9 @@ module RIB
     # @param [#to_sym]        name    name of the {Command}
     # @param [Array<#to_sym>] params  name of none or several params
     #                                 for this {Command}
-    # @param [Proc]           block   block to call on instantiation of
-    #                                 this {Command}
+    #
+    # @yield (see Action#on_call)
+    # @yieldreturn (see Action#on_call)
     #
     # @raise [TypeError] if name is not a Symbol
     # @raise [DuplicateCommandError] if name is not unique for this
@@ -334,8 +346,9 @@ module RIB
     #
     # @param [#to_sym]  name    name of the {Response}
     # @param [Regexp]   trigger when this {Response} should be called
-    # @param [Proc]     block   block to call on instantiation of the
-    #                           {Response}
+    #
+    # @yield (see Action#on_call)
+    # @yieldreturn (see Action#on_call)
     #
     # @raise [TypeError] if name is not a Symbol
     # @raise [TypeError] if name is not a Symbol
@@ -363,7 +376,7 @@ module RIB
     # {Action::Handler} namespace. This will be available for all
     # Modules' Commands and Responses.
     #
-    # @param [Proc] block code that should be injected
+    # @yield  block to call on in the {Action::Handler} namespace
     #
     # @return [void]
 

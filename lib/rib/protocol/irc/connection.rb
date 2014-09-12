@@ -119,7 +119,7 @@ module RIB
             raise ChannelJoinError, rpl.data
           end
 
-          @logging.add_channel_log @host, channel
+          @logging.add_channel_log(channel)
         end
 
 

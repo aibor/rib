@@ -26,8 +26,12 @@ module RIB
         end
 
 
-        def login(passwort)
+        def login
           @client.connect
+        end
+
+
+        def auth_nick(password)
           @client.auth password
           @client.send Jabber::Presence.new.set_type(':available')
         end
