@@ -450,8 +450,8 @@ module RIB
     def save_replies
       sanitize_replies
 
-      if File.writable?(@config.replies)
-        File.write(@config.replies, @replies.to_yaml)
+      if File.writable?(@config.replies_file)
+        File.write(@config.replies_file, @replies.to_yaml)
       else
         false
       end
