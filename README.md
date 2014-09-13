@@ -6,7 +6,7 @@ Simple IRC and XMPP bot framework written in Ruby
 
 ## Requirements
 
-* Ruby (tested with 1.9.2, 1.9.3, 2.0.0, 2.1.2)
+* Ruby (tested with 1.9.3, 2.0.0, 2.1.2)
 * xmpp4r gem for XMPP connections
 
 

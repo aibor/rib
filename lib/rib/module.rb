@@ -123,7 +123,8 @@ module RIB
       def load_path(path)
         @loaded = []
 
-        Dir.glob(path).each {|f| load f if File.file?(f)}
+        abs = File.expand_path(__FILE__ + '/..') + "/#{path}"
+        Dir.glob(abs).each {|f| load f if File.file?(f)}
       end
 
 

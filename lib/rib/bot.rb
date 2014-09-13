@@ -301,7 +301,7 @@ module RIB
     # @return[Bot]
 
     def load_protocol_module
-      protocol_path = "#{__dir__}/protocol/#{@config.protocol}.rb"
+      protocol_path = "rib/protocol/#{@config.protocol}"
 
       require protocol_path
 
@@ -385,7 +385,7 @@ module RIB
     #   protocol
 
     def load_modules
-      @modules = get_unique_modules_form_path("#{__dir__}/modules/*.rb")
+      @modules = get_unique_modules_form_path("modules/*.rb")
       @modules += get_unique_modules_form_path(@config.modules_dir)
       @modules.each { |mod| mod.init(self) }
     end
@@ -412,7 +412,7 @@ module RIB
     # @return [Hash{String => Array<String>] all loaded replies
 
     def sanitize_replies
-      @replies = @replies.sort.to_h.inject({}) do |hash, (key, value)|
+      @replies = @replies.sort.inject({}) do |hash, (key, value)|
         value.compact! if value.respond_to?(:compact)
         hash[key] = [value].flatten if value && !value.empty?
         hash
