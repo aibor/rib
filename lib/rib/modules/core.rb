@@ -158,22 +158,18 @@ RIB::Module.new :core do
 
     on_call do
       if trigger
-        if bot.replies.has_key?(trigger)
-          if command
-            if user = bot.config.admin
-              case command
-              when 'add' then add_reply(trigger, msg.split[3..-1])
-              when 'del' then delete_reply(trigger, msg.split[3])
-              else "What? Try '#{bot.config.tc}help reply'."
-              end
-            else
-              ['How about no?', 'Go away!', '°.°', '<_<', 'sryly?'].sample
+        if command
+          if user = bot.config.admin
+            case command
+            when 'add' then add_reply(trigger, msg.split[3..-1])
+            when 'del' then delete_reply(trigger, msg.split[3])
+            else "What? Try '#{bot.config.tc}help reply'."
             end
           else
-            bot.replies[trigger].map.with_index { |e, i| %(#{i}: "#{e}") } * ', '
+            ['How about no?', 'Go away!', '°.°', '<_<', 'sryly?'].sample
           end
         else
-          'What is this shit?'
+          bot.replies[trigger].map.with_index { |e, i| %(#{i}: "#{e}") } * ', '
         end
       else
         bot.replies.keys * ', '
