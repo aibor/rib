@@ -547,7 +547,7 @@ module RIB
     def process_msg(msg)
       return false unless action = get_action(msg[:msg])
 
-      @log.debug "found action: #{action}; data: #{msg[:msg]}"
+      @log.debug "found action: #{action}; message: #{msg[:msg]}"
 
       get_reply(action, msg)
     end

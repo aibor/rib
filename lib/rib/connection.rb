@@ -93,6 +93,14 @@ module RIB
     class Base
 
       ##
+      # Handler of all logging instances.
+      #
+      # @return [Logging]
+
+      attr_reader :logging
+
+
+      ##
       # @param [String] log_path path of the log file directory
       # @param [String] hostname hostname of the server to connect to
       # @param [Array] args protocol specific arguments

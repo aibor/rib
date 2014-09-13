@@ -65,7 +65,7 @@ RIB::Module.new :alarm do
     on_call do
       resp = case command
              when 'list' then list_alarms
-             when 'add' then  add_alarm(num_or_time, data.split[3..-1] * ' ')
+             when 'add' then  add_alarm(num_or_time, msg.split[3..-1] * ' ')
              when 'del' then  delete_alarm(num_or_time)
              else "What? Try '#{bot.config.tc}help alarm'."
              end

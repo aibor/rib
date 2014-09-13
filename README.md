@@ -32,11 +32,12 @@ configuration directive, as the bot won't do much without any modules
 registered.
 
 
-### Start
+### Quick Start
 
-Start the bot with
+Copy one of the exmaples in `examples/` into this directory, edit
+server, channel and admin and start it:
 
-    ruby rib
+    $ ruby rib-irc
 
 
 ### Interaction
@@ -104,7 +105,7 @@ welcome. Just open a Issue/Ticket or contact me directly.
 GPLv2 license can be found in `LICENSE`
 
 
-Copyright (C) 2011-2014    Tobias Böhm <tobias@aibor.de>
+Copyright (C) 2011-2014    Tobias Böhm <code@aibor.de>
 
 This program is free software; you can redistribute it and/or modify
 it under the terms of the GNU General Public License version 2 as
