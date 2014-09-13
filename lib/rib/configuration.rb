@@ -38,7 +38,7 @@ module RIB
       debug:         false,
       replies_file:  'data/replies.yml',
       modules_dir:   'modules',
-      modules:       [:core, :link_title, :search, :alarm, :fun, :quotes]
+      modules:       [:core, :link_title, :search, :alarm, :fun, :quotes, :seen]
     }
 
 
