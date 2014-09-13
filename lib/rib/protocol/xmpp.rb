@@ -30,7 +30,7 @@ module RIB
             next if (nick == @config.nick) or (Time.new - @starttime < 5)
             begin
               out = process_msg(msg: text, user: nick, source: room)
-              say([out].flatten[0], muc)
+              say([out].flatten[0], muc) if out
             rescue
               @log.error($!)
             end # begin

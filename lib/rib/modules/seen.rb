@@ -6,6 +6,7 @@ require 'date'
 RIB::Module.new :seen do
   desc 'Parse log files for information about a user.'
 
+  protocol_only :irc
 
   command :seen, :who do
     desc 'Show when users were seen last and what were their last words'
