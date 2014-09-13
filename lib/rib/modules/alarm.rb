@@ -1,7 +1,7 @@
 # coding: utf-8
 
 require 'time'
-require 'alarms'
+require 'alarm_bucket'
 
 RIB::Module.new :alarm do
   desc 'Manage alarms'

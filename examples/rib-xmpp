@@ -1,0 +1,26 @@
+#!/usr/bin/ruby
+# coding: utf-8
+#
+
+# Just copy this file over in the root dir and execute it directly or
+# with 'ruby rib-xmpp'.
+
+# add local library directory to $LOAD_PATH
+$LOAD_PATH << File.expand_path('../lib', __FILE__)
+
+require 'rib'
+
+rib = RIB::Bot.new do |bot|
+  
+  bot.protocol = :xmpp
+  bot.server = 'muc.xmpp.example.com'
+  bot.channel = 'bottest'
+  bot.jid = 'rib@xmpp.example.com'
+  bot.auth = 'aBcDeFgHiJkLmNoPqRsTuVwXyZ'
+  bot.qmsg = 'See you later, shitlords!'
+  bot.debug = false
+  bot.admin = 'ribmaster'
+
+end
+
+rib.run

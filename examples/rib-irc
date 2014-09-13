@@ -1,0 +1,24 @@
+#!/usr/bin/ruby
+# coding: utf-8
+
+# Just copy this file over in the root dir and execute it directly or
+# with 'ruby rib-irc'.
+
+# add local library directory to $LOAD_PATH
+$LOAD_PATH << File.expand_path('../lib', __FILE__)
+
+require 'rib'
+
+rib = RIB::Bot.new do |bot|
+  bot.protocol = :irc
+  bot.server = 'irc.quakenet.org'
+  bot.port = 6667
+  bot.channel = '#rib'
+  bot.qmsg = 'See you later, shitlords!'
+  bot.debug = false
+  bot.admin = 'ribmaster'
+  bot.modules = [:core, :link_title, :quotes, :search, :fun, :alarm]
+  bot.replies_file = 'replies.yml'
+end
+
+rib.run

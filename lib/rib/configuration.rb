@@ -36,7 +36,7 @@ module RIB
       qmsg:          'Bye!',
       logdir:        'log/',
       debug:         false,
-      replies_file:  'replies.yml',
+      replies_file:  'data/replies.yml',
       modules_dir:   'modules',
       modules:       [:core, :link_title, :search, :alarm, :fun, :quotes]
     }

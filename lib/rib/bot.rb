@@ -173,6 +173,8 @@ module RIB
 
         @starttime = Time.new
 
+        set_signals
+
         load_protocol_module
         load_modules
         load_replies
@@ -287,6 +289,24 @@ module RIB
 
 
     private
+
+    ##
+    # Catch some signals and close the connection gracefully, if it is
+    # established already
+    #
+    # @raise [RuntimeError]
+    #
+    # @return [void]
+
+    def set_signals
+      %w(INT TERM).each do |signal|
+        Signal.trap(signal) do
+          @log.warn"SIG#{signal} catched. Terminating."
+          self.connection.quit(self.config.qmsg) if self.connection
+        end
+      end
+    end
+
 
     ##
     # Depending on the protocol the Bot instance has configured, the
