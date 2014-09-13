@@ -21,16 +21,19 @@ RIB::Module.new :seen do
         out = "I haven't seen #{who}."
 
         File.readlines(logfile).reverse_each do |line|
-          if line =~ /^I,\s
-            \[(\S+).\d+\s\#\d+\]                  # get date and time
-            \s+INFO\s--\s:\s:#{who}!\S+\s         # check the nickname
-            PRIVMSG\s#{source.gsub(/#/,'\#')}\s   # check the source
-            :(.*)$                                # get the message
-            /x
+          begin
+            if line.encode!('UTF-8') =~ /^I,\s
+              \[(\S+).\d+\s\#\d+\]\s+INFO\s               # get  time
+              --\s:\s:((?i:#{who.gsub(/\|/,'\|')}))!\S+   # check nick
+              \sPRIVMSG\s#{source.gsub(/#/,'\#')}\s       # check source
+              :(.*)$                                      # get message
+              /xi
 
-            time = ::DateTime.parse($1).strftime('%F %R')
-            out = "#{who} was last seen at #{time}: #{$2}"
-            break
+              time = ::DateTime.parse($1).strftime('%F %R')
+              out = "#{$2} was last seen at #{time}: #{$3}"
+              break
+            end
+          rescue ArgumentError
           end
         end
 
