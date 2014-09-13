@@ -25,7 +25,7 @@ RIB::Module.new :quotes do
 
 
   protocol_only :irc do
-    
+
     helpers do
 
       def get_quote(subject, number = nil)

@@ -131,31 +131,31 @@ module RIB
       end
 
     end
-                                       
+
 
     ##
     # Raised if an Error is received during login.
 
     class LoginError            < StandardError; end
-                                       
+
 
     ##
     # Raised if Authentication fails.
 
     class AuthError             < StandardError; end
-                                       
+
 
     ##
     # Raised if a channel couldn't be joined.
 
     class ChannelJoinError      < StandardError; end
-                                       
+
 
     ##
     # Raised if a malformed message is received.
 
     class MalformedMessageError < StandardError; end
-                                       
+
 
     ##
     # Raised if an Error is received from the server.

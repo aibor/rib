@@ -43,7 +43,7 @@ module RIB
 
       def server_say(line, target)
         line.encode("utf-8")
-        target.say(line) if target.is_a? Jabber::MUC::SimpleMUCClient 
+        target.say(line) if target.is_a? Jabber::MUC::SimpleMUCClient
       end
 
     end

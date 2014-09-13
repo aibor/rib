@@ -9,12 +9,12 @@ RIB::Module.new :link_title do
     bot.config.register(:title, true) unless bot.config.has_attr?(:title)
   end
 
-    
+
   helpers do
 
     def formattitle(title)
       return nil if title.nil? || title.empty?
-      case title 
+      case title
       when /(\s+- YouTube\s*\Z)/ then
         "YouTube: #{title.sub(/#{$1}/, "")}"
       when /(\Axkcd:\s)/ then
@@ -39,7 +39,7 @@ RIB::Module.new :link_title do
 
       def formattitle(title)
         return nil if title.nil? || title.empty?
-        case title 
+        case title
         when /(\s+- YouTube\s*\Z)/ then
           "1,0You0,4Tube #{title.sub(/#{$1}/, "")}"
         when /(\Axkcd:\s)/ then

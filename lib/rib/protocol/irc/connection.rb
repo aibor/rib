@@ -26,9 +26,9 @@ module RIB
         DEFAULT_OPTIONS = {
           port: 6667,
           ssl:  {
-            use:      false, 
-            ca_path:  '/etc/ssl/certs', 
-            verify:   false, 
+            use:      false,
+            ca_path:  '/etc/ssl/certs',
+            verify:   false,
             cert:     false
           }
         }.freeze
@@ -98,7 +98,7 @@ module RIB
           mode "#{@nick} +x", " "
           "auth sent"
         rescue
-          $! 
+          $!
         end
 
 
@@ -200,7 +200,7 @@ module RIB
           if msg.nil? or msg.strip!.empty?
             msg
           elsif msg =~ /ERROR:.*/
-            raise ReceivedError, msg 
+            raise ReceivedError, msg
           elsif msg =~ /\APING (.*?)\z/
             send_message("PONG #{$1}")
             receive_message
@@ -227,7 +227,7 @@ module RIB
         # Check if a message is a IRC command that shouldn't be logged.
         #
         # @param  [String]  msg   string that should be checked
-        # @return [Boolean] true  if it should not be logged 
+        # @return [Boolean] true  if it should not be logged
 
         def non_log?(msg)
           !!(msg =~ /\A(?:#{NON_LOG_CMDS * '|'} [^#])/)

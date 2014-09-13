@@ -16,7 +16,7 @@ class AlarmBucket
   end
 
 
-  def add(date = Time.now, message, user, source, &block) 
+  def add(date = Time.now, message, user, source, &block)
     return false if full?
     @worker = worker
     @mutex.synchronize do
@@ -58,7 +58,7 @@ class AlarmBucket
 
 
   def map(&block)
-    self.to_a.map &block 
+    self.to_a.map &block
   end
 
 

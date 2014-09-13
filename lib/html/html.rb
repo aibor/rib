@@ -3,7 +3,7 @@ module HTML
   require 'uri'
   require 'html/entities.rb'
 
-  TitleRegex = /\<title\>\s*([^<]*)\s*\<\/title\>/mi 
+  TitleRegex = /\<title\>\s*([^<]*)\s*\<\/title\>/mi
 
   def self.unentit( string, enc )
     string.encode!("utf-8", enc)
@@ -50,7 +50,7 @@ module HTML
       raise 'Redirection Loop' if url == resp['location']
       fetch(resp['location'], limit - 1)
     when Net::HTTPSuccess
-      resp 
+      resp
     when Net::HTTPClientError
       resp
     else

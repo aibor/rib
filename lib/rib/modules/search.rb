@@ -14,10 +14,10 @@ RIB::Module.new :search do
       url = case site
             when :wiki
               "https://www.google.com/search?hl=de&btnI=1&q=site:wikipedia.org+" +
-                "#{key}&ie=utf-8&oe=utf-8&pws=0" 
+                "#{key}&ie=utf-8&oe=utf-8&pws=0"
             when :google
               "https://www.google.com/search?hl=de&btnI=1&q=" +
-                "#{key}&ie=utf-8&oe=utf-8&pws=0" 
+                "#{key}&ie=utf-8&oe=utf-8&pws=0"
             end
       10.times do |i|
         uri = ::URI.parse(::URI.escape(url))

@@ -28,7 +28,7 @@ module RIB
   # expression. Definition is almost the same as for Commands, but take
   # a trigger regular expression instead of parameters. See below for
   # an example.
-  # See {Response#call} for available methods in {Action#on_call 
+  # See {Response#call} for available methods in {Action#on_call
   # Response#on_call} blocks.
   #
   # @example HTML title fetching module
@@ -278,7 +278,7 @@ module RIB
     # @return [Proc]
 
     def on_load(&block)
-      @on_load = block 
+      @on_load = block
     end
 
 
@@ -393,7 +393,7 @@ module RIB
     # the Module protocols.
     #
     # If no block is passed, the Module itself is limited to the passed
-    # protocols.  
+    # protocols.
     #
     # @param [Symbol, Array<Symbol>] protocol
     #

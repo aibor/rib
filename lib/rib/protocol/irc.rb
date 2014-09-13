@@ -31,7 +31,7 @@ module RIB
       private
 
       def run_loop
-        while msg = @connection.receive 
+        while msg = @connection.receive
           @log.debug msg.to_a[0..-2].join(' ')
           process_privmsg(msg) if msg.command == "PRIVMSG"
         end
@@ -46,7 +46,7 @@ module RIB
         }
 
         case out = process_msg(args)
-        when Array  then say *out 
+        when Array  then say *out
         when String then say out, msg.source
         else true
         end

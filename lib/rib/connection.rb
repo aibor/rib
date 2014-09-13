@@ -17,7 +17,7 @@ module RIB
     # channel. The exact log file name is built based on the server
     # hostname and the respective channel name. All these files are
     # stored in the directory that is specified in {#path}.
-    # 
+    #
     # @attr [String] path
     #   Path to the log file directory.
     # @attr [String] hostname

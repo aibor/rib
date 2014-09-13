@@ -7,7 +7,7 @@ require 'xmpp4r/client'
 require 'xmpp4r/muc'
 
 module RIB
-  
+
   module Protocol
 
     module XMPP
@@ -70,7 +70,7 @@ module RIB
               end # if iq_queryns
             end # if iq_received.type
           end # @client.add_callback
-        end 
+        end
 
       end # class Connection
 

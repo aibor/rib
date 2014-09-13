@@ -209,7 +209,7 @@ module RIB
     def has_attr?(attr)
       instance_variables.any? { |e| e[/@#{attr}/] }
     end
-                                      
+
 
     ##
     # Check if this instance has a specific attribute set and also
@@ -255,7 +255,7 @@ module RIB
     # @param [#to_s] name   name of the attribute
     # @param [Object] value value to assign to the attribute
 
-    def set_attribute(name, value) 
+    def set_attribute(name, value)
       send("#{name}=", value)
     end
 

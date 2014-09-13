@@ -15,8 +15,8 @@ RIB::Module.new :alarm do
         "Currently no alarms active."
       else
         Alarms.map.with_index do |alarm,index|
-          "#{index}: " + 
-            ((alarm.time.strftime('%D') == ::Time.new.strftime('%D')) ? 
+          "#{index}: " +
+            ((alarm.time.strftime('%D') == ::Time.new.strftime('%D')) ?
              "heute" : alarm.time.strftime('%v')) +
             " #{alarm.time.strftime('%T')} by #{alarm.user} - #{alarm.msg}"
         end.join(' --!!-- ')

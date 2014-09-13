@@ -88,7 +88,7 @@ RIB::Module.new :core do
   helpers do
 
     def print_help(cmd)
-      params_string = cmd.params.map { |p| " <#{p.capitalize}>" }.join 
+      params_string = cmd.params.map { |p| " <#{p.capitalize}>" }.join
 
       "Module: #{cmd.module.capitalize}, Usage: #{bot.config.tc}#{cmd.name}" +
       "#{params_string} --- #{cmd.description}"

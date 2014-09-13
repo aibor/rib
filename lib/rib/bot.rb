@@ -46,7 +46,7 @@ module RIB
     # @return [Configuration]
 
     attr_accessor :config
-    
+
 
     ##
     # All loaded Modules for this Bot instance matching the bot's
@@ -55,7 +55,7 @@ module RIB
     # @return [Array<Module>]
 
     attr_reader :modules
-    
+
 
     ##
     # Replies currently available. These will be loaded on boot from
@@ -65,8 +65,8 @@ module RIB
     # @return [Hash{String => Array<String>}]
 
     attr_reader :replies
-    
-    
+
+
     ##
     # Boot time of the Bot instance. useful for calculating running
     # time.
@@ -74,10 +74,10 @@ module RIB
     # @return [Time]
 
     attr_reader :starttime
-    
-    
+
+
     ##
-    # Connection Class object of the Bot instance depending on the Bot 
+    # Connection Class object of the Bot instance depending on the Bot
     # instance's protocol. For example
     # {RIB::Protocol::IRC::Connection}.
     #
@@ -99,7 +99,7 @@ module RIB
     #
     # @example without block
     #   rib = RIB::Bot.new
-    #   
+    #
     #   rib.config.protocol  = :irc
     #   rib.config.server    = 'irc.freenode.net'
     #   # ...
@@ -297,7 +297,7 @@ module RIB
     #
     # @raise [LoadError] if file cannot be loaded
     # @raise [UnknownProtocolError] if no matching module is found
-    # 
+    #
     # @return[Bot]
 
     def load_protocol_module
@@ -431,7 +431,7 @@ module RIB
       sanitize_replies
 
       if File.writable?(@config.replies)
-        File.write(@config.replies, @replies.to_yaml)  
+        File.write(@config.replies, @replies.to_yaml)
       else
         false
       end
@@ -451,7 +451,7 @@ module RIB
     #
     # @example with Enumerator
     #   hash = {'one' => 'silence', 'two' => 3}
-    #   hash.select &reply_validation #=> {'one' => 'silence'} 
+    #   hash.select &reply_validation #=> {'one' => 'silence'}
     #
     # @return [Proc (lambda)] validation lambda function
 
@@ -539,9 +539,9 @@ module RIB
     #
     # @param [String] msg message that has been received
     #
-    # @return [Command, Response] 
+    # @return [Command, Response]
     # @return [String, Array<String>] if a Reply is found
-    
+
     def get_action(msg)
       if msg[0] == @config.tc
         find_handler(msg)
