@@ -60,7 +60,7 @@ RIB::Module.new :link_title do
   end
 
 
-  response :html_title, /(http[s]?:\/\/\S*)/  do
+  response :html_title, /(http[s]?:\/\/[-_.~a-zA-Z0-9\/:]+)/  do
     desc 'Get the HTML title if a URL is received'
     on_call do
       formattitle(HTML.title(match[1])) if bot.config.title
