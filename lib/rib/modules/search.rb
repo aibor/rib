@@ -35,7 +35,7 @@ RIB::Module.new :search do
       dns = ::Resolv::DNS.new(nameserver: nameserver)
       dns.getresource(host, ::Resolv::DNS::Resource::IN::TXT).strings
     rescue ::Resolv::ResolvError
-      "Can't resolv. Halp!"
+      ["Can't resolv. Halp!"]
     end
 
   end

@@ -110,8 +110,10 @@ module RIB
 
     def initialize(&block)
       @config = Configuration.new
+      @log = @connection = @commands = @responses = @startime = nil
+      @threads = []
 
-      configure &block if block_given?
+      configure(&block) if block_given?
     end
 
 
@@ -181,11 +183,13 @@ module RIB
         init_server
 
         run_loop
-      rescue => e
+
+        @threads.each(&:join)
+      rescue
         @log.fatal($!)
+        raise if @config.debug
       ensure
         @log.info("EXITING")
-        @log.close
       end
     end
 
@@ -338,7 +342,7 @@ module RIB
     # @return [String] path to log directory
 
     def log_path
-      file_path =  File.expand_path('..', $0)
+      file_path = @config.logdir[0] == '/' ? '' : File.expand_path('..', $0)
       file_path << @config.logdir.sub(/\A\/?(.*?)\/?\z/, '/\1/')
     end
 
@@ -376,25 +380,6 @@ module RIB
 
 
     ##
-    # Load {Module Modules} in `path` and return all {Module Modules}
-    # that can handle the Bot instance's protocol
-    #
-    # @param [String] path to load files from
-    #
-    # @return [Array<Module>] successfully loaded {Module Modules}
-
-    def get_unique_modules_form_path(path)
-      return [] if path.nil?
-
-      Module.load_path path
-
-      Module.loaded.select do |mod|
-        @config.modules.include?(mod.name) && mod.speaks?(@config.protocol)
-      end
-    end
-
-
-    ##
     # Load all modules in a file or a directory. At first the library's
     # {Module Modules} are loaded from `rib/modules/` directory and
     # then user modules - specified in {Configuration#modules_dir} -
@@ -405,8 +390,16 @@ module RIB
     #   protocol
 
     def load_modules
-      @modules = get_unique_modules_form_path("modules/*.rb")
-      @modules += get_unique_modules_form_path(@config.modules_dir)
+      Module.empty_loaded
+
+      Module.load_path(File.expand_path("../modules/*.rb", __FILE__))
+      Module.load_path(@config.modules_dir + '/*.rb')
+
+      @modules = Module.loaded.select do |mod|
+        @config.modules.include?(mod.name) && 
+          mod.speaks?(@config.protocol)
+      end
+
       @modules.each { |mod| mod.init(self) }
     end
 
@@ -420,7 +413,7 @@ module RIB
     def load_replies
       hash = YAML.load_file(@config.replies_file)
 
-      @replies = hash.select &reply_validation
+      @replies = hash.select(&reply_validation)
       sanitize_replies
     end
 
@@ -520,36 +513,68 @@ module RIB
     def join_channels
       @config.channel.split( /\s+|\s*,\s*/ ).each do |chan|
         @connection.join_channel( chan )
-        @log.info("Connected to #{@config.server} as #{@config.nick} in #{chan}")
+        @log.info \
+          "Connected to #{@config.server} as #{@config.nick} in #{chan}"
       end
     end
 
 
     ##
-    # For each received message, check if it matches an Action the instance
-    # has loaded. If a matching {Command}, {Response} or Reply is found,
-    # process it.
+    # Process a received message in background. To avoid resource
+    # hogging, only allow 32 threads and ensure dead threads are cleaned
+    # up.
     #
     # @!macro handler_tags
-    #   @param [Hash] msg values that should be available in the Handler
+    #   @param msg [Hash] values that should be available in the Handler
     #   @option msg [String] :msg    message that has been received
     #   @option msg [String] :user   user that sent the message
     #   @option msg [String] :source source of the message, e.g. the
     #                               channel
-    #   @option msg [Bot] :bot       the bot instance that received the
-    #                               message
     #
-    #   @return [String]            response to send back to the source
-    #                               the message was received from
-    #   @return [(String, String)]  response and target to send back to
-    #   @return [nil]               if nothing should be sent back
+    # @return [Boolean] if Thread could be created
 
-    def process_msg(msg)
-      return false unless action = get_action(msg[:msg])
+    def process_msg(msg, allow_target = false, default_target = nil)
+      if @threads.size < 32
+        @threads << Thread.new do
+          begin
+            get_action_and_reply(msg)
+          ensure
+            @threads.delete(Thread.current)
+          end
+        end
+        true
+      else
+        @log.warn "too many threads"
+        false
+      end
+    end
 
-      @log.debug "found action: #{action}; message: #{msg[:msg]}"
+    Thread.abort_on_exception = true
 
-      get_reply(action, msg)
+
+    ##
+    # For each received message, check if it matches an Action the instance
+    # has loaded. If a matching {Command}, {Response} or Reply is found,
+    # process it and respond.
+    #
+    # @!macro handler_tags
+    #
+    # @return [void]
+
+    def get_action_and_reply(msg)
+      if action = get_action(msg[:msg])
+
+        @log.debug "found action: #{action}; message: #{msg[:msg]}"
+
+        default_target ||= msg[:source]
+
+        case out = get_reply(action, msg)
+        when Array 
+          say(out[0], allow_target? ? say[1] : default_target)
+        when String
+          say(out, default_target)
+        end
+      end
     end
 
 
@@ -573,21 +598,32 @@ module RIB
 
     ##
     # Evaluate the found action. For childs of {Action} that means to
-    # run their {Action#action `action`} block. For Replies this means
-    # to pick a random one from the found array or using them as is, if
-    # a single one was found and passed.
+    # run their {Action#action `action`} block. In order to avoid
+    # endless processing, respect the {Action#timeout action's timeout}.
+    # For Replies this means to pick a random one from the found array
+    # or using them as is, if a single one was found and passed.
     #
     # @param [Command,Response,String,Array<String>] action
+    #
     # @!macro handler_tags
+    #
+    # @return [String]            response to send back to the source
+    #                             the message was received from
+    # @return [(String, String)]  response and target to send back to
+    # @return [nil]               if nothing should be sent back
 
     def get_reply(action, msg)
       if [Command, Response].include? action.class
-        action.call(msg.merge(bot: self))
+        timeout(action.timeout) { action.call(msg.merge(bot: self)) }
       elsif action.respond_to?(:sample)
         action.sample
       else
         action
       end
+    rescue Timeout::Error
+      @log.warn \
+        "message processing took too long for: '#{msg[:msg]}'."
+      'timed out while processing the action'
     end
 
 
@@ -681,6 +717,6 @@ module RIB
       # dummy replaced by a {Protocol} module
     end
 
-  end # class Bot
+    end # class Bot
 
-end # module RIB
+  end # module RIB

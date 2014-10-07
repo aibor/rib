@@ -39,25 +39,17 @@ module RIB
 
 
       def process_privmsg(msg)
-        args = {
-          msg: msg.data,
-          user: msg.user,
-          source: msg.source
-        }
-
-        case out = process_msg(args)
-        when Array  then say *out
-        when String then say out, msg.source
-        else true
-        end
+        args = {msg: msg.data, user: msg.user, source: msg.source}
+        process_msg(args, true)
       rescue => e
         @log.error e
+        raise if @config.debug
       end
 
 
       def server_say(line, target)
         @log.debug "server_say: '#{line}' to '#{target}'"
-        @connection.privmsg target, ":" + line
+        @connection.privmsg(target, ":" + line)
       end
 
     end

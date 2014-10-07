@@ -1,5 +1,4 @@
-source "https://rubygems.org"
+source 'https://rubygems.org'
 
-gem 'xmpp4r'
-gem 'rspec'
-gem 'yard'
+# Specify your gem's dependencies in rib.gemspec
+gemspec

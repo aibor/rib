@@ -1,7 +1,7 @@
 RIB - Ruby IRC (and XMPP) Bot
 =============================
 
-Simple IRC and XMPP bot framework written in Ruby
+Simple IRC and XMPP bot framework written in Ruby.
 
 
 ## Requirements

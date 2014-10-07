@@ -16,24 +16,11 @@ module RIB
 
       ##
       # @param [Hash] hash  values which will be available to executed
-      #   blocks by {#exec}
+      #   blocks
 
       def initialize(hash = {})
         @hash = hash
         @params = hash[:params] || {}
-      end
-
-
-      ##
-      # Run a block in our clean Handler environment and return its return
-      # value.
-      #
-      # @param [Proc] action block to call in the instances namespace
-      #
-      # @return[Object] return value of the block
-
-      def exec(&action)
-        instance_eval &action
       end
 
 

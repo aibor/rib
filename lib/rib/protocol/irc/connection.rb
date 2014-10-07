@@ -67,14 +67,14 @@ module RIB
 
           ssl_context.ca_path = options[:ca_path]
 
-          const = options[:verify] ? VERIFY_PEER : VERIFY_NONE
+          const = options[:verify] ? 'VERIFY_PEER' : 'VERIFY_NONE'
           ssl_context.verify_mode = OpenSSL::SSL.const_get(const)
 
           ssl_socket = OpenSSL::SSL::SSLSocket.new(socket, ssl_context)
           ssl_socket.sync = true
           ssl_socket.connect
 
-          return ssl_socket
+          ssl_socket
         end
 
 
@@ -86,19 +86,17 @@ module RIB
             c.command =~ /\A(?:43[1236]|46[12]|001)\Z/
           end
 
-          raise LoginError, rpl.data unless rpl and rpl.command == "001"
+          raise RIB::LoginError, rpl unless rpl and rpl.command == "001"
         end
 
 
         def auth_nick(authdata)
-          raise AuthError.new(authdata) unless authdata
+          raise RIB::AuthError.new(authdata) unless authdata
 
           authdata = authdata.split(/\s+/)
           privmsg authdata.shift, authdata * ' '
           mode "#{@nick} +x", " "
           "auth sent"
-        rescue
-          $!
         end
 
 
@@ -116,7 +114,7 @@ module RIB
           end
 
           unless rpl and rpl.command =~ /\A3(?:32|53)\Z/
-            raise ChannelJoinError, rpl.data
+            raise RIB::ChannelJoinError, rpl.data
           end
 
           @logging.add_channel_log(channel)
@@ -144,11 +142,15 @@ module RIB
             ((?:\s[^:]\S+)*)            # params, minus last
             (?:\s:?(.*))?               # data
             \Z /x
-            raise MalformedMessageError, msg
+            raise RIB::MalformedMessageError, msg
           end
 
           params = $4.split + [$5].compact
-          source = params[0][0] == '#' ? params[0] : $2
+          source = if params.empty? or params[0].empty?
+                     nil
+                   else
+                     params[0][0] == '#' ? params[0] : $2
+                   end
 
           Message.new($1, $2, source, $3, params, params.last)
         end
@@ -197,10 +199,14 @@ module RIB
         def receive_message
           msg = @irc_server.gets
 
-          if msg.nil? or msg.strip!.empty?
+          return nil if msg.nil?
+
+          msg.strip!
+          
+          if msg.empty?
             msg
           elsif msg =~ /ERROR:.*/
-            raise ReceivedError, msg
+            raise RIB::ReceivedError, msg
           elsif msg =~ /\APING (.*?)\z/
             send_message("PONG #{$1}")
             receive_message

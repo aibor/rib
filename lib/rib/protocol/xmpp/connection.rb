@@ -14,7 +14,7 @@ module RIB
 
       class Connection < RIB::Connection::Base
 
-        attr_accessor :muc
+        attr_reader :muc
 
 
         def initialize(log_path, server, nick, jid)
@@ -67,9 +67,9 @@ module RIB
                 iq.from = iq_received.to
                 iq.to = iq_received.from
                 @client.send iq
-              end # if iq_queryns
-            end # if iq_received.type
-          end # @client.add_callback
+              end
+            end
+          end
         end
 
       end # class Connection

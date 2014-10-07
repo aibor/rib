@@ -3,6 +3,7 @@
 require 'rib/command'
 require 'rib/response'
 require 'rib/helpers'
+require 'rib/exceptions'
 
 module RIB
 
@@ -113,17 +114,27 @@ module RIB
 
 
       ##
-      # Load a file or  directory. If they contain RIB::Modules, they are
-      # instantiated and added to the 'loaded' attribute.
+      # Empty {.loaded} Array.
+      #
+      # @return [Array]
+
+      def empty_loaded
+        @loaded = []
+      end
+
+
+      ##
+      # Load a file or  directory. If they contain RIB::Modules, they
+      # are instantiated and added to the 'loaded' attribute.
       #
       # @param [String] path
       #
       # @return [Array<String>] found and loaded files
 
       def load_path(path)
-        @loaded = []
+        @loaded ||= []
 
-        abs = File.expand_path(__FILE__ + '/..') + "/#{path}"
+        abs = path[0] == '/' ? path : File.expand_path("../#{path}", $0)
         Dir.glob(abs).each {|f| load f if File.file?(f)}
       end
 
@@ -137,15 +148,37 @@ module RIB
       # @raise [DuplicateModuleError] if there already is a Module with
       #   that name
       #
-      # @return [Array<Module>] current value of lodaded attribute
+      # @return [Array<Module>] current value of loaded attribute
 
       def add_to_loaded_modules(mod)
         @loaded ||= []
 
         if array_has_value?(@loaded, :name, mod.name)
-          raise DuplicateModuleError
+          raise RIB::DuplicateModuleError.new(mod.name)
         else
           @loaded << mod
+        end
+      end
+
+
+      ##
+      # @return [Array<String>] list of {Action#name command names} of
+      #                         loaded {Module Modules}
+
+      def loaded_commands
+        @loaded.inject([]) do |array, modul|
+          array += modul.commands.map(&:name)
+        end
+      end
+
+
+      ##
+      # @return [Array<String>] list of {Action#name response names} of
+      #                         loaded {Module Modules}
+
+      def loaded_responses
+        @loaded.inject([]) do |array, modul|
+          array += modul.responses.map(&:name)
         end
       end
 
@@ -225,11 +258,14 @@ module RIB
     #   and helpers
 
     def initialize(name, &block)
-      @name       = name.to_sym.downcase
-      @commands   = []
-      @responses  = []
+      @name         = name.to_sym.downcase
+      @description  = nil
+      @protocol     = nil
+      @on_load      = nil
+      @commands     = []
+      @responses    = []
 
-      instance_eval &block if self.class.add_to_loaded_modules self
+      instance_eval(&block) if self.class.add_to_loaded_modules self
 
       @commands.freeze
       @responses.freeze
@@ -316,8 +352,8 @@ module RIB
     def command(name, *params, &block)
       raise TypeError, 'not a Symbol' unless name.is_a? Symbol
 
-      if array_has_value?(@commands, :name, name)
-        raise DuplicateCommandError
+      if self.class.loaded_commands.include?(name)
+        raise RIB::DuplicateCommandError.new(name)
       end
 
       cmd = Command.new name, @name, params, @protocol, &block
@@ -362,8 +398,8 @@ module RIB
       raise TypeError, 'not a Symbol' unless name.is_a? Symbol
       raise TypeError, 'not a Regexp' unless trigger.is_a? Regexp
 
-      if array_has_value?(@responses, :name, name)
-        raise DuplicateResponseError
+      if self.class.loaded_responses.include?(name)
+        raise RIB::DuplicateResponseError.new(name)
       end
 
       resp = Response.new name, @name, trigger, @protocol, &block
@@ -382,7 +418,7 @@ module RIB
     # @return [void]
 
     def helpers(&block)
-      Action::Handler.class_eval &block
+      Action::Handler.class_eval(&block)
     end
 
 

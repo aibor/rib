@@ -58,7 +58,7 @@ class AlarmBucket
 
 
   def map(&block)
-    self.to_a.map &block
+    self.to_a.map(&block)
   end
 
 

@@ -9,6 +9,22 @@ module RIB
 
     include Helpers
 
+
+    ##
+    # Default Timeout for block execution in seconds.
+
+    DEFAULT_TIMEOUT = 5
+
+
+    class << self
+
+      attr_accessor :timeout
+
+
+    end
+
+      self.timeout = DEFAULT_TIMEOUT
+
     ##
     # This instance's name. Should be unique for its Class.
     #
@@ -61,6 +77,15 @@ module RIB
 
 
     ##
+    # Processing time in seconds allowed for execution of the action
+    # block.
+    #
+    # @return [Fixnum]
+
+    attr_reader :timeout
+
+
+    ##
     # @param [#to_sym] name
     #   name of the Command
     # @param [Symbol] mod_name
@@ -72,8 +97,9 @@ module RIB
       @name     = name.to_sym.downcase
       @module   = mod_name
       @protocol = protocol
+      @timeout  = self.class.timeout
 
-      instance_eval &block
+      instance_eval(&block)
 
       @init = true
     end
@@ -98,6 +124,7 @@ module RIB
     private
 
     ##
+    # @param timeout [Fixnum] timeout for exectuion of the block
     # @yield a block that is called on invocation of this {Action}
     #
     # @yieldreturn [String]            response to send back to the
@@ -109,7 +136,8 @@ module RIB
     #
     # @return [Proc]
 
-    def on_call(&block)
+    def on_call(timeout = Action.timeout, &block)
+      @timeout = timeout if timeout.is_a?(Fixnum)
       @action = block
     end
 
@@ -140,7 +168,7 @@ module RIB
       @last_call = Time.now
 
       handler = Handler.new(hash)
-      handler.exec &@action
+      handler.instance_eval(&@action)
     end
 
   end

@@ -164,4 +164,6 @@ module RIB
 
   end
 
+  include Exceptions
+
 end

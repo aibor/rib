@@ -18,7 +18,6 @@ module RIB
 
       private
 
-
       ##
       # @todo what a mess
 
@@ -27,10 +26,11 @@ module RIB
 
         @connection.muc.each do |room,muc|
           muc.on_message do |time, nick, text|
-            next if (nick == @config.nick) or (Time.new - @starttime < 5)
+            next if (nick == @config.nick) || (Time.new - @starttime < 5)
+
             begin
-              out = process_msg(msg: text, user: nick, source: room)
-              say([out].flatten[0], muc) if out
+              msg = {msg: text, user: nick, source: room}
+              process_msg(msg, false, muc)
             rescue
               @log.error($!)
             end # begin

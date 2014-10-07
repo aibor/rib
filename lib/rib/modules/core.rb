@@ -116,7 +116,7 @@ RIB::Module.new :core do
   command :reload, :what do
     desc 'Reload all Modules'
     on_call do
-      if user = bot.config.admin
+      if user == bot.config.admin
         case what
         when 'modules' then bot.reload_modules ? 'done' : 'Me failed q.q'
         when 'replies' then bot.reload_replies ? 'done' : 'Me failed q.q'
@@ -159,7 +159,7 @@ RIB::Module.new :core do
     on_call do
       if trigger
         if command
-          if user = bot.config.admin
+          if user == bot.config.admin
             case command
             when 'add' then add_reply(trigger, msg.split[3..-1])
             when 'del' then delete_reply(trigger, msg.split[3])

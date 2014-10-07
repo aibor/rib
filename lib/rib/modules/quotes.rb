@@ -5,7 +5,7 @@ RIB::Module.new :quotes do
 
   quotes = {}
   %w(bofh brba dexter).each do |subject|
-    quotefile = File.absolute_path($0 + "/../data/#{subject}quotes")
+    quotefile = File.absolute_path("../data/#{subject}quotes", __FILE__)
     quotes[subject] = File.readlines(quotefile).each {|l| l.strip!}
   end
 
