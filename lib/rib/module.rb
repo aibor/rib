@@ -264,6 +264,7 @@ module RIB
       @on_load      = nil
       @commands     = []
       @responses    = []
+      @helpers      = {}
 
       instance_eval(&block) if self.class.add_to_loaded_modules self
 
@@ -274,13 +275,20 @@ module RIB
 
     ##
     # Calls the block set by {#on_load}. Should be called by a {Bot}
-    # instance passing itself as argument.
+    # instance passing itself as argument. Also calls the helper blocks
+    # for the bot's protocol.
     #
     # @param [Bot] bot
 
     def init(bot)
       raise TypeError, 'not a Bot' unless bot.is_a? Bot
+
       @on_load.call(bot) if @on_load
+
+      helpers = [@helpers[nil]] + [@helpers[bot.config.protocol]]
+      helpers.flatten.compact.each do |block|
+        Action::Handler.class_eval(&block)
+      end
     end
 
 
@@ -411,14 +419,16 @@ module RIB
     ##
     # Add some Code like constants and method definition to the
     # {Action::Handler} namespace. This will be available for all
-    # Modules' Commands and Responses.
+    # Modules' Commands and Responses. Will be set on {#init} of
+    # the module.
     #
     # @yield  block to call on in the {Action::Handler} namespace
     #
     # @return [void]
 
     def helpers(&block)
-      Action::Handler.class_eval(&block)
+      @helpers[@protocol] ||= []
+      @helpers[@protocol] << block
     end
 
 
