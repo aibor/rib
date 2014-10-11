@@ -258,6 +258,7 @@ module RIB
     #   and helpers
 
     def initialize(name, &block)
+      @init         = false
       @name         = name.to_sym.downcase
       @description  = nil
       @protocol     = nil
@@ -265,11 +266,13 @@ module RIB
       @commands     = []
       @responses    = []
       @helpers      = {}
+      @on_load      = {}
 
       instance_eval(&block) if self.class.add_to_loaded_modules self
 
       @commands.freeze
       @responses.freeze
+      @init = true
     end
 
 
@@ -281,14 +284,16 @@ module RIB
     # @param [Bot] bot
 
     def init(bot)
+      return false unless @init
       raise TypeError, 'not a Bot' unless bot.is_a? Bot
 
-      @on_load.call(bot) if @on_load
+      relevant = [nil, bot.config.protocol]
 
-      helpers = [@helpers[nil]] + [@helpers[bot.config.protocol]]
-      helpers.flatten.compact.each do |block|
-        Action::Handler.class_eval(&block)
-      end
+      on_load = @on_load.values_at(*relevant).flatten.compact
+      on_load.each { |block| block.call(bot) }
+
+      helpers = @helpers.values_at(*relevant).flatten.compact
+      helpers.each { |block| Action::Handler.class_eval(&block) }
     end
 
 
@@ -322,7 +327,10 @@ module RIB
     # @return [Proc]
 
     def on_load(&block)
-      @on_load = block
+      [@protocols].flatten.each do |protocol|
+        @on_load[protocol] ||= []
+        @on_load[protocol] << block
+      end
     end
 
 
@@ -427,8 +435,10 @@ module RIB
     # @return [void]
 
     def helpers(&block)
-      @helpers[@protocol] ||= []
-      @helpers[@protocol] << block
+      [@protocols].flatten.each do |protocol|
+        @helpers[protocol] ||= []
+        @helpers[protocol] << block
+      end
     end
 
 
@@ -466,4 +476,6 @@ module RIB
     end
 
   end
+
 end
+
