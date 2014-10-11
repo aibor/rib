@@ -208,6 +208,7 @@ module RIB
       return if text.nil?
       text.split('\n').each do |line|
         next if line.empty?
+        @log.debug "say '#{line}' to '#{target}'"
         server_say line, target
       end
     end
@@ -537,7 +538,7 @@ module RIB
       if @threads.size < 32
         @threads << Thread.new do
           begin
-            get_action_and_reply(msg)
+            get_action_and_reply(msg, default_target)
           ensure
             @threads.delete(Thread.current)
           end
@@ -561,7 +562,7 @@ module RIB
     #
     # @return [void]
 
-    def get_action_and_reply(msg)
+    def get_action_and_reply(msg, default_target = nil)
       if action = get_action(msg[:msg])
 
         @log.debug "found action: #{action}; message: #{msg[:msg]}"
