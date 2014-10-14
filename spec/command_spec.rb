@@ -4,9 +4,9 @@ require 'rib/command'
 
 RSpec.describe RIB::Command do
   let(:command) do
-    RIB::Command.new(:test, :modul, [:test_param], :irc) do
+    RIB::Command.new(:test, modul, [], :irc) do
       desc 'test command'
-      on_call { "invoked with arg: '#{test_param}'" }
+      on_call { |test_param| "invoked with arg: '#{test_param}'" }
     end
   end
 
@@ -15,6 +15,6 @@ RSpec.describe RIB::Command do
   end
 
   it 'sets params' do
-    expect(command.params).to eq([:test_param])
+    expect(command.params).to eq([])
   end
 end

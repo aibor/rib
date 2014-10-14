@@ -1,6 +1,8 @@
 # coding: utf-8
 
 RSpec.shared_examples 'action' do |name, desc|
+  before { RIB::Module.empty_loaded }
+  let(:modul) { RIB::Module.new(:action_test) {} }
   it 'sets name' do
     expect(action.name).to eq(name)
   end
@@ -9,8 +11,8 @@ RSpec.shared_examples 'action' do |name, desc|
     expect(action.description).to eq(desc)
   end
 
-  it 'sets module name' do
-    expect(action.module).to eq(:modul)
+  it 'sets module' do
+    expect(action.module).to eq(modul)
   end
 
   it 'sets action' do

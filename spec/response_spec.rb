@@ -4,7 +4,7 @@ require 'rib/response'
 
 RSpec.describe RIB::Response do
   let(:response) do
-    RIB::Response.new(:test, :modul, /^test (\w+)$/, :irc) do
+    RIB::Response.new(:test, modul, /^test (\w+)$/, :irc) do
       desc 'test response'
       on_call { "invoked with arg: '#{match[1]}'" }
     end
