@@ -37,21 +37,21 @@ RIB::Module.new :quotes do
   end
 
 
-  command :brba, :number do
+  command :brba do
     desc 'Print a quote from Breaking Bad'
-    on_call { get_quote('brba', number) }
+    on_call { |number| get_quote('brba', number) }
   end
 
 
-  command :dexter, :number do
+  command :dexter do
     desc 'Print a quote from Dexter'
-    on_call { get_quote('dexter', number) }
+    on_call { |number| get_quote('dexter', number) }
   end
 
 
-  command :bofh, :number do
+  command :bofh do
     desc 'Print a BOFH excuse'
-    on_call { get_quote('bofh', number) }
+    on_call { |number| get_quote('bofh', number) }
   end
 
 end

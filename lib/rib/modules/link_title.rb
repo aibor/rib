@@ -15,8 +15,8 @@ RIB::Module.new :link_title do
     def formattitle(title)
       return nil if title.nil? || title.empty?
       case title
-      when /(\s+- YouTube\s*\Z)/ then
-        "YouTube: #{title.sub(/#{$1}/, "")}"
+      #when /(\s+- YouTube\s*\Z)/ then
+      #  "YouTube: #{title.sub(/#{$1}/, "")}"
       when /(\Axkcd:\s)/ then
         "xkcd: #{title.sub(/#{$1}/, "")}"
       when /(\son\sdeviantART\Z)/ then
@@ -60,22 +60,25 @@ RIB::Module.new :link_title do
   end
 
 
-  response :html_title, /(http[s]?:\/\/[-_.~a-zA-Z0-9\/:]+)/  do
+  response :html_title, /(http[s]?:\/\/[-?&+%=_.~a-zA-Z0-9\/:]+)/  do
     desc 'Get the HTML title if a URL is received'
     on_call do
+      return unless bot.config.title
       begin
-        out = HTML.title(match[1])
+        ::Kernel.puts "match: #{match[1]}"
+        title = HTML.title(match[1])
+        ::Kernel.puts "out: #{title}"
+        formattitle(title)
       rescue RuntimeError => e
-        out = e.message
+        e.message
       end
-      formattitle(out) if bot.config.title
     end
   end
 
 
-  command :title, :on_off do
+  command :title do
     desc 'de-/activate HTML title parsing'
-    on_call do
+    on_call do |on_off|
       if %w(on true 1).include? on_off
         bot.config.title = true
         "will try to parse HTML titles"

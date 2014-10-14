@@ -59,10 +59,10 @@ RIB::Module.new :alarm do
   end
 
 
-  command :alarm, :command, :num_or_time do
+  command :alarm do
     desc 'Get, Set or Delete Alarms.' +
       ' Possible commands: list, del <[0-9]>, add <datetime> <msg>'
-    on_call do
+    on_call do |command, num_or_time|
       resp = case command
              when 'list' then list_alarms
              when 'add' then  add_alarm(num_or_time, msg.split[3..-1] * ' ')

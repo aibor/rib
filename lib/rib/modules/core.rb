@@ -18,20 +18,19 @@ RIB::Module.new :core do
 
   protocol_only :irc do
 
-    command :join, :channel do
+    command :join do
       desc 'Join a new channel'
-      on_call do
+      on_call do |channel|
         if user == bot.config.admin
-          bot.connection.join_channel(params[:channel])
+          bot.connection.join_channel(channel)
         end
       end
     end
 
 
-    command :part, :channel do
+    command :part do
       desc 'Leave a channel'
-      on_call do
-        channel = params[:channel]
+      on_call do |channel|
         channel ||= msg.source
         bot.connection.part(channel) if user == bot.config.admin
       end
@@ -62,12 +61,12 @@ RIB::Module.new :core do
   end
 
 
-  command :list, :module do
+  command :list do
     desc 'List all available Modules or Commands for a specific Module'
-    on_call do
-      if self.module
+    on_call do |modul|
+      if modul
         mod = bot.modules.find do |m|
-          m.name.to_s.downcase == self.module.downcase
+          m.name.to_s.downcase == modul.downcase
         end
 
         if mod
@@ -90,16 +89,17 @@ RIB::Module.new :core do
     def print_help(cmd)
       params_string = cmd.params.map { |p| " <#{p.capitalize}>" }.join
 
-      "Module: #{cmd.module.capitalize}, Usage: #{bot.config.tc}#{cmd.name}" +
+      "Module: #{cmd.module.name.capitalize}, " +
+      "Usage: #{bot.config.tc}#{cmd.name}" +
       "#{params_string} --- #{cmd.description}"
     end
 
   end
 
 
-  command :help, :command do
+  command :help do
     desc 'Print short help text for a command'
-    on_call do
+    on_call do |command|
       if command
         if cmd = bot.commands.find { |c| c.name.to_s == command }
           print_help cmd
@@ -113,9 +113,9 @@ RIB::Module.new :core do
   end
 
 
-  command :reload, :what do
+  command :reload do
     desc 'Reload all Modules'
-    on_call do
+    on_call do |what|
       if user == bot.config.admin
         case what
         when 'modules' then bot.reload_modules ? 'done' : 'Me failed q.q'
@@ -151,12 +151,12 @@ RIB::Module.new :core do
   end
 
 
-  command :reply, :trigger, :command do
+  command :reply do
     desc 'Manage replies. Without trigger, show all trigger. With trigger and' +
       " without command, shows the trigger's values array. Pass an arbitrary" +
       ' string with "add" or an index number with "del" (starts with 0)'
 
-    on_call do
+    on_call do |trigger, command|
       if trigger
         if command
           if user == bot.config.admin

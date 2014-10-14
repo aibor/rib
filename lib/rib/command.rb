@@ -26,10 +26,10 @@ module RIB
     # @param [Array<Symbol>] params
     #   params that command can take
 
-    def initialize(name, mod_name, params = [], protocol = nil, &block)
+    def initialize(name, modul, params = [], protocol = nil, &block)
       @params   = params.map(&:to_sym)
 
-      super(name, mod_name, protocol, &block)
+      super(name, modul, protocol, &block)
     end
 
 
@@ -41,7 +41,8 @@ module RIB
     #
 
     def call(hash)
-      super hash.merge(params: map_params(hash[:msg].split[1..-1]))
+      #super hash.merge(params: map_params(hash[:msg].split[1..-1]))
+      super hash.merge(params: hash[:msg].split[1..-1].take(@action.arity))
     end
 
 

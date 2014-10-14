@@ -14,13 +14,10 @@ module RIB
 
     class Handler < BasicObject
 
-      ##
-      # @param [Hash] hash  values which will be available to executed
-      #   blocks
+      attr_accessor :invocation_hash
 
-      def initialize(hash = {})
-        @hash = hash
-        @params = hash[:params] || {}
+      def initialize
+        @invocation_hash = nil
       end
 
 
@@ -33,13 +30,11 @@ module RIB
       #   hash or in the params
 
       def method_missing(meth, *args)
-        if @hash[meth]
-          @hash[meth]
-        elsif @params.has_key?(meth)
-          @params[meth]
+        if @invocation_hash && @invocation_hash[meth]
+          @invocation_hash[meth]
         else
           ::Kernel.raise(::NoMethodError,
-                         "method '#{meth}' not available in Commands")
+                         "method '#{meth}' not available")
         end
       end
 

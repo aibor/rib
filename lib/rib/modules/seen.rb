@@ -8,9 +8,9 @@ RIB::Module.new :seen do
 
   protocol_only :irc
 
-  command :seen, :who do
+  command :seen do
     desc 'Show when users were seen last and what were their last words'
-    on_call do
+    on_call do |who|
       case who
       when nil, ''  then "#{user}: What? Try '!help seen'."
       when user     then "#{user}: Do you think that is funny? oO"

@@ -237,6 +237,15 @@ module RIB
 
 
     ##
+    # Module own {Action::Handler} Action handler object. Used for
+    # executing the {Action actions} in.
+    #
+    # @return [Action::Handler] object with helper methods
+    
+    attr_reader :handler
+
+
+    ##
     # New Modules need to be instantiated with a name and a block.
     # The block is evaluated in the instance namespace of the new
     # Module object.
@@ -267,6 +276,7 @@ module RIB
       @responses    = []
       @helpers      = {}
       @on_load      = {}
+      @handler      = Action::Handler.new
 
       instance_eval(&block) if self.class.add_to_loaded_modules self
 
@@ -293,7 +303,7 @@ module RIB
       on_load.each { |block| block.call(bot) }
 
       helpers = @helpers.values_at(*relevant).flatten.compact
-      helpers.each { |block| Action::Handler.class_eval(&block) }
+      helpers.each { |block| @handler.instance_eval(&block) }
     end
 
 
@@ -372,7 +382,7 @@ module RIB
         raise RIB::DuplicateCommandError.new(name)
       end
 
-      cmd = Command.new name, @name, params, @protocol, &block
+      cmd = Command.new name, self, params, @protocol, &block
       @commands << cmd
       cmd
     end
@@ -418,7 +428,7 @@ module RIB
         raise RIB::DuplicateResponseError.new(name)
       end
 
-      resp = Response.new name, @name, trigger, @protocol, &block
+      resp = Response.new name, self, trigger, @protocol, &block
       @responses << resp
       resp
     end

@@ -53,9 +53,9 @@ module RIB
 
 
     ##
-    # Name of the Module this instance belongs to.
+    # Module this instance belongs to.
     #
-    # @return [Symbol]
+    # @return [Module]
 
     attr_reader :module
 
@@ -88,14 +88,14 @@ module RIB
     ##
     # @param [#to_sym] name
     #   name of the Command
-    # @param [Symbol] mod_name
+    # @param [Modul] modul
     #   name of the Module that Command belongs to
     # @param [Symbol, Array<Symbol>] protocol
     #   none or several protocols this command is limited to
 
-    def initialize(name, mod_name, protocol = nil, &block)
+    def initialize(name, modul, protocol = nil, &block)
       @name     = name.to_sym.downcase
-      @module   = mod_name
+      @module   = modul
       @protocol = protocol
       @timeout  = self.class.timeout
 
@@ -162,13 +162,14 @@ module RIB
     #   @return [nil]               if nothing should be sent back
 
     def call(hash)
-      # Shall not be called from within the command definition itself.
+      # Shall not be called from within the action definition itself.
       return false unless @init
 
       @last_call = Time.now
 
-      handler = Handler.new(hash)
-      handler.instance_eval(&@action)
+      handler = @module.handler
+      handler.invocation_hash = hash
+      handler.instance_exec(*hash[:params], &@action)
     end
 
   end
