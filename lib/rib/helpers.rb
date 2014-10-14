@@ -22,18 +22,18 @@ module RIB
     def speaks?(protocols)
       ensure_symbol_or_array_of_symbols protocols
 
-      case self.protocol
+      case self.protocols
       when nil
         true
       when Symbol
         case protocols
-        when Symbol then self.protocol == protocols
-        when Array  then protocols.include? self.protocol
+        when Symbol then self.protocols == protocols
+        when Array  then protocols.include? self.protocols
         end
       when Array
         case protocols
-        when Symbol then self.protocol.include? protocol
-        when Array  then (protocols - self.protocol).empty?
+        when Symbol then self.protocols.include? protocol
+        when Array  then (protocols - self.protocols).empty?s
         end
       else false
       end

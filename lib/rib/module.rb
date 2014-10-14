@@ -212,7 +212,7 @@ module RIB
     # @return [Array<Symbol>] if it works with several protocols
     # @return [nil]           if it works with all protocols
 
-    attr_reader :protocol
+    attr_reader :protocols
 
 
     ##
@@ -270,7 +270,7 @@ module RIB
       @init         = false
       @name         = name.to_sym.downcase
       @description  = nil
-      @protocol     = nil
+      @protocols    = nil
       @on_load      = nil
       @commands     = []
       @responses    = []
@@ -302,8 +302,10 @@ module RIB
       on_load = @on_load.values_at(*relevant).flatten.compact
       on_load.each { |block| block.call(bot) }
 
+      puts @helpers
+
       helpers = @helpers.values_at(*relevant).flatten.compact
-      helpers.each { |block| @handler.instance_eval(&block) }
+      helpers.each { |block| puts block; @handler.instance_eval(&block) }
     end
 
 
@@ -382,7 +384,7 @@ module RIB
         raise RIB::DuplicateCommandError.new(name)
       end
 
-      cmd = Command.new name, self, params, @protocol, &block
+      cmd = Command.new name, self, params, @protocols, &block
       @commands << cmd
       cmd
     end
@@ -428,7 +430,7 @@ module RIB
         raise RIB::DuplicateResponseError.new(name)
       end
 
-      resp = Response.new name, self, trigger, @protocol, &block
+      resp = Response.new name, self, trigger, @protocols, &block
       @responses << resp
       resp
     end
@@ -461,7 +463,7 @@ module RIB
     # If no block is passed, the Module itself is limited to the passed
     # protocols.
     #
-    # @param [Symbol, Array<Symbol>] protocol
+    # @param [Symbol, Array<Symbol>] protocols
     #
     # @yield limits the definitions within the block to protocol instead
     #   of the whole Module
@@ -471,17 +473,17 @@ module RIB
     #
     # @return [void]
 
-    def protocol_only(protocol)
-      ensure_symbol_or_array_of_symbols protocol
+    def protocol_only(protocols, &block)
+      ensure_symbol_or_array_of_symbols protocols
 
-      raise ProtocolMismatchError unless speaks?(protocol)
+      raise ProtocolMismatchError unless speaks?(protocols)
 
-      before = @protocol
-      @protocol = protocol
+      before = @protocols
+      @protocols = protocols
 
-      if block_given?
-        yield
-        @protocol = before
+      if block
+        instance_eval &block
+        @protocols = before
       end
     end
 

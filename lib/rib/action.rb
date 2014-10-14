@@ -65,7 +65,7 @@ module RIB
     #
     # @return [Symbol]
 
-    attr_reader :protocol
+    attr_reader :protocols
 
 
     ##
@@ -93,11 +93,11 @@ module RIB
     # @param [Symbol, Array<Symbol>] protocol
     #   none or several protocols this command is limited to
 
-    def initialize(name, modul, protocol = nil, &block)
-      @name     = name.to_sym.downcase
-      @module   = modul
-      @protocol = protocol
-      @timeout  = self.class.timeout
+    def initialize(name, modul, protocols = nil, &block)
+      @name       = name.to_sym.downcase
+      @module     = modul
+      @protocols  = protocols
+      @timeout    = self.class.timeout
 
       instance_eval(&block)
 
