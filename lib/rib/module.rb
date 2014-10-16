@@ -302,10 +302,8 @@ module RIB
       on_load = @on_load.values_at(*relevant).flatten.compact
       on_load.each { |block| block.call(bot) }
 
-      puts @helpers
-
       helpers = @helpers.values_at(*relevant).flatten.compact
-      helpers.each { |block| puts block; @handler.instance_eval(&block) }
+      helpers.each { |block| @handler.instance_eval(&block) }
     end
 
 
