@@ -36,10 +36,33 @@ module RIB
       qmsg:          'Bye!',
       logdir:        'log/',
       debug:         false,
-      replies_file:  'data/replies.yml',
       modules_dir:   'modules',
-      modules:       [:core, :link_title, :search, :alarm, :fun, :quotes, :seen]
+      modules:       [:Core, :LinkTitle, :Search, :Alarm, :Fun, :Quotes,
+                      :Seen, :Reply]
     }
+
+
+    ##
+    # Add new configuration attribute for this Configuration instance.
+    # This method is intended to be used by {Module Modules} in order
+    # to register their own configuration directives.
+    #
+    # @param [Symbol] attr  name of the new attribute
+    # @param [Object] value value to assign to the new attribute
+    #
+    # @raise [TypeError] if attr is not a Symbol
+    # @raise [AttributeExistsError] if the an attribute with that name
+    #   already exists
+
+    def self.register(attr, value = nil)
+      if !attr.is_a?(Symbol)
+        raise TypeError, "not a Symbol: #{attr.inspect}"
+      elsif Defaults.keys.include?(attr)
+        #raise RIB::AttributeExistsError.new(attr)
+      end
+
+      Defaults[attr] = value
+    end
 
 
     ##
@@ -240,7 +263,8 @@ module RIB
 
     def register(attr, value = nil)
       raise TypeError, 'not a Symbol' unless attr.is_a? Symbol
-      raise AttributeExistsError if has_attr?(attr)
+      raise AttributeExistsError.new(attr) if has_attr?(attr)
+      raise ReservedNameError.new(attr) if respond_to?(attr)
 
       singleton_class.class_eval { attr_accessor attr }
       set_attribute(attr, value)
@@ -266,7 +290,10 @@ module RIB
     # @return [Hash] {Defaults}
 
     def default
-      Defaults.each { |key, value| set_attribute(key, value) }
+      Defaults.each do |key, value|
+        register(key) unless respond_to?(key)
+        set_attribute(key, value)
+      end
     end
 
   end

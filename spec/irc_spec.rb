@@ -27,8 +27,7 @@ RSpec.describe RIB::Protocol::IRC do
     bot = RIB::Bot.new do |b|
       b.protocol      = :irc
       b.logdir        = test_log_dir
-      b.modules_dir   = "#{__dir__}/modules/"
-      b.modules       = [:core, :test_core]
+      b.modules       = [:Core, :TestCore, :Reply]
       b.replies_file  = "#{test_dir}/replies.yml"
       b.debug         = true
     end
@@ -58,7 +57,7 @@ RSpec.describe RIB::Protocol::IRC do
 
     it 'calls process_msg' do
       expect(bot).to receive(:process_msg).
-        with( {msg: '!test', user: 'rib', source: '#rib'}, true).
+        with(RIB::Message.new('!test', 'rib', '#rib'), true).
         and_return(true)
       is_expected.to be true
     end
@@ -80,6 +79,7 @@ RSpec.describe RIB::Protocol::IRC do
   context 'from user perspective' do
     it 'runs and replies' do
       bot.run
+      p bot.modules.keys
       sleep 0.1
       expect(server.received).to include('PRIVMSG #rib :pong')
       expect(server.received).to include('PRIVMSG #rib :yo')

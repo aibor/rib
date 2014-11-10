@@ -3,14 +3,16 @@
 require 'date'
 
 
-RIB::Module.new :seen do
-  desc 'Parse log files for information about a user.'
+class RIB::Module::Seen < RIB::Module::Base
 
-  protocol_only :irc
+  describe 'Parse log files for information about a user.'
 
-  command :seen do
-    desc 'Show when users were seen last and what were their last words'
-    on_call do |who|
+
+  protocols_only :irc do
+
+    describe seen: 'Show when users were seen last and what were their last words'
+
+    def seen(who)
       case who
       when nil, ''  then "#{user}: What? Try '!help seen'."
       when user     then "#{user}: Do you think that is funny? oO"
@@ -40,6 +42,8 @@ RIB::Module.new :seen do
         "#{user}: #{out}"
       end
     end
+
   end
 
 end
+

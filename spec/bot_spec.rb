@@ -27,36 +27,5 @@ RSpec.shared_examples 'bot instance' do |klass|
     end
   end
 
-
-  context 'reply management' do
-
-    describe '#reload_replies' do
-      it 'loads replies' do
-        expect { bot.reload_replies }.to change { bot.replies }.
-          from(nil).to(Hash)
-      end
-    end
-
-
-    describe '#add_reply' do
-      it 'adds a reply ' do
-        bot.reload_replies
-        expect { bot.add_reply("test", "yo") }.to change { 
-          bot.replies.to_a }. by([['test',['yo']]])
-      end
-    end
-
-
-    describe '#delete_reply' do
-      it 'deletes a reply ' do
-        bot.reload_replies
-        bot.add_reply("test", "yo")
-        expect { bot.delete_reply("test", 0) }.to change { 
-          bot.replies.keys.include?('test') }.from(true).to(false)
-      end
-    end
-
-  end
-
 end
 

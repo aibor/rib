@@ -105,5 +105,7 @@ module TestFilesSetup
                      test_dir + 'replies.yml')
   end
 
-  after { FileUtils.rm_rf(test_dir) }
+  after do
+    FileUtils.rm_rf(test_dir)
+  end
 end

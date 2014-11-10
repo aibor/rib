@@ -12,9 +12,7 @@ module RIB
       ##
       # @param [#to_s] protocol_name name of the unknown protocol
 
-      def initialize(protocol_name)
-        @protocol_name = protocol_name
-      end
+      def initialize(protocol_name); @protocol_name = protocol_name end
 
 
       ##
@@ -50,16 +48,14 @@ module RIB
       ##
       # @param [#to_s] name name of the duplicate
 
-      def initialize(name)
-        @name = name
-      end
+      def initialize(name); @name = name end
 
 
       ##
       # @return [String] default message
 
       def message
-        "The name '#{name}' is not unique"
+        "The name '#{@name}' is not unique"
       end
 
     end
@@ -127,7 +123,16 @@ module RIB
       # @return [String] default message
 
       def message
-        "An attribute with the name '#{name}' already exists."
+        "An attribute with the name '#{@name}' already exists."
+      end
+
+    end
+
+
+    class ReservedNameError < DuplicateError
+
+      def message
+        "Attribute name is reserved: '#{@name}'"
       end
 
     end
@@ -136,19 +141,19 @@ module RIB
     ##
     # Raised if an Error is received during login.
 
-    class LoginError            < StandardError; end
+    class LoginError < StandardError; end
 
 
     ##
     # Raised if Authentication fails.
 
-    class AuthError             < StandardError; end
+    class AuthError < StandardError; end
 
 
     ##
     # Raised if a channel couldn't be joined.
 
-    class ChannelJoinError      < StandardError; end
+    class ChannelJoinError < StandardError; end
 
 
     ##
@@ -160,9 +165,10 @@ module RIB
     ##
     # Raised if an Error is received from the server.
 
-    class ReceivedError         < StandardError; end
+    class ReceivedError < StandardError; end
 
   end
+
 
   include Exceptions
 

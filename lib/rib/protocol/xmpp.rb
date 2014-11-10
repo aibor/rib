@@ -1,53 +1,53 @@
 # coding: utf-8
 
-require 'rib/protocol/xmpp/connection'
+require 'rib'
 
-module RIB
 
-  module Protocol
+module RIB::Protocol
+  
+  class XMPP < Adapter
 
-    module XMPP
+    autoload :Connection, "#{to_file_path(self.name)}/connection"
+    
 
-      def init_connection
-        Connection.new(log_path,
-                       @config.server,
-                       @config.nick,
-                       @config.jid)
+    def initialize(config, log_path)
+      Jabber::debug = true if config.debug
+
+      @connection = Connection.new(
+        log_path,
+        config.server,
+        config.nick,
+        config.jid
+      )
+    end
+
+
+    ##
+    # @todo what a mess
+
+    def run_loop
+      @connection.muc.each do |room,muc|
+        muc.on_message do |time, nick, text|
+          next if nick == @connection.resource
+
+          begin
+            msg_handler = RIB::MessageHandler.new(text, nick, room)
+            msg_handler.tell { |line| say line, muc }
+          rescue
+          end
+        end
       end
 
-
-      private
-
-      ##
-      # @todo what a mess
-
-      def run_loop
-        Jabber::debug = true if @config.debug
-
-        @connection.muc.each do |room,muc|
-          muc.on_message do |time, nick, text|
-            next if (nick == @config.nick) || (Time.new - @starttime < 5)
-
-            begin
-              msg = {msg: text, user: nick, source: room}
-              process_msg(msg, false, muc)
-            rescue
-              @log.error($!)
-            end # begin
-          end # muc.on_message
-        end # @connection.muc.each
-
-        Thread.stop
-      end
+      Thread.stop
+    end
 
 
-      def server_say(line, target)
-        line.encode("utf-8")
-        target.say(line) if target.is_a? Jabber::MUC::SimpleMUCClient
-      end
-
+    def say(line, target)
+      line.encode("utf-8")
+      target.say(line) if target.is_a? Jabber::MUC::SimpleMUCClient
     end
 
   end
 
 end
+
