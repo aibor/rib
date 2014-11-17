@@ -38,7 +38,7 @@ module RIB
       debug:         false,
       modules_dir:   'modules',
       modules:       [:Core, :LinkTitle, :Search, :Alarm, :Fun, :Quotes,
-                      :Seen, :Reply]
+                      :Seen, :Fact]
     }
 
 
@@ -47,21 +47,19 @@ module RIB
     # This method is intended to be used by {Module Modules} in order
     # to register their own configuration directives.
     #
-    # @param [Symbol] attr  name of the new attribute
-    # @param [Object] value value to assign to the new attribute
+    # @param attr  [Symbol] name of the new attribute
+    # @param value [Object] value to assign to the new attribute
     #
     # @raise [TypeError] if attr is not a Symbol
-    # @raise [AttributeExistsError] if the an attribute with that name
-    #   already exists
+    #
+    # @return [Object] the value
 
     def self.register(attr, value = nil)
-      if !attr.is_a?(Symbol)
+      if attr.is_a?(Symbol)
+        Defaults[attr] = value
+      else
         raise TypeError, "not a Symbol: #{attr.inspect}"
-      elsif Defaults.keys.include?(attr)
-        #raise RIB::AttributeExistsError.new(attr)
       end
-
-      Defaults[attr] = value
     end
 
 

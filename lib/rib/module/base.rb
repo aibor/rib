@@ -21,23 +21,13 @@ class RIB::Module::Base
     attr_reader :protocols
 
 
+    def inherited(subclass)
+      RIB::Module.loaded << subclass
+    end
+
+
     def key
       name.split(':').last.to_sym
-    end
-
-
-    def descriptions
-      @descriptions ||= {}
-    end
-
-
-    def commands
-      public_instance_methods(false)
-    end
-
-
-    def responses
-      @responses ||= {}
     end
 
 
@@ -51,19 +41,79 @@ class RIB::Module::Base
     end
 
 
+    def commands
+      public_instance_methods(false)
+    end
+
+
+    def descriptions
+      @descriptions ||= {}
+    end
+
+
     def timeouts
       @timeout ||= Hash.new(5)
     end
 
 
+    def triggers
+      @triggers ||= {}
+    end
+
+
+    def has_command_for_args?(command_name, args_count)
+      unless public_instance_methods(false).include?(command_name)
+        return false 
+      end
+
+      method = instance_method(command_name)
+      params = method.parameters.group_by(&:first)
+
+      return true if params[:rest]
+
+      args_min = params[:req].to_a.count
+      args_max = args_min + params[:opt].to_a.count
+
+      args_count.between?(args_min, args_max)
+    end
+
+
+    def init(bot)
+      init_blocks.each do |block|
+        block.call(bot)
+      end
+    end
+
+
     private
 
+    def register(hash)
+      raise TypeError, 'not a Hash' unless hash.is_a? Hash
+
+      hash.each do |config_key, default_value|
+        if config_key.respond_to?(:to_sym)
+          RIB::Configuration.register(config_key.to_sym, default_value)
+        end
+      end
+    end
+
+
+    def on_init(&block)
+      init_blocks << block if init_blocks.none?(&:source_location)
+    end
+
+
     ##
-    # Set a description for this module
+    # If a String is passed, sets the description for the RIB::Module.
+    # If a Hash is passed, it sets descriptionis for the {RIB::Command
+    # commands with the name of the keys.
     #
-    # @param [#to_s] description
+    # @see #descriptions
     #
-    # @return [String] the description that has been set
+    # @param argument [String, Hash{Symbol => #to_s}]
+    #
+    # @return [String, Hash] the description that has been set
+    #
 
     def describe(argument)
       case argument
@@ -79,17 +129,6 @@ class RIB::Module::Base
     end
 
 
-    def register(hash)
-      raise TypeError, 'not a Hash' unless hash.is_a? Hash
-
-      hash.each do |config_key, default_value|
-        if config_key.respond_to?(:to_sym)
-          RIB::Configuration.register(config_key.to_sym, default_value)
-        end
-      end
-    end
-
-
     def timeout(hash)
       raise TypeError, 'not a Hash' unless hash.is_a? Hash
 
@@ -100,123 +139,48 @@ class RIB::Module::Base
     end
 
 
-    def init(&block)
-      init_blocks << block if init_blocks.none?(&:source_location)
-    end
-
-
     ##
-    # Define a response a bot should send if a message matches its
-    # trigger. The name and the trigger regular expression are passed as
-    # attributes. Further attributes are set in the mandatory block.
-    # This block is evaluated in the instance namespace of the new
-    # {Response} object. The on_call block will be evluated in an
-    # {Action::Handler} instance namespace and therefor has a very
-    # limited method list.
-    #
-    # @see Response#call for available methods in the on_call block
+    # Define a response a bot should send if a message matches the
+    # trigger. The block is evaluated in the instance scope of the
+    # bot module it belongs to, which shall inherit from
+    # {RIB::Module::Base}.
     #
     # @example
-    #   response :marvin, /\bcrap\b/ do
-    #     desc 'This bot is rather depressed'
-    #     on_call do
-    #       "#{user}: oh yes, everything is crap!"
-    #     end
+    #   response /\bcrap\b/ do
+    #     "#{msg.user}: oh yes, everything is crap!"
     #   end
     #
-    # @param [#to_sym]  name    name of the {Response}
-    # @param [Regexp]   trigger when this {Response} should be called
+    # @param regexp [Regexp] when to be invoked
     #
-    # @yield (see Action#on_call)
-    # @yieldreturn (see Action#on_call)
+    # @yield 
+    # @yieldreturn [String, [String, String]]
     #
-    # @raise [TypeError] if name is not a Symbol
-    # @raise [TypeError] if name is not a Symbol
-    # @raise [DuplicateResponseError] if name is not unique for this
-    #                                 Module
+    # @raise [TypeError] if regexp is not a Regexp
     #
-    # @return [Response] the created and added {Response}
+    # @return [Proc] the block
+    #
 
-    def response(hash)
-      raise TypeError, 'not a Hash' unless hash.is_a? Hash
-
-      hash.each do |name, trigger|
-        if !name.respond_to?(:to_sym)
-          raise TypeError, "not a symbolizable: #{name.inspect}"
-        elsif !trigger.is_a?(Regexp)
-          raise TypeError, "not a Regexp: #{trigger.inspect}"
-        end
-        responses[trigger] = name.to_sym
-      end
-    end
-
-
-    ##
-    # Limit the availability for the Module, Commands and Responses to
-    # one or more protocols. When the Module itself is limited to
-    # specific protocols, all of the passed ones need to be included in
-    # the Module protocols.
-    #
-    # If no block is passed, the Module itself is limited to the passed
-    # protocols.
-    #
-    # @param [Symbol, Array<Symbol>] protocols
-    #
-    # @yield limits the definitions within the block to protocol instead
-    #   of the whole Module
-    #
-    # @raise [ProtocolMismatch] if the Module protocols doesn't contain
-    #   one or more of the protocols passed
-    #
-    # @return [void]
-
-    def protocols_only(*protocols, &block)
-      ensure_symbol_or_array_of_symbols protocols
-
-      return (@protocols = *protocols) unless block
-
-      protocols.each do |protocol|
-        if speaks?(protocol)
-          array = protocol_blocks[protocol]
-          array << block if array.none?(&:source_location)
-        end
+    def trigger(regexp, timeout = nil, &block)
+      if regexp.is_a?(Regexp)
+        triggers[regexp] = block
+        timeouts[regexp] = timeout.to_i if timeout
+      else
+        raise TypeError, "not a Regexp: #{regexp.inspect}"
       end
     end
 
   end
 
 
-  attr_accessor :new_msg
-
-  attr_reader :bot, :msg_queue
+  attr_reader :bot, :msg
 
 
-  def initialize(bot)
-    @bot, @new_msg, @msg_queue = bot, false, Queue.new
-
-    self.class.protocol_blocks[bot.config.protocol].each do |block|
-      logger.debug "protocol_block: #{block.source_location}"
-      self.class.class_eval &block
-    end
-
-    self.class.init_blocks.each do |block|
-      logger.debug "init: #{self.class.name}"
-      instance_eval &block
-    end
+  def initialize(bot, msg)
+    @bot, @msg = bot, msg
   end
 
 
   private
-
-  def msg
-    if @new_msg && !@msg_queue.empty?
-      @new_msg = false
-      @msg = @msg_queue.pop(true)
-    else
-      @msg
-    end
-  end
-
 
   def logger
     unless @logger

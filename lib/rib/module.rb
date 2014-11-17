@@ -1,97 +1,94 @@
 # coding: utf-8
 
 require 'rib'
+require 'set'
 
 
 ##
 # A bot framework needs to have a simple way to add functionality to
-# it. The Module class is inteded to provide a DSL for writing
-# Modules for the bot. It handles definition of Commands, Responses
-# and Helpers, either for all protocols or only for specific ones.
+# it. The Module class is inteded to provide a simple way for writing
+# Modules for the bot. It handles definition of Commands and Triggers,
+# either for all protocols or only for specific ones.
 #
 # ## Commands
 #
-# Commands are called by name with optional parameters, which can have
-# names defined. Commands should have a short description which is
-# used for help texts. They need to have a block that is called on
-# invocation, otherwise there would be no point for a Command.
-# See {Command#call} for available methods in {Action#on_call
-# Command#on_call} blocks.
+# Commands are all public instance methods defined in a subclass of
+# {Module::Base}. Commands should have a short description which is
+# used for help texts. Additional helper methods may be defined, but
+# should be private.
+# See {Module::Base} for available predefined helper methods.
 #
-# ## Responses
+# ## Triggers
 #
-# Responses are very similar to Commands, but are not called by name.
+# Triggers are very similar to Commands, but are not called by name.
 # They are triggered, if a message matches their trigger regular
-# expression. Definition is almost the same as for Commands, but take
-# a trigger regular expression instead of parameters. See below for
-# an example.
-# See {Response#call} for available methods in {Action#on_call
-# Response#on_call} blocks.
+# expression. Definition is done by giving a regular expression and a
+# block, which shall be called, wenn a message matches the regular
+# expression. The MatchData object is passed to te block, so capture
+# groups can be used in any way Ruby allows.
 #
 # @example HTML title fetching module
-#   RIB::Module.new :title do
-#     desc 'Handle automatic HTML title fetching for received URLs.'
+#   class LinkTitle < RIB::Module::Base
+#
+#     # describe the Module
+#     describe 'Handle automatic HTML title fetching for URLs.'
+#
 #
 #     # add a new config attribute and pass it a value
-#     on_load do |bot|
-#       bot.config.register(:title, true)
-#     end
+#     register title: true
 #
-#     # define some helper methods which can be used in on_call
-#     # blocks
-#     helpers do
-#       def fetch_title(url)
-#         # code for fetching and parsing web pages for HTML titles
-#       end
-#     end
 #
 #     # define a new command '!title' which takes one named argument
-#     command :title, :on_off do
-#       desc 'De-/Activate automatic HTML title fetching'
-#       # what will be done when the command is called?
-#       on_call do
-#         # call the argument by its name
-#         case on_off
-#         when on
-#           # use your added config attribute
-#           bot.config.title = true
-#           "HTML title fetching activated"
-#         when off
-#           bot.config.title = false
-#           "HTML title fetching deactivated"
-#         else
-#           "#{user}, I don't understand you"
-#         end
+#     describe title: 'De-/Activate automatic HTML title fetching'
+#
+#     def title(on_off)
+#       case on_off
+#       when on
+#         # use your added config attribute
+#         bot.config.title = true
+#         "HTML title fetching activated"
+#       when off
+#         bot.config.title = false
+#         "HTML title fetching deactivated"
+#       else
+#         "#{user}, I don't understand you"
 #       end
 #     end
 #
+#
 #     # define a new response for messages that contain an URL
-#     response :title, %r((http://\S+)) do
-#       desc 'automatically fetch and send the HTML title'
-#       on_call do
-#         # get the value of the regexp's MatchData with match
-#         "Title: #{fetch_title(match[1])}"
-#       end
+#     response %r((http://\S+)) do |match|
+#       # get the value of the regexp's MatchData with match
+#       "Title: #{fetch_title(match[1])}"
 #     end
+#
 #
 #     # some stuff might only work with a particular protocol
 #     protocol_only :irc do
 #
-#       command :formating do
-#         desc 'A Command that only works in IRC, maybe due to' +
-#           ' formatting special characters'
-#         on_call do
-#           # fancy stuff
-#         end
+#       desc formatting: 'A Command that only works in IRC, maybe due' +
+#         ' to formatting special characters'
+#
+#       def formatting
+#         # fancy stuff
 #       end
 #
 #     end
 #
+#
+#     private
+#
+#     # define some helper methods which can be used in on_call
+#     # blocks
+#     def fetch_title(url)
+#       # code for fetching and parsing web pages for HTML titles
+#     end
+#
 #   end
 #
-# @see Action
+# @see Module::Base
 # @see Command
-# @see Response
+# @see Trigger
 
 module RIB::Module
 
@@ -104,26 +101,73 @@ module RIB::Module
 
 
   ##
-  # Load a file or  directory. If they contain RIB::Modules, they
-  # are instantiated and added to the 'loaded' attribute.
+  # Load all modules in a directory.
   #
   # @param [String] path
   #
   # @return [Array<String>] found and loaded files
 
-  def load_all
-    Dir[Directory].each { |f| load f }
+  def load_all(path = Directory)
+    Dir[path].each { |f| load f }
     loaded
   end
 
 
+  ##
+  # Set that holds all subclasses of {Module::Base}, which are
+  # Bot modules.
+  #
+  # @param name_only [Boolean] if only the class names without namespace
+  #   prfix should be returned
+  #
+  # @return [Set<Object>] either the Instances or just their base class
+  #   names
+
   def loaded(name_only = false)
-    self.constants.map do |constant_name|
-      constant = self.const_get(constant_name)
-      next unless constant.is_a?(Class)
-      next unless constant.superclass == self.const_get(:Base)
-      name_only ? constant_name : constant
-    end.compact
+    @loaded ||= ::Set.new
+    name_only ? @loaded.map(&:key).to_set : @loaded
+  end
+
+
+  class Set < ::Set
+
+    attr_reader :protocol
+
+    def initialize(module_names, protocol = nil)
+      @protocol = protocol
+
+      modules = RIB::Module.loaded.select do |modul|
+        module_names.include?(modul.key) && modul.speaks?(protocol)
+      end
+
+      super(modules)
+    end
+
+
+    def responding_modules(cmd_name, args)
+      @hash.select do |modul, state|
+        state && modul.has_command_for_args?(cmd_name, args.count)
+      end.keys
+    end
+
+
+    def find_module(name)
+      modul = @hash.find do |modul, state|
+        state && modul.key.to_s.casecmp(name.to_s).zero?
+      end
+      modul.first if modul
+    end
+
+
+    def matching_triggers(text)
+      @hash.inject(Hash.new([])) do |hsh, (modul, state)|
+        modul.triggers.each do |trigger, block|
+          match = trigger.match(text)
+          hsh[modul] += [[block, match]] if state && match
+        end
+      end
+    end
+
   end
 
 end

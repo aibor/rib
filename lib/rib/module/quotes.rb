@@ -2,10 +2,14 @@
 
 class RIB::Module::Quotes < RIB::Module::Base
 
+  class << self
+    attr_accessor :quotes
+  end
+
   describe 'Quote Handler'
 
 
-  init do
+  on_init do
     @quotes ||= {}
     %i(bofh brba dexter).each do |subject|
       quotefile = File.absolute_path("../data/#{subject}quotes", __FILE__)
@@ -40,22 +44,18 @@ class RIB::Module::Quotes < RIB::Module::Base
   def fetch_quote(subject, number = nil)
     puts number.inspect
     if number && (number.is_a?(Fixnum) || number[/\A\d+\z/])
-      quote = @quotes[subject][number.to_i - 1]
+      quote = self.class.quotes[subject][number.to_i - 1]
       puts quote
     end
-    quote ||= @quotes[subject].sample
+    quote ||= self.class.quotes[subject].sample
     quote.sub(/ \|/, ':')
   end
 
-  alias :get_quote :fetch_quote
 
-
-  protocols_only :irc do
-
-    def get_quote(subject, number = nil)
-      fetch_quote(subject, number).sub(/\A([^:]+:)/, '\1')
-    end
-
+  def get_quote(subject, number = nil)
+    res = fetch_quote(subject, number)
+    res.sub!(/\A([^:]+:)/, '\1') if bot.config.protocol == :irc
+    res
   end
 
 end

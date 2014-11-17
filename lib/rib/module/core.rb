@@ -5,11 +5,13 @@ class RIB::Module::Core < RIB::Module::Base
   describe 'Core Module'
 
 
-  describe quit: 'Quits the connection'
+  describe quit: 'Quits the connection and exits'
 
   def quit
     if authorized? && Time.now - bot.starttime > 5
       bot.connection.quit(bot.config.qmsg)
+      bot.connection.stop_ping_thread
+      exit
     end
   end
 
@@ -39,29 +41,23 @@ class RIB::Module::Core < RIB::Module::Base
 
   def list(modul = nil)
     if modul
-      mod = bot.modules.find do |m|
-        m.class.key.to_s.downcase[/#{modul.downcase}$/]
-      end
-
-      if mod
-        'Module commands: ' + mod.class.commands * ', '
-      else
-        'Unknown module'
-      end
+      mod = bot.modules.find_module(modul)
+      mod ? "Module commands: #{mod.commands * ', '}" : 'Unknown module'
     else
-      "Available Modules: #{bot.modules.map { |m| m.class.key } * ', '}"
+      "Available Modules: #{bot.modules.map { |m| m.key } * ', '}"
     end
   end
 
 
   describe help: 'Print short help text for a command'
 
-  def help(command = nil)
-    if command
-      if mod = bot.modules.find { |m| m.respond_to?(command) }
-        print_help(mod, command)
+  def help(cmd = nil)
+    if cmd
+      modul = bot.modules.find { |m| m.commands.include?(cmd.to_sym) }
+      if modul
+        print_help(modul, cmd)
       else
-        "Unknown command '#{command}'. Try '#{bot.config.tc}list'."
+        "Unknown command '#{cmd}'. Try '#{bot.config.tc}list'."
       end
     else
       print_help(self, 'help')
@@ -73,37 +69,36 @@ class RIB::Module::Core < RIB::Module::Base
 
   def reload
     if authorized?
-      bot.reload('modules') ? 'done' : 'Me failed q.q'
+      bot.reload_modules ? 'done' : 'Me failed q.q'
     else
       ['How about no?', 'Go away!', '°.°', '<_<', 'sryly?'].sample
     end
   end
 
 
-  protocols_only :irc do
 
-    describe join: 'Join a new channel'
+  describe join: 'Join a new channel'
 
-    def join(channel)
-      bot.connection.join_channel(channel) if authorized?
-    end
-
-
-    describe part: 'Leave a channel'
-
-    def part(channel)
-      channel ||= msg.source
-      bot.connection.part(channel) if authorized?
-    end
-
+  def join(channel)
+    bot.connection.join_channel(channel) if authorized?
   end
+
+
+  describe part: 'Leave a channel. If none specified, leave the one 
+    the command was received from.'
+
+  def part(channel = nil)
+    channel ||= msg.source
+    bot.connection.part(channel) if authorized?
+  end
+
 
 
   private
 
   def print_help(mod, cmd)
-    out     = "Module: #{mod.class.key}"
-    method  = mod.method(cmd)
+    out     = "Module: #{mod.key}"
+    method  = mod.instance_method(cmd)
 
     if method.name == method.original_name
       params = method.parameters.group_by(&:first)
@@ -112,7 +107,7 @@ class RIB::Module::Core < RIB::Module::Base
       params_a << params[:rest].to_a.map { |r| "[#{r.last}, ... ]" }
       params_string = params_a.flatten * ' '
 
-      description = mod.class.descriptions[method.original_name]
+      description = mod.descriptions[method.original_name]
       description.gsub!(/\n/, ' ')
       description.squeeze!(' ')
 

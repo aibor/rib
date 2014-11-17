@@ -1,11 +1,18 @@
+# coding: utf-8
+
+require 'net/https'
+require 'uri'
+require 'html/entities.rb'
+
+
 module HTML
-  require 'net/https'
-  require 'uri'
-  require 'html/entities.rb'
 
-  TitleRegex = /\<title\>\s*([^<]*)\s*\<\/title\>/mi
+  extend self
 
-  def self.unentit( string, enc )
+  TitleRegex = /\<title[^>]*\>\s*([^<]*)\s*\<\/title\>/mi
+
+
+  def unentit(string, enc)
     string.encode!("utf-8", enc)
     string.gsub(/&(.*?);/) do
       ent = $1
@@ -25,7 +32,8 @@ module HTML
     end
   end
 
-  def self.fetch( url, limit )
+
+  def fetch(url, limit)
     raise ArgumentError,'HTTP redirect too deep' if limit == 0
 
     uri = URI.parse(url)
@@ -41,7 +49,7 @@ module HTML
       if res.content_type == 'text/html'
         res.read_body
       else
-        res.instance_eval {@body_exist = false}
+        res.instance_eval { @body_exist = false }
       end
     end # request_get
 
@@ -58,10 +66,13 @@ module HTML
     end # case resp
   end
 
-  def self.title( url )
+
+  def title(url)
     raise "No page found" unless resp = fetch(url, 20)
     enc = resp.body =~ /charset=([-\w]+)/ ? $1 : 'utf-8'
     raise "No title found" unless resp.body =~ TitleRegex
     unentit($1, enc).gsub(/(\r|\n)/, " ").gsub(/(\s{2,})/, " ")
   end
+
 end
+

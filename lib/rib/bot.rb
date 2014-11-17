@@ -10,16 +10,14 @@ Thread.abort_on_exception = true
 
 ##
 # Main class for initializing and handling the connection after
-# reading the configuration and loading {#load_protocol_module
-# protocol handler}, the {#load_replies replies} and the
-# {#load_modules Command and Response Modules}.
+# reading the configuration and loading the {Module modules}.
 # Based on the configuration, the Ruby modules for the appropriate
 # protocol are loaded. This means the Bot behaves slightly differently
 # for each protocol. Available protocols are defined in `protocols`
-# direcotry.
-# Since {Module Modules}, {Command Commands} and {Response Responses}
-# can be limited to specific protocols, on invocation are only those
-# loaded which match the Bot instance's protocol.
+# directory.
+# Since {Module Modules} can be limited to specific protocols, on
+# invocation only those are loaded, which match the Bot instance's
+# protocol.
 #
 # @example Basic Bot configuration
 #   require 'rib'
@@ -30,12 +28,12 @@ Thread.abort_on_exception = true
 #     bot.port      = 6667
 #     bot.channel   = '#rib'
 #     bot.admin     = 'ribmaster'
-#     bot.modules   = [:core, :fun]
+#     bot.modules   = [:Core, :Fun]
 #   end
 #
 #   rib.run
 #
-# @see Configuration Available configuration options
+# @see Configuration
 
 class RIB::Bot
 
@@ -75,6 +73,11 @@ class RIB::Bot
   attr_reader :connection
 
 
+  ##
+  # The Logger instance for this Bot instance.
+  #
+  # @return [Logger]
+
   attr_reader :logger
 
 
@@ -98,14 +101,16 @@ class RIB::Bot
   #
   # @see #configure
   #
-  # @yield [config]
+  # @yieldparam config [Configuration]
 
   def initialize(&block)
     RIB::Module.load_all
-    @config = RIB::Configuration.new
-    @logger = @connection = @startime = @protocol_adapter = nil
-    @threads, @modules = [], Set.new
 
+    @config = RIB::Configuration.new
+
+    @logger = @connection = @startime = @connection_adapter = nil
+
+    @threads, @modules = [], RIB::Module::Set.new([])
 
     configure(&block) if block_given?
   end
@@ -123,7 +128,7 @@ class RIB::Bot
   #     # ...
   #   end
   #
-  # @yield [config]
+  # @yieldparam config [Configuration]
 
   def configure(&block)
     yield @config
@@ -144,16 +149,19 @@ class RIB::Bot
 
     set_signals
     load_modules
-    init_server
 
     begin
-      @protocol_adapter.run_loop do |handler|
-        handler.logger = @logger.dup
+      init_server
+      @connection_adapter.run_loop do |handler|
         process_msg handler
       end
       @threads.each(&:join)
-    rescue
-      @logger.fatal($!)
+    rescue RIB::LostConnectionError => e
+      @connection.quit(@config.qmsg) rescue nil
+      @logger.warn e.message
+      sleep(2) && retry
+    rescue => e
+      @logger.fatal e
     ensure
       @logger.info("EXITING")
     end
@@ -164,9 +172,9 @@ class RIB::Bot
   # Output a message to a target (a user or channel). This calls the
   # #server_say method of the loaded {Protocol} module.
   #
-  # @param [String] text    message to send, if multiline, then each
+  # @param text   [String] message to send, if multiline, then each
   #   line will be sent separately.
-  # @param [String] target  receiver of the message, a user or channel
+  # @param target [String] receiver of the message, a user or channel
   #
   # @return [nil]
 
@@ -175,7 +183,7 @@ class RIB::Bot
     text.split('\n').each do |line|
       next if line.empty?
       @logger.debug "say '#{line}' to '#{target}'"
-      @protocol_adapter.say line, target
+      @connection_adapter.say line, target
     end
   end
 
@@ -183,15 +191,15 @@ class RIB::Bot
   ##
   # Reload all modules. This is basically an alias to {#load_modules},
   # but catches and logs Exceptions. That's why it can be used for a
-  # running instance, for example from {Command Commands} without
+  # running instance, for example from a {Module} itself without
   # the possibility to kill the application, if {Module Modules} have
   # syntax errors or other issues.
   #
-  # @return [Array<Modul>] if successful
+  # @return [Set<Module>] if successful
   # @return [FalseClass] if an exception was raised
 
-  def reload(unit)
-    send("load_#{unit}")
+  def reload_modules
+    load_modules
   rescue => e
     @logger.error "Exception catched while reloading #{unit}: "
     @logger.error e
@@ -212,7 +220,11 @@ class RIB::Bot
   def set_signals
     %w(INT TERM).each do |signal|
       Signal.trap(signal) do
-        self.connection.quit(self.config.qmsg) if self.connection
+        @connection.togglelogging
+        if @connection
+          @connection.stop_ping_thread
+          @connection.quit(self.config.qmsg)
+        end
       end
     end
   end
@@ -220,19 +232,18 @@ class RIB::Bot
 
   ##
   # Depending on the protocol the Bot instance has configured, the
-  # appropriate {Protocol} module has to be loaded for connection
-  # handling. The Module name has to be te protocol name upcase and
+  # appropriate {Protocol::Adapter} has to be loaded for connection
+  # handling. The class name has to be te protocol name upcase and
   # has to be stored in a file with its name downcase with '.rb'
   # extension. Otherwise an exception is raised.
   #
   # @raise [LoadError] if file cannot be loaded
-  # @raise [UnknownProtocolError] if no matching module is found
   #
-  # @return[Bot]
+  # @return[Object] a {Protocol::Adapter} subclass
 
-  def get_protocol_adapter(protocol_name)
-    require "rib/protocol/#{protocol_name}"
-    RIB::Protocol.const_get(protocol_name.to_s.upcase)
+  def get_connection_adapter(protocol_name)
+    require "rib/connection/#{protocol_name}"
+    RIB::Connection.const_get(protocol_name.to_s.upcase)
   end
 
 
@@ -265,7 +276,7 @@ class RIB::Bot
   # {Configuration#debug} is true, logging will be more verbose and
   # logs will go to STDOUT instead of a log file.
   #
-  # @return [Fixnum] log level
+  # @return [Boolean]
 
   def init_log
     destination       = @config.debug ? STDOUT : log_file_path
@@ -275,7 +286,9 @@ class RIB::Bot
 
     @logger.formatter = proc do |severity, datetime, progname, message|
       time = datetime.strftime('%F %X.%L')
-      "%-5s %s -- %s: %s\n" % [severity, time, progname, message]
+      format = "%-5s %s -- %s: %s\n"
+      msg = Logger::Formatter.new.send(:msg2str, message)
+      format % [severity, time, progname, msg]
     end
 
     @logger.info "Server starts"
@@ -289,21 +302,13 @@ class RIB::Bot
   # are loaded. This ensures, that the core {Module Modules} commands
   # are preferred in case of naming collisions.
   #
-  # @return [Array<Module>] all Modules for this Bot instance's
+  # @return [Set<Module>] all Modules for this Bot instance's
   #   protocol
 
   def load_modules
-    seed = Set.new
-    @modules = RIB::Module.load_all.inject(seed) do |set, modul|
-      if @config.modules.include?(modul.key)
-        begin
-          set.add(modul.new(self))
-        rescue => e
-          @logger.warn e
-        end
-      end
-      set
-    end
+    RIB::Module.load_all
+    @modules = RIB::Module::Set.new(@config.modules, @config.protocol)
+    @modules.each { |modul| modul.init(self) }
   end
 
 
@@ -313,9 +318,9 @@ class RIB::Bot
   # @return [void]
 
   def init_server
-    pa = get_protocol_adapter(@config.protocol)
-    @protocol_adapter = pa.new(config, log_path)
-    @connection = @protocol_adapter.connection
+    adapter = get_connection_adapter(@config.protocol)
+    @connection_adapter = adapter.new(config, log_path)
+    @connection = @connection_adapter.connection
     @connection.togglelogging
     @connection.login
     @connection.auth_nick @config.auth if @config.defined?(:auth)
@@ -332,10 +337,10 @@ class RIB::Bot
   # @return [void]
 
   def join_channels
-    @config.channel.split( /\s+|\s*,\s*/ ).each do |chan|
-      @connection.join_channel( chan )
-      @logger.info \
-        "Connected to #{@config.server} as #{@config.nick} in #{chan}"
+    @config.channel.split(/\s+|\s*,\s*/).each do |chan|
+      @connection.join_channel(chan)
+      @logger.info 'Connected to %s as %s in %s' %
+        [@config.server, @config.nick, chan]
     end
   end
 
@@ -345,14 +350,9 @@ class RIB::Bot
   # hogging, only allow 32 threads and ensure dead threads are cleaned
   # up.
   #
-  # @!macro handler_tags
-  #   @param msg [Hash] values that should be available in the Handler
-  #   @option msg [String] :msg    message that has been received
-  #   @option msg [String] :user   user that sent the message
-  #   @option msg [String] :source source of the message, e.g. the
-  #                               channel
+  # @param msg_handler [MessageHandler] 
   #
-  # @return [Boolean] if Thread could be created
+  # @return [Thread] if Thread could be created
 
   def process_msg(msg_handler)
     if @threads.size >= 32
@@ -362,7 +362,7 @@ class RIB::Bot
 
     @threads << Thread.new do
       begin
-        msg_handler.process(@modules, @config.tc)
+        msg_handler.process(self)
       ensure
         @threads.delete(Thread.current)
       end

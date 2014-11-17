@@ -3,7 +3,7 @@
 require 'rib'
 
 
-module RIB::Protocol
+module RIB::Connection
 
   ##
   # IRC connection handling module.
@@ -30,22 +30,18 @@ module RIB::Protocol
 
     def run_loop
       while msg = @connection.receive
-        yield get_handler(@connection, msg) if msg.command == "PRIVMSG"
+        next unless msg.command == "PRIVMSG"
+        rib_msg = RIB::Message.new(msg.data, msg.user, msg.source)
+        handler = RIB::MessageHandler.new(rib_msg) do |line, target|
+          say(line, target || msg.source)
+        end
+        yield handler
       end
     end
 
 
     def say(line, target)
       @connection.privmsg(target, ":#{line}")
-    end
-
-
-    private
-
-    def get_handler(connection, msg)
-      handler = RIB::MessageHandler.new(msg.data, msg.user, msg.source)
-      handler.tell { |line, target| say(line, target || msg.source) }
-      handler
     end
 
   end

@@ -3,7 +3,7 @@
 require 'rib'
 
 
-module RIB::Protocol
+module RIB::Connection
   
   class XMPP < Adapter
 
@@ -31,8 +31,10 @@ module RIB::Protocol
           next if nick == @connection.resource
 
           begin
-            msg_handler = RIB::MessageHandler.new(text, nick, room)
-            msg_handler.tell { |line| say line, muc }
+            rib_msg = RIB::Message.new(text, nick, room)
+            yield RIB::MessageHandler.new(rib_msg) do |line|
+              say line, muc
+            end
           rescue
           end
         end

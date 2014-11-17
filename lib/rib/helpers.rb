@@ -8,7 +8,7 @@ module RIB::Helpers
   ##
   # Test if the instance is limited to specific protocols and if these
   # include one or several specific ones. This is useful for checking
-  # if a {Module}, {Command} or {Response} are able to handle one
+  # if a {Module}, {Command} or {Trigger} is able to handle one
   # or several protocols.
   #
   # @param [Symbol, Array<Symbol>] protocols  one or several protocol
@@ -19,7 +19,6 @@ module RIB::Helpers
   #
   # @return [Boolean] self is able to handle all of the passed
   #   protocols?
-
   def speaks?(protocols)
     ensure_symbol_or_array_of_symbols protocols
 
@@ -55,7 +54,6 @@ module RIB::Helpers
   # @raise [TypeError] if method is not a Symbol
   #
   # @return [Boolean] Array includes an element with this value?
-
   def array_has_value?(array, method, value)
     raise TypeError, 'not an Array' unless array.is_a? Array
     raise TypeError, 'not a Symbol' unless method.is_a? Symbol
@@ -73,7 +71,6 @@ module RIB::Helpers
   # @return [TrueClass] object passed the check
   #
   # @raise [TypeError] if object isn't a Symbol or Array of Symbols
-
   def ensure_symbol_or_array_of_symbols(object)
     case object
     when Symbol then true
@@ -84,10 +81,11 @@ module RIB::Helpers
 
 
   ##
-  # @param modul [String]  name of a RIB::Module class
+  # Generate the appropriate file name for a class name.
   #
-  # @return [String]  expected file name for that class
-
+  # @param klass_name [String] name of a RIB::Module class
+  #
+  # @return [String] expected file name for that class
   def to_file_path(klass_name)
     raise TypeError, 'not a String' unless klass_name.is_a?(String)
 
