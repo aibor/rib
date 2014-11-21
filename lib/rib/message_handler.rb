@@ -33,10 +33,9 @@ class RIB::MessageHandler
 
   ##
   # Parse the message and check if it looks like a command or if a
-  # trigger matches. Before this method can be used, a block 
+  # trigger matches.
   #
-  # @param modules [Set<Module>] modules which should be searched
-  # @param tc      [String] character that prefixes Bot commands
+  # @param bot [Bot] instance to process this message for
 
   def process(bot)
     @bot = bot
@@ -44,83 +43,111 @@ class RIB::MessageHandler
     mod_name, cmd_name, args = parse_msg
 
     if mod_name
-      lookup_module(mod_name, cmd_name, args)
+      say lookup_module(mod_name, cmd_name, args)
     elsif cmd_name
-      lookup_command(cmd_name, args)
+      say lookup_command(cmd_name, args)
     else
-      process_triggers
+      process_triggers { |response| say response }
     end
   end
 
 
   private
 
+  ##
+  # Try to call the requested command for the Module with the given
+  # name. Return something to respond to the requesting user.
+  #
+  # @param mod_name [Symbol] name of a module to call the cmd for
+  # @param cmd_name [Symbol] name of the command to call
+  # @param args [Array<String>] arguments to pass to the command
+  #
+  # @return [String, Array(String, String)] response for @say block
+  # @return [nil] if nothing should be responded
+
   def lookup_module(mod_name, cmd_name, args)
     if modul = @bot.modules.find_module(mod_name)
       if modul.has_command_for_args?(cmd_name, args.count)
-        say call_command(modul, cmd_name, args)
+        call_command(modul, cmd_name, args)
       else
-        say "No appropriate command found for module '%s'." % modul
+        "%s: No appropriate command found for module '%s'." %
+          [@msg.user, modul]
       end
     else
-      say "Unknown Module: '#{mod_name}'"
+      "#{@msg.user}: Unknown Module: '#{mod_name}'"
     end
   end
 
 
   ##
   # Try to find a {Module}, that is able to handle the command with
-  # its arguments. If multiple {Module Modules} are found, tel the user
-  # to invokethe command pefixed with its {Module} name.
+  # its arguments. If multiple {Module Modules} are found, tell the user
+  # to invokethe command pefixed with the desired {Module} name.
   #
   # @param cmd_name [Symbol]        command name to search for
   # @param args     [Array<String>] arguments that shall be passed to
   #   found method
   #
-  # @return [void]
+  # @return [String, Array(String, String)] response for @say block
+  # @return [nil] if nothing should be responded
 
   def lookup_command(cmd_name, args)
     moduls = @bot.modules.responding_modules(cmd_name, args)
 
     if moduls.count > 1
-      say "Ambigious command. Modules: '%s'. Use '%sModulname#%s'" %
-        [moduls.map(&:key) * ', ', @bot.config.tc, cmd_name]
+      "%s: Ambigious command. Modules: '%s'. Use '%sModulname#%s'" %
+        [@msg.user, moduls.map(&:key) * ', ', @bot.config.tc, cmd_name]
     elsif moduls.one?
-      say call_command(moduls.first, cmd_name, args)
+      call_command(moduls.first, cmd_name, args)
     else
-      say "Unknown command '#{cmd_name}'", @msg.user
+      "#{@msg.user}: Unknown command '#{cmd_name}'"
     end
   end
 
 
   ##
-  # Find triggers that matches, call their block and {#say} their
-  # response.
+  # Find triggers that matches, call their block and yield the passed
+  # block with their response. Block should be something like:
+  # `{ |response| say response }`.
+  #
+  # @yieldparam response [Object] return value of the block of a
+  #   matching trigger
   #
   # @return [void]
 
   def process_triggers
-    modules = bot.modules.matching_triggers(@msg.text)
+    modules = @bot.modules.matching_triggers(@msg.text)
 
     modules.each do |modul, trigger_block_array|
-      obj = modul_instance(modul)
+      obj = module_instance(modul)
       trigger_block_array.each do |block, match|
         timeout = modul.timeouts[match.regexp]
-        call_with_timeout(timeout, match) do
-          say obj.instance_exec(match, &block)
+        call_with_timeout(timeout) do
+          yield obj.instance_exec(match, &block)
         end
       end
     end
   end
 
 
-  def call_with_timeout(timeout, *args)
-    timeout(timeout) { yield *args }
+  ##
+  # Wrap a block into a timeout and do some logging on failures.
+  #
+  # @param timeout [Fixnum]
+  #
+  # @yield
+  #
+  # @return [Object] retun value of the passed block
+
+  def call_with_timeout(timeout, &block)
+    timeout(timeout, &block)
   rescue Timeout::Error
-    @bot.logger.warn "message processing took too long: '#{msg.text}'."
+    @bot.logger.warn "message processing took too long: '#{@msg.text}'."
+    nil
   rescue => e
-    @bot.logger.warn "Error while processing msg: #{name}"
+    @bot.logger.warn "Error while processing msg: #{@msg.text}"
     @bot.logger.warn e
+    nil
   end
 
 
@@ -129,23 +156,17 @@ class RIB::MessageHandler
   # called method takes too long, an error is logged and nothing nil is
   # returned.
   #
-  # @param modul [Module]
+  # @param modul [Class]         a RIB::Module
   # @param name  [Symbol]        command name
   # @param args  [Array<String>] arguments to pass
   #
   # @return [String]                text to reply
   # @return [Array(String, String)] text and target to reply to
+  # @return [nil] if nothing should be responded
 
   def call_command(modul, name, args = [])
     timeout = modul.timeouts[name]
-    timeout(timeout) { module_instance(modul).send(name, *args) }
-  rescue Timeout::Error
-    @bot.logger.warn "message processing took too long: '#{msg.text}'."
-    nil
-  rescue => e
-    @bot.logger.warn "Error while processing command: #{name}"
-    @bot.logger.warn e
-    nil
+    call_with_timeout(timeout) { module_instance(modul).send(name, *args) }
   end
 
 
@@ -163,6 +184,13 @@ class RIB::MessageHandler
   end
 
 
+  ##
+  # Let the Bot speak to the channel, or user.
+  #
+  # @param args [Array<String>]  
+  #
+  # @return [void]
+
   def say(*args)
     text, target = args.count == 2 ? args : [args * ' ', nil]
     text.to_s.split("\n").each do |line|
@@ -171,6 +199,14 @@ class RIB::MessageHandler
     end
   end
 
+
+  ##
+  # Create an instance of a {Module} which can be used for further
+  # message processing.
+  #
+  # @param modul [Class] a RIB::Module
+  #
+  # @return [Object] instance of the passed Class
 
   def module_instance(modul)
     modul.new(@bot, @msg)

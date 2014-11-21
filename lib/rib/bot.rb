@@ -66,7 +66,7 @@ class RIB::Bot
   ##
   # Connection Class object of the Bot instance depending on the Bot
   # instance's protocol. For example
-  # {RIB::Protocol::IRC::Connection}.
+  # {RIB::Connection::IRC::Connection}.
   #
   # @return [Connection]
 
@@ -170,7 +170,7 @@ class RIB::Bot
 
   ##
   # Output a message to a target (a user or channel). This calls the
-  # #server_say method of the loaded {Protocol} module.
+  # #say method of the loaded {Connection::Adapter}.
   #
   # @param text   [String] message to send, if multiline, then each
   #   line will be sent separately.
@@ -232,14 +232,14 @@ class RIB::Bot
 
   ##
   # Depending on the protocol the Bot instance has configured, the
-  # appropriate {Protocol::Adapter} has to be loaded for connection
+  # appropriate {Connection::Adapter} has to be loaded for connection
   # handling. The class name has to be te protocol name upcase and
   # has to be stored in a file with its name downcase with '.rb'
   # extension. Otherwise an exception is raised.
   #
   # @raise [LoadError] if file cannot be loaded
   #
-  # @return[Object] a {Protocol::Adapter} subclass
+  # @return[Object] a {Connection::Adapter} subclass
 
   def get_connection_adapter(protocol_name)
     require "rib/connection/#{protocol_name}"

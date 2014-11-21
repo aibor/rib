@@ -4,10 +4,11 @@ require 'rib'
 require "#{__dir__}/tcp_socket_mock"
 
 
-RSpec.describe RIB::Protocol::IRC do
+RSpec.describe RIB::Connection::IRC do
   include_examples 'tcp_socket_mock'
-  include_examples 'bot instance', RIB::Protocol::IRC::Connection
+  include_examples 'bot instance', RIB::Connection::IRC::Connection
 
+  let(:rib_msg) { RIB::Message.new('!help', 'rib', '#rib') }
 
   before do
     server.send(':localhost 001')
@@ -27,12 +28,14 @@ RSpec.describe RIB::Protocol::IRC do
     bot = RIB::Bot.new do |b|
       b.protocol      = :irc
       b.logdir        = test_log_dir
-      b.modules       = [:Core, :TestCore, :Reply]
+      b.modules       = [:Core, :Fact]
       b.replies_file  = "#{test_dir}/replies.yml"
       b.debug         = true
     end
 
-    bot.instance_eval { load_protocol_module }
+    bot.instance_eval do
+      @connection_adapter = RIB::Connection::IRC.new(config, log_path)
+    end
 
     bot
   end
@@ -40,7 +43,7 @@ RSpec.describe RIB::Protocol::IRC do
 
   describe '#process_privmsg' do
     let(:msg) do
-      RIB::Protocol::IRC::Message.new(
+      RIB::Connection::IRC::Connection::Message.new(
         'rib!~rib@rib.users.example.org',
         'rib',
         '#rib',
@@ -57,7 +60,7 @@ RSpec.describe RIB::Protocol::IRC do
 
     it 'calls process_msg' do
       expect(bot).to receive(:process_msg).
-        with(RIB::Message.new('!test', 'rib', '#rib'), true).
+        with(RIB::MessageHandler.new(rib_msg) {}).
         and_return(true)
       is_expected.to be true
     end
@@ -67,10 +70,10 @@ RSpec.describe RIB::Protocol::IRC do
     it 'logs and shouts' do
       allow_message_expectations_on_nil
       expect(bot.instance_variable_get('@log')).to receive(:debug).
-        with("server_say: 'yo' to '#rib'")
+        with("say 'yo' to '#rib'")
       expect(bot.instance_variable_get('@connection')).to \
         receive(:privmsg).with('#rib', ':yo')
-      bot.instance_eval { server_say('yo', '#rib') }
+      bot.instance_eval { say('yo', '#rib') }
     end
   end
 
@@ -79,12 +82,11 @@ RSpec.describe RIB::Protocol::IRC do
   context 'from user perspective' do
     it 'runs and replies' do
       bot.run
-      p bot.modules.keys
       sleep 0.1
       expect(server.received).to include('PRIVMSG #rib :pong')
       expect(server.received).to include('PRIVMSG #rib :yo')
       expect(server.received).to \
-        include('PRIVMSG #rib :Available Modules: Core, TestCore')
+        include('PRIVMSG #rib :Available Modules: Fact, Core')
     end
   end
 

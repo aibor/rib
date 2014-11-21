@@ -10,9 +10,6 @@ module RIB::Connection
 
   class IRC < Adapter
 
-    autoload :Connection, "#{to_file_path(self.name)}/connection"
-
-
     def initialize(config, log_path)
       # ruby1.9.3 - no to_h for Structs
       ssl_hash = config.ssl.members.inject({}) do |hash, key|

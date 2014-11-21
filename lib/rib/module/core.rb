@@ -60,7 +60,7 @@ class RIB::Module::Core < RIB::Module::Base
         "Unknown command '#{cmd}'. Try '#{bot.config.tc}list'."
       end
     else
-      print_help(self, 'help')
+      print_help(self.class, 'help')
     end
   end
 

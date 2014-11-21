@@ -1,14 +1,14 @@
 # coding: utf-8
 
-require 'rib/protocol/xmpp/connection'
+require 'rib/connection/xmpp'
 require "#{__dir__}/jabber_mock"
 
-RSpec.describe RIB::Protocol::XMPP::Connection do
+RSpec.describe RIB::Connection::XMPP::Connection do
   include_examples 'jabber_mock'
   include TestFilesSetup
 
   let(:conn) do
-    RIB::Protocol::XMPP::Connection.new(
+    RIB::Connection::XMPP::Connection.new(
       test_log_dir,
       'muc.xmpp.example.com',
       'rib',
@@ -23,7 +23,7 @@ RSpec.describe RIB::Protocol::XMPP::Connection do
 
   describe '.new' do
     subject { conn }
-    it { is_expected.to be_a(RIB::Protocol::XMPP::Connection) }
+    it { is_expected.to be_a(RIB::Connection::XMPP::Connection) }
   end
 
 

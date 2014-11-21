@@ -49,7 +49,7 @@ class RIB::Module::LinkTitle < RIB::Module::Base
 
   def formattitle(title)
     return nil if title.nil? || title.empty?
-    if bot.protocol== :irc
+    if bot.config.protocol== :irc
       return nil if title.nil? || title.empty?
       case title
       when /(\s+- YouTube\s*\Z)/ then

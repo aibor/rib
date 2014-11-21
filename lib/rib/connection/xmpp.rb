@@ -7,9 +7,6 @@ module RIB::Connection
   
   class XMPP < Adapter
 
-    autoload :Connection, "#{to_file_path(self.name)}/connection"
-    
-
     def initialize(config, log_path)
       Jabber::debug = true if config.debug
 
@@ -32,9 +29,10 @@ module RIB::Connection
 
           begin
             rib_msg = RIB::Message.new(text, nick, room)
-            yield RIB::MessageHandler.new(rib_msg) do |line|
+            handler = RIB::MessageHandler.new(rib_msg) do |line|
               say line, muc
             end
+            yield handler
           rescue
           end
         end

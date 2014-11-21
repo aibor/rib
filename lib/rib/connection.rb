@@ -6,15 +6,15 @@ require 'logger'
 
 ##
 # Protocol independent object for connection handling. Provides a
-# class {Base}, which is intended to be inherited by {Protocol}
+# class {Base}, which is intended to be inherited by protocol specific
 # connection classes.
 
 module RIB::Connection
 
   ##
-  # This object is intended to manage the logging of the {Protocol}
-  # activities. These are divided in server logs and logs for each
-  # channel. The exact log file name is built based on the server
+  # This object is intended to manage the logging of the server and
+  # channel messages. These are splitted in individual files.
+  # The exact log file name is built based on the server
   # hostname and the respective channel name. All these files are
   # stored in the directory that is specified in {#path}.
   #
@@ -91,11 +91,16 @@ module RIB::Connection
 
     attr_reader :connection
 
+    def self.inherited(subclass)
+      subclass.autoload :Connection,
+        "#{to_file_path(subclass.name)}/connection"
+    end
+
   end
 
 
   ##
-  # Base class for {Protocol} Connection classes. All protocol
+  # Base class for Connection classes. All protocol
   # independent methods should live here. This means methods related
   # to logging and error handling.
 

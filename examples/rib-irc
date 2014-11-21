@@ -17,8 +17,9 @@ rib = RIB::Bot.new do |bot|
   bot.qmsg = 'See you later, shitlords!'
   bot.debug = false
   bot.admin = 'ribmaster'
-  bot.modules = [:core, :link_title, :quotes, :search, :fun, :alarm]
-  bot.replies_file = 'replies.yml'
+  bot.modules = [:Core, :LinkTitle, :Quotes, :Search, :Fun, :Alarm, :Fact]
+  bot.facts_file = 'examples/facts.yml'
 end
 
 rib.run
+

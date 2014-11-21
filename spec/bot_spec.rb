@@ -12,7 +12,14 @@ RSpec.shared_examples 'bot instance' do |klass|
 
 
   describe '#init_connection' do
-    let(:init) { bot.instance_eval { init_connection } }
+    let(:init) do
+      bot.instance_eval do
+        adapter = get_connection_adapter(config.protocol)
+        @connection_adapter = adapter.new(config, log_path)
+        @connection = @connection_adapter.connection
+      end
+    end
+
 
     it 'creates Connection' do
       expect(init).to be_a(klass)

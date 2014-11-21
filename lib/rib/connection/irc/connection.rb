@@ -244,7 +244,7 @@ module RIB::Connection
     def method_missing(meth, *args)
       if MESSAGE_METHODS.include? meth
         params = args.dup
-        params[-1] = params.last.sub(/\A[^:]/, ':\&')
+        params[-1] = params.last.sub(/\A[^:].* /, ':\&')
         send_message "#{meth.to_s.upcase} #{params * ' '}"
       else
         super

@@ -8,8 +8,7 @@ module RIB::Helpers
   ##
   # Test if the instance is limited to specific protocols and if these
   # include one or several specific ones. This is useful for checking
-  # if a {Module}, {Command} or {Trigger} is able to handle one
-  # or several protocols.
+  # if a {Module} is able to handle one or several protocols.
   #
   # @param [Symbol, Array<Symbol>] protocols  one or several protocol
   #   names to check

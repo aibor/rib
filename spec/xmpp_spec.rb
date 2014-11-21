@@ -1,10 +1,10 @@
 # coding: utf-8
 
-require 'rib/protocol/xmpp'
+require 'rib/connection/xmpp'
 
 
-RSpec.describe RIB::Protocol::XMPP do
-  include_examples 'bot instance', RIB::Protocol::XMPP::Connection
+RSpec.describe RIB::Connection::XMPP do
+  include_examples 'bot instance', RIB::Connection::XMPP::Connection
 
   before do
     wayne = Logger.new('/dev/null')
@@ -20,18 +20,22 @@ RSpec.describe RIB::Protocol::XMPP do
       b.replies_file  = "#{test_dir}/replies.yml"
     end
 
-    bot.instance_eval { load_protocol_module }
+    bot.instance_eval do
+        adapter = get_connection_adapter(:xmpp)
+        @connection_adapter = adapter.new(config, log_path)
+        @connection = @connection_adapter.connection
+    end
 
     bot
   end
 
 
-  describe '#server_say' do
+  describe '#say' do
     it 'says to muc' do
       bot.instance_eval { @test_muc = Jabber::MUC::SimpleMUCClient.new('') }
       expect(bot.instance_variable_get('@test_muc')).to \
         receive(:say).with('yo')
-      bot.instance_eval { server_say('yo', @test_muc) }
+      bot.instance_eval { say('yo', @test_muc) }
     end
   end
 

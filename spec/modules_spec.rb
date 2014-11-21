@@ -12,13 +12,13 @@ RSpec.describe RIB::Module do
         def test(test_param)
           "command invoked with arg: '#{test_param}'"
         end
-        response test: /^(test)$/
+        trigger /^(test)$/ do test("hi") end
       end
 
     let(:modul) { RIB::Module::Test }
 
     it 'sets a description' do
-      expect(modul.description[nil]).to eq('test module')
+      expect(modul.descriptions[nil]).to eq('test module')
     end
 
 
@@ -30,10 +30,10 @@ RSpec.describe RIB::Module do
     end
 
 
-    describe '#response' do
-      it 'adds to @responses' do
-        response = modul.responses[:test]
-        expect(response).to eq(/^(test)$/)
+    describe '#trigger' do
+      it 'adds to @triggers' do
+        response = modul.triggers[/^(test)$/]
+        expect(response).to be_a(Proc)
       end
     end
   end

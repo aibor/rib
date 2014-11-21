@@ -1,14 +1,14 @@
 # coding: utf-8
 
-require 'rib/protocol/irc/connection'
+require 'rib/connection/irc.rb'
 require "#{__dir__}/tcp_socket_mock"
 
-RSpec.describe RIB::Protocol::IRC::Connection do
+RSpec.describe RIB::Connection::IRC::Connection do
   include_examples 'tcp_socket_mock'
   include TestFilesSetup
 
   let(:conn) do
-    RIB::Protocol::IRC::Connection.new(
+    RIB::Connection::IRC::Connection.new(
       test_log_dir,
       'irc.example.com',
       'rib'
@@ -45,7 +45,7 @@ RSpec.describe RIB::Protocol::IRC::Connection do
     end
 
     it 'receives messages' do
-      expect(msg).to be_a(RIB::Protocol::IRC::Message)
+      expect(msg).to be_a(RIB::Connection::IRC::Connection::Message)
     end
 
     it 'parses the message' do
@@ -69,6 +69,7 @@ RSpec.describe RIB::Protocol::IRC::Connection do
     it 'sends nick and user' do
       server.send(':localhost 001')
       conn.login
+      conn.stop_ping_thread
       expect(server.received.first).to eq('NICK rib')
       expect(server.received.last).to \
         eq('USER rib hostname servername :rib')
@@ -118,7 +119,7 @@ RSpec.describe RIB::Protocol::IRC::Connection do
 
   describe '#whois' do
     subject { whois_me }
-    it { is_expected.to be_a(RIB::Protocol::IRC::User) }
+    it { is_expected.to be_a(RIB::Connection::IRC::Connection::User) }
   end
 
 
