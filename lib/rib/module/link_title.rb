@@ -3,7 +3,7 @@
 require 'html/html'
 
 
-class RIB::Module::LinkTitle < RIB::Module::Base
+class RIB::Module::LinkTitle < RIB::Module
 
   describe 'HTML title parser for URLs'
 
@@ -14,7 +14,7 @@ class RIB::Module::LinkTitle < RIB::Module::Base
   describe html_title: 'Get the HTML title if a URL is received'
 
 
-  trigger /(http[s]?:\/\/[-?&+%=_.~a-zA-Z0-9\/:]+)/ do |match|
+  trigger(/(http[s]?:\/\/[-?&+%=_.~a-zA-Z0-9\/:]+)/) do |match|
     html_title(match[1])
   end
 

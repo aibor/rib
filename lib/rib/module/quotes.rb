@@ -1,6 +1,6 @@
 # coding: utf-8
 
-class RIB::Module::Quotes < RIB::Module::Base
+class RIB::Module::Quotes < RIB::Module
 
   class << self
     attr_accessor :quotes

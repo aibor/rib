@@ -3,7 +3,7 @@
 require 'yaml'
 
 
-class RIB::Module::Fact < RIB::Module::Base
+class RIB::Module::Fact < RIB::Module
 
   class << self
 
@@ -70,7 +70,7 @@ class RIB::Module::Fact < RIB::Module::Base
 
     def sanitize_facts
       return unless @facts.respond_to?(:sort)
-      facts = @facts.sort.inject({}) do |hash, (key, value)|
+      @facts.sort.inject({}) do |hash, (key, value)|
         value.compact! if value.respond_to?(:compact)
         if value && value.any?
           hash[key] = [value].flatten

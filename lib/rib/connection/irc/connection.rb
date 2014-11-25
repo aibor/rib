@@ -1,50 +1,15 @@
 # coding: utf-8
 
-require 'rib/connection.rb'
 require 'socket'
 require 'openssl'
 require 'logger'
 require 'date'
+require 'rib/connection/irc/message.rb'
 
 
-module RIB::Connection
+class RIB::Connection::IRC
 
-  class IRC::Connection < Base
-
-    class Message < Struct.new(:prefix, :user, :source, :command, :params,
-                               :data)
-
-      ##
-      # regular expression for parsing a message received by the server.
-
-      RE = / \A
-      (?::((?:([^!]+)!)?\S+)\s)?  # prefix and user
-      ([A-Za-z]+|\d{3})           # command
-      ((?:\s[^:]\S+)*)            # params, minus last
-      (?:\s:?(?>(.*)))?           # data
-      \Z /x
-
-
-      ##
-      # Parse a received message string into a handy object.
-      #
-      # @param msg [String] message to parse
-      #
-      # @return [Message]
-
-      def self.parse(msg = '')
-        raise(RIB::MalformedMessageError, msg) unless msg.to_s =~ RE
-
-        prefix, user, command, params = $1, $2, $3, $4.split + [$5].compact
-        source = unless params[0].to_s.empty?
-                   params[0].to_s[/\A#.*/] || user
-                 end
-
-        new(prefix, user, source, command, params, params.last)
-      end
-
-    end
-
+  class Connection < RIB::Connection
 
     User = Struct.new(:user, :channels, :server, :auth)
 
@@ -74,6 +39,7 @@ module RIB::Connection
     def initialize(log_path, host, nick, options = Hash.new)
       @options = DEFAULT_OPTIONS.merge options
       @host, @nick, @mutex = host, nick, Mutex.new
+      @ping_thread = @last_pong = nil
 
       connect
 
@@ -95,7 +61,7 @@ module RIB::Connection
 
     def login
       nick @nick
-      user @nick, 'hostname', 'servername', ":#{@nick}"
+      user @nick, 'rib.rules.org', 'rib.rules.org', ":#{@nick}"
 
       reply = receive_until do |c|
         c.command =~ /\A(?:43[1236]|46[12]|001)\Z/
@@ -186,8 +152,8 @@ module RIB::Connection
         receive
       else
         irclog(msg)
-        rib_msg = Message.parse(msg)
-        ctcp?(rib_msg) || pong?(rib_msg) ? receive : rib_msg
+        rib_msg = IRC::Message.parse(msg)
+        (ctcp?(rib_msg) || pong?(rib_msg)) ? receive : rib_msg
       end
     end
 
@@ -204,14 +170,14 @@ module RIB::Connection
 
       out = User.new
 
-      while msg = receive
-        2.times {|i| msg.params.shift}
-        case msg.command
+      receive_until do |msg|
+        msg.params.shift(2)
+        !case msg.command
         when /\A(?:311)\Z/ then out.user = msg.params * " "
         when /\A(?:319)\Z/ then out.channels = msg.params[0].split
         when /\A(?:312)\Z/ then out.server = msg.params * " "
         when /\A(?:330)\Z/ then out.auth = msg.params[0]
-        when /\A(?:318)\Z/ then break
+        when /\A(?:318)\Z/ then false
         end
       end
 
@@ -292,7 +258,7 @@ module RIB::Connection
         ssl_context.key = OpenSSL::PKey::RSA.new(cert)
       end
 
-      if Dir.exists?(options[:ca_path].to_s)
+      if Dir.exist?(options[:ca_path].to_s)
         ssl_context.ca_path = options[:ca_path].to_s
       end
 
@@ -323,9 +289,10 @@ module RIB::Connection
 
       @ping_thread = Thread.new do
         while @mutex.synchronize { @last_pong.to_i } == last_ping
-          @irc_socket.puts("PING #{last_ping += 1}")
+          send_message("PING #{last_ping += 1}")
           sleep PING_INTERVAL
         end
+        puts 3
         raise RIB::LostConnectionError
       end
     end
@@ -417,7 +384,7 @@ module RIB::Connection
     def ctcp?(msg)
       resp = case msg.data
              when /\APING (.*)\z/
-               "PING #{$1}"
+               msg.data
              when /\ATIME\z/
                "TIME #{Time.now.strftime('%c %Z')}"
              when /\AVERSION\z/

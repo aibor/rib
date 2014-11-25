@@ -9,7 +9,7 @@ module RIB
   autoload :Helpers,        'rib/helpers'
   autoload :Configuration,  'rib/configuration'
   autoload :Module,         'rib/module'
-  autoload :Protocol,       'rib/protocol'
+  autoload :ModuleSet,      'rib/module_set'
   autoload :MessageHandler, 'rib/message_handler'
   autoload :Message,        'rib/message'
   autoload :Connection,     'rib/connection'

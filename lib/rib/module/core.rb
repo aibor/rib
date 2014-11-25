@@ -1,6 +1,6 @@
 # coding: utf-8
 
-class RIB::Module::Core < RIB::Module::Base
+class RIB::Module::Core < RIB::Module
 
   describe 'Core Module'
 

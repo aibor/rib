@@ -1,7 +1,6 @@
 # coding: utf-8
 
 require 'logger'
-require 'set'
 require 'rib'
 
 
@@ -110,7 +109,7 @@ class RIB::Bot
 
     @logger = @connection = @startime = @connection_adapter = nil
 
-    @threads, @modules = [], RIB::Module::Set.new([])
+    @threads, @modules = [], RIB::ModuleSet.new([])
 
     configure(&block) if block_given?
   end
@@ -307,7 +306,7 @@ class RIB::Bot
 
   def load_modules
     RIB::Module.load_all
-    @modules = RIB::Module::Set.new(@config.modules, @config.protocol)
+    @modules = RIB::ModuleSet.new(@config.modules, @config.protocol)
     @modules.each { |modul| modul.init(self) }
   end
 
@@ -327,7 +326,7 @@ class RIB::Bot
 
     join_channels
 
-    @connection.setme @config.nick
+    #@connection.setme @config.nick
   end
 
 

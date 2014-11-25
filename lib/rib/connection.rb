@@ -1,15 +1,47 @@
 # coding: utf-8
 
-require 'rib'
 require 'logger'
 
 
 ##
-# Protocol independent object for connection handling. Provides a
-# class {Base}, which is intended to be inherited by protocol specific
-# connection classes.
+# Protocol independent object for connection handling.
+# Base class for Connection classes. All protocol
+# independent methods should live here. This means methods related
+# to logging and error handling.
 
-module RIB::Connection
+class RIB::Connection
+
+  ##
+  # Handler of all logging instances.
+  #
+  # @return [Logging]
+
+  attr_reader :logging
+
+
+  ##
+  # @param [String] log_path path of the log file directory
+  # @param [String] hostname hostname of the server to connect to
+  # @param [Array] args protocol specific arguments
+
+  def initialize(log_path, hostname, *args)
+    @logging = Logging.new(log_path, hostname)
+
+    @me = String.new
+  end
+
+
+  ##
+  # Toggle logging on/off. Since Logging is disabled on connection
+  # initialization, in order to discard MOTDs and stuff, it needs
+  # to be switched on once initialization is done.
+  #
+  # @return [Boolean] logging active?
+
+  def togglelogging
+    @logging.active ^= true
+  end
+
 
   ##
   # This object is intended to manage the logging of the server and
@@ -77,7 +109,7 @@ module RIB::Connection
     def logger(file_path)
       logger = Logger.new(file_path)
       logger.formatter = proc do |severity, datetime, progname, message|
-        format = "%s -- %s\n" % [datetime.strftime('%F %X'), message]
+        "%s -- %s\n" % [datetime.strftime('%F %X'), message]
       end
       logger
     end
@@ -94,47 +126,6 @@ module RIB::Connection
     def self.inherited(subclass)
       subclass.autoload :Connection,
         "#{to_file_path(subclass.name)}/connection"
-    end
-
-  end
-
-
-  ##
-  # Base class for Connection classes. All protocol
-  # independent methods should live here. This means methods related
-  # to logging and error handling.
-
-  class Base
-
-    ##
-    # Handler of all logging instances.
-    #
-    # @return [Logging]
-
-    attr_reader :logging
-
-
-    ##
-    # @param [String] log_path path of the log file directory
-    # @param [String] hostname hostname of the server to connect to
-    # @param [Array] args protocol specific arguments
-
-    def initialize(log_path, hostname, *args)
-      @logging = Logging.new(log_path, hostname)
-
-      @me = String.new
-    end
-
-
-    ##
-    # Toggle logging on/off. Since Logging is disabled on connection
-    # initialization, in order to discard MOTDs and stuff, it needs
-    # to be switched on once initialization is done.
-    #
-    # @return [Boolean] logging active?
-
-    def togglelogging
-      @logging.active ^= true
     end
 
   end

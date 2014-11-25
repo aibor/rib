@@ -1,6 +1,6 @@
 # coding: utf-8
 
-class RIB::Module::Fun < RIB::Module::Base
+class RIB::Module::Fun < RIB::Module
 
   describe 'Couple of useless commands'
 
@@ -19,7 +19,7 @@ class RIB::Module::Fun < RIB::Module::Base
   end
 
 
-  trigger /\A((?:ACTION|\/me)\s+salutes)\Z/ do |match|
+  trigger(/\A((?:ACTION|\/me)\s+salutes)\Z/) do |match|
     "#{match[1]}\nI am Dave ! Yognaught and I have the balls!"
   end
 

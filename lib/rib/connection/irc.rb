@@ -3,7 +3,7 @@
 require 'rib'
 
 
-module RIB::Connection
+class RIB::Connection
 
   ##
   # IRC connection handling module.

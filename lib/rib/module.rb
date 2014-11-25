@@ -88,123 +88,316 @@ require 'set'
 #
 # @see Module::Base
 
-module RIB::Module
-
-  extend RIB::Helpers
-  extend self
-
-  autoload :Base, 'rib/module/base'
+class RIB::Module
 
   Directory = File.expand_path("../module/*.rb", __FILE__)
 
 
-  ##
-  # Load all modules in a directory.
-  #
-  # @param [String] path
-  #
-  # @return [Array<String>] found and loaded files
-
-  def load_all(path = Directory)
-    Dir[path].each { |f| load f }
-    loaded
-  end
-
-
-  ##
-  # Set that holds all subclasses of {Module::Base}, which are
-  # Bot modules.
-  #
-  # @param name_only [Boolean] if only the class names without namespace
-  #   prfix should be returned
-  #
-  # @return [Set<Object>] either the Instances or just their base class
-  #   names
-
-  def loaded(name_only = false)
-    @loaded ||= ::Set.new
-    name_only ? @loaded.map(&:key).to_set : @loaded
-  end
-
-
-  ##
-  # Specialized Set for carrying our loaded and desired module classes.
-
-  class Set < ::Set
+  class << self
 
     ##
-    # Bot protocol this Set is used for. (:irc odr :xmpp)
+    # If the module can only be used with specific protocols, these
+    # can be set in this attribute. If it works with all protocols,
+    # it is nil.
     #
-    # @return [Symbol, nil]
+    # @return [Array<Symbol>] if it works with several protocols
+    # @return [nil]           if it works with all protocols
 
-    attr_reader :protocol
+    attr_reader :protocols
 
 
     ##
-    # @param module_names [Array<Symbol>]
+    # Callback method, which is called when a class inherits from this
+    # class. Used to add the sublass to our loaded module list.
+    
+    def inherited(subclass)
+      loaded << subclass
+      @init_blocks = []
+      @descriptions = {}
+      @timeouts = Hash.new(5)
+      @triggers = {}
+      super
+    end
+
+
+    ##
+    # @return [Symbol] base class name of this class
+
+    def key
+      name.split(':').last.to_sym
+    end
+
+
+    ##
+    # @return [Array<Proc>] blocks that should be called on init
+
+    def init_blocks
+      @init_blocks ||= []
+    end
+
+
+    ##
+    # @return [Array<Symbol>] all available commands for this module
+
+    def commands
+      public_instance_methods(false)
+    end
+
+
+    ##
+    # @return [Hash{Symbol => String}] descriptions for module and
+    #   commands
+
+    def descriptions
+      @descriptions ||= {}
+    end
+
+
+    ##
+    # @return [Hash{Symbol => Fixnum}] timeouts for commands
+
+    def timeouts
+      @timeout ||= Hash.new(5)
+    end
+
+
+    ##
+    # @return [Hash{Regexp => Proc}] triggers and the blocks that should
+    #   be called when they match
+
+    def triggers
+      @triggers ||= {}
+    end
+
+
+    ##
+    # Check if this module responds to the command name and if this
+    # method can take the number of arguments
+    #
+    # @param command_name [Symbol] name of the command
+    # @param args_count   [Fixnum] number of arguments
+    #
+    # @return [Boolean]
+
+    def has_command_for_args?(command_name, args_count)
+      unless public_instance_methods(false).include?(command_name)
+        return false 
+      end
+
+      method = instance_method(command_name)
+      params = method.parameters.group_by(&:first)
+
+      return true if params[:rest]
+
+      args_min = params[:req].to_a.count
+      args_max = args_min + params[:opt].to_a.count
+
+      args_count.between?(args_min, args_max)
+    end
+
+
+    ##
+    # Call the {.init_blocks} for this module.
+    #
+    # @param bot [Bot] the Bot instance the modules are used for.
+    #
+    # @return [void]
+
+    def init(bot)
+      init_blocks.each do |block|
+        block.call(bot)
+      end
+    end
+
+
+    ##
+    # Load all modules in a directory.
+    #
+    # @param [String] path
+    #
+    # @return [Array<String>] found and loaded files
+
+    def load_all(path = Directory)
+      Dir[path].each { |f| load f }
+      loaded
+    end
+
+
+    ##
+    # Set that holds all subclasses of {Module::Base}, which are
+    # Bot modules.
+    #
+    # @return [Set<Object>] either the Instances or just their base class
+    #   names
+
+    def loaded
+      @loaded ||= ::Set.new
+    end
+
+
+    ##
+    # Test if the instance is limited to specific protocols and if these
+    # include one or several specific ones. This is useful for checking
+    # if a {Module} is able to handle one or several protocols.
+    #
     # @param protocol [Symbol]
+    #
+    # @return [Boolean] self is able to handle the passed protocol?
 
-    def initialize(module_names, protocol = nil)
-      @protocol = protocol
-
-      modules = RIB::Module.loaded.select do |modul|
-        module_names.include?(modul.key) && modul.speaks?(protocol)
+    def speaks?(protocol)
+      case @protocols
+      when Symbol then @protocols == protocol
+      when Array  then @protocols.include?(protocol)
+      when nil    then true
+      else false
       end
-
-      super(modules)
     end
 
 
-    ##
-    # Find all modules, that respond to a given command name and allow
-    # the given number of arguments.
-    #
-    # @param cmd_name [Symbol]
-    # @param args [Array<String>]
-    #
-    # @return [Array<Class>]
-
-    def responding_modules(cmd_name, args)
-      @hash.select do |modul, state|
-        state && modul.has_command_for_args?(cmd_name, args.count)
-      end.keys
-    end
-
+    private
 
     ##
-    # Find a module woth the given name
+    # Register a {Configuration] directive for the module.
     #
-    # @param name [#to_s]
-    # 
-    # @return [Class, nil]
-
-    def find_module(name)
-      modul = @hash.find do |modul, state|
-        state && modul.key.to_s.casecmp(name.to_s).zero?
-      end
-      modul.first if modul
-    end
-
-
-    ##
-    # Find all triggers that match the given text. In order to avoid
-    # running the regexp again against the text, return the MatchData
-    # along with the block for the trigger.
+    # @param hash [Hash{Symbol => Object}]
     #
-    # @param text [String]
-    #
-    # @return [Hash{Class => Array<Array(Proc,MatchData)>]
+    # @return [void]
 
-    def matching_triggers(text)
-      @hash.inject(Hash.new([])) do |hsh, (modul, state)|
-        modul.triggers.each do |trigger, block|
-          match = trigger.match(text)
-          hsh[modul] += [[block, match]] if state && match
+    def register(hash)
+      raise TypeError, 'not a Hash' unless hash.is_a? Hash
+
+      hash.each do |config_key, default_value|
+        if config_key.respond_to?(:to_sym)
+          RIB::Configuration.register(config_key.to_sym, default_value)
         end
-        hsh
       end
     end
 
+
+    ##
+    # Define a block that is called when {.init} is called for the
+    # module by a Bot.
+    #
+    # @yieldparam bot [Bot]
+
+    def on_init(&block)
+      init_blocks << block if init_blocks.none?(&:source_location)
+    end
+
+
+    ##
+    # If a String is passed, sets the description for the RIB::Module.
+    # If a Hash is passed, it sets descriptions for the commands with
+    # the name of the keys.
+    #
+    # @see #descriptions
+    #
+    # @param argument [String, Hash{Symbol => #to_s}]
+    #
+    # @return [void]
+
+    def describe(argument)
+      case argument
+      when String
+        descriptions[nil] = argument
+      when Hash
+        argument.each do |cmd, desc|
+          if cmd.respond_to?(:to_sym) && desc.respond_to?(:to_s)
+            descriptions[cmd.to_sym] = desc.to_s 
+          end
+        end
+      end
+    end
+
+
+    ##
+    # Set timeout for a command or a trigger. Default timeout is 5
+    # seconds.
+    #
+    # @param hash [Hash{Symbol => Fixnum}]
+    #
+    # @return [void]
+
+    def timeout(hash)
+      raise TypeError, 'not a Hash' unless hash.is_a? Hash
+
+      hash.each do |command, timeout|
+        raise TypeError, 'not a Fixnum' unless timeout.is_a?(Fixnum)
+        timeouts[command] = timeout
+      end
+    end
+
+
+    ##
+    # Define a block a bot should call if a message matches the
+    # trigger. The block is evaluated in the instance scope of the
+    # bot module it belongs to, which shall inherit from
+    # {RIB::Module::Base}.
+    #
+    # @example
+    #   trigger /\bcrap\b/ do
+    #     "#{msg.user}: oh yes, everything is crap!"
+    #   end
+    #
+    # @param regexp [Regexp] when to be invoked
+    #
+    # @yield 
+    # @yieldreturn [String, [String, String]]
+    #
+    # @raise [TypeError] if regexp is not a Regexp
+    #
+    # @return [Proc] the block
+
+    def trigger(regexp, timeout = nil, &block)
+      if regexp.is_a?(Regexp)
+        triggers[regexp] = block
+        timeouts[regexp] = timeout.to_i if timeout
+      else
+        raise TypeError, "not a Regexp: #{regexp.inspect}"
+      end
+    end
+
+  end
+
+
+  ##
+  # The bot instance the module is called for.
+  #
+  # @return [Bot]
+
+  attr_reader :bot
+
+
+  ##
+  # The message the module is called for.
+  #
+  # @return [Message]
+
+  attr_reader :msg
+
+
+  ##
+  # @param bot [Bot]
+  # @param msg [Message]
+
+  def initialize(bot, msg)
+    @bot, @msg = bot, msg
+  end
+
+
+  private
+
+  ##
+  # Logger that can be used for convenient logging from a module.
+  #
+  # @return [Logger]
+
+  def logger
+    unless @logger
+      @logger = bot.logger.dup
+      @logger.progname = self.class.name
+    end
+    @logger
   end
 
 end

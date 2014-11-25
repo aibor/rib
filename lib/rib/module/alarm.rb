@@ -5,7 +5,7 @@ require 'alarm_bucket'
 require 'rib/module'
 
 
-class RIB::Module::Alarm < RIB::Module::Base
+class RIB::Module::Alarm < RIB::Module
 
   describe 'Manage alarms'
 

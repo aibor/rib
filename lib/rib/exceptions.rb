@@ -1,8 +1,5 @@
 # coding: utf-8
 
-require 'rib'
-
-
 module RIB::Exceptions
 
   ##

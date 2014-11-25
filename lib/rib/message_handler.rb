@@ -40,12 +40,12 @@ class RIB::MessageHandler
   def process(bot)
     @bot = bot
 
-    mod_name, cmd_name, args = parse_msg
+    @msg.parse(@bot.config.tc)
 
-    if mod_name
-      say lookup_module(mod_name, cmd_name, args)
-    elsif cmd_name
-      say lookup_command(cmd_name, args)
+    if @msg.module
+      say process_module
+    elsif @msg.command
+      say process_command
     else
       process_triggers { |response| say response }
     end
@@ -58,23 +58,19 @@ class RIB::MessageHandler
   # Try to call the requested command for the Module with the given
   # name. Return something to respond to the requesting user.
   #
-  # @param mod_name [Symbol] name of a module to call the cmd for
-  # @param cmd_name [Symbol] name of the command to call
-  # @param args [Array<String>] arguments to pass to the command
-  #
   # @return [String, Array(String, String)] response for @say block
   # @return [nil] if nothing should be responded
 
-  def lookup_module(mod_name, cmd_name, args)
-    if modul = @bot.modules.find_module(mod_name)
-      if modul.has_command_for_args?(cmd_name, args.count)
-        call_command(modul, cmd_name, args)
+  def process_module
+    if modul = @bot.modules.find_module(@msg.module)
+      if modul.has_command_for_args?(@msg.command, @msg.arguments.count)
+        call_command(modul)
       else
         "%s: No appropriate command found for module '%s'." %
           [@msg.user, modul]
       end
     else
-      "#{@msg.user}: Unknown Module: '#{mod_name}'"
+      "#{@msg.user}: Unknown Module: '#{@msg.module}'"
     end
   end
 
@@ -84,23 +80,19 @@ class RIB::MessageHandler
   # its arguments. If multiple {Module Modules} are found, tell the user
   # to invokethe command pefixed with the desired {Module} name.
   #
-  # @param cmd_name [Symbol]        command name to search for
-  # @param args     [Array<String>] arguments that shall be passed to
-  #   found method
-  #
   # @return [String, Array(String, String)] response for @say block
   # @return [nil] if nothing should be responded
 
-  def lookup_command(cmd_name, args)
-    moduls = @bot.modules.responding_modules(cmd_name, args)
+  def process_command
+    moduls = @bot.modules.responding_modules(@msg.command, @msg.arguments)
 
     if moduls.count > 1
       "%s: Ambigious command. Modules: '%s'. Use '%sModulname#%s'" %
-        [@msg.user, moduls.map(&:key) * ', ', @bot.config.tc, cmd_name]
+        [@msg.user, moduls.map(&:key) * ', ', @bot.config.tc, @msg.command]
     elsif moduls.one?
-      call_command(moduls.first, cmd_name, args)
+      call_command(moduls.first)
     else
-      "#{@msg.user}: Unknown command '#{cmd_name}'"
+      "#{@msg.user}: Unknown command '#{@msg.command}'"
     end
   end
 
@@ -116,9 +108,9 @@ class RIB::MessageHandler
   # @return [void]
 
   def process_triggers
-    modules = @bot.modules.matching_triggers(@msg.text)
+    triggered = @bot.modules.matching_triggers(@msg.text)
 
-    modules.each do |modul, trigger_block_array|
+    triggered.each do |modul, trigger_block_array|
       obj = module_instance(modul)
       trigger_block_array.each do |block, match|
         timeout = modul.timeouts[match.regexp]
@@ -157,29 +149,14 @@ class RIB::MessageHandler
   # returned.
   #
   # @param modul [Class]         a RIB::Module
-  # @param name  [Symbol]        command name
-  # @param args  [Array<String>] arguments to pass
   #
   # @return [String]                text to reply
   # @return [Array(String, String)] text and target to reply to
   # @return [nil] if nothing should be responded
 
-  def call_command(modul, name, args = [])
-    timeout = modul.timeouts[name]
-    call_with_timeout(timeout) { module_instance(modul).send(name, *args) }
-  end
-
-
-  ##
-  # Check if the `@msg.text` matches the Bot command syntax and return
-  # module name (optional), command name and arguments (optional).
-  #
-  # @return [(Symbol, Symbol, Array<String>] if module name is included
-  # @return [(Symbol, Array<String>] if module name is not included
-
-  def parse_msg
-    if /\A#{@bot.config.tc}(?:(\S+)#)?(\S+)(?:\s+(.*))?\z/ =~ @msg.text
-      [$1 ? $1.to_sym : $1, $2.to_sym, $3.to_s.split]
+  def call_command(modul)
+    call_with_timeout(modul.timeouts[@msg.command]) do
+      module_instance(modul).send(@msg.command, *@msg.arguments)
     end
   end
 

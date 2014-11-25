@@ -3,7 +3,7 @@
 require 'date'
 
 
-class RIB::Module::Seen < RIB::Module::Base
+class RIB::Module::Seen < RIB::Module
 
   describe 'Parse log files for information about a user.'
 
