@@ -73,12 +73,13 @@ class RIB::ModuleSet < ::Set
   # @return [Hash{Class => Array<Array(Proc,MatchData)>]
 
   def matching_triggers(text)
-    @hash.inject(Hash.new([])) do |hsh, (modul, state)|
+    seed = Hash.new([])
+    @hash.inject(seed) do |hsh, (modul, state)|
       modul.triggers.each do |trigger, block|
-      match = trigger.match(text)
-      hsh[modul] += [[block, match]] if state && match
-    end
-    hsh
+        match = trigger.match(text)
+        hsh[modul] += [[block, match]] if state && match
+      end
+      hsh
     end
   end
 

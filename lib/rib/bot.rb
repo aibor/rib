@@ -63,16 +63,6 @@ class RIB::Bot
 
 
   ##
-  # Connection Class object of the Bot instance depending on the Bot
-  # instance's protocol. For example
-  # {RIB::Connection::IRC::Connection}.
-  #
-  # @return [Connection]
-
-  attr_reader :connection
-
-
-  ##
   # The Logger instance for this Bot instance.
   #
   # @return [Logger]
@@ -105,11 +95,11 @@ class RIB::Bot
   def initialize(&block)
     RIB::Module.load_all
 
-    @config = RIB::Configuration.new
+    @logger = @startime = @connection_adapter = nil
 
-    @logger = @connection = @startime = @connection_adapter = nil
-
-    @threads, @modules = [], RIB::ModuleSet.new([])
+    @config   = RIB::Configuration.new
+    @threads  = []
+    @modules  = RIB::ModuleSet.new([])
 
     configure(&block) if block_given?
   end
@@ -151,19 +141,21 @@ class RIB::Bot
 
     begin
       init_server
+
       @connection_adapter.run_loop do |handler|
         process_msg handler
       end
+
       @threads.each(&:join)
     rescue RIB::LostConnectionError => e
-      @connection.quit(@config.qmsg) rescue nil
+      quit rescue nil
       @logger.warn e.message
       sleep(2) && retry
-    rescue => e
-      @logger.fatal e
-    ensure
-      @logger.info("EXITING")
     end
+  rescue => e
+    @logger.fatal e
+  ensure
+    @logger.info("EXITING")
   end
 
 
@@ -178,10 +170,10 @@ class RIB::Bot
   # @return [nil]
 
   def say(text, target)
-    return if text.nil?
+    return unless text || @connection_adapter
     text.split('\n').each do |line|
       next if line.empty?
-      @logger.debug "say '#{line}' to '#{target}'"
+      @logger.debug "say '#{line}' to '#{target}'" if @logger
       @connection_adapter.say line, target
     end
   end
@@ -200,9 +192,20 @@ class RIB::Bot
   def reload_modules
     load_modules
   rescue => e
-    @logger.error "Exception catched while reloading #{unit}: "
+    @logger.error "Exception catched while reloading modules: "
     @logger.error e
     false
+  end
+
+
+  ##
+  # Go away gracefully.
+  #
+  # @return [void]
+
+  def quit
+    @connection_adapter.quit(@config.qmsg) if @connection_adapter
+    exit
   end
 
 
@@ -219,11 +222,7 @@ class RIB::Bot
   def set_signals
     %w(INT TERM).each do |signal|
       Signal.trap(signal) do
-        @connection.togglelogging
-        if @connection
-          @connection.stop_ping_thread
-          @connection.quit(self.config.qmsg)
-        end
+        quit
       end
     end
   end
@@ -240,9 +239,10 @@ class RIB::Bot
   #
   # @return[Object] a {Connection::Adapter} subclass
 
-  def get_connection_adapter(protocol_name)
-    require "rib/connection/#{protocol_name}"
-    RIB::Connection.const_get(protocol_name.to_s.upcase)
+  def get_connection_adapter
+    protocol_name = @config.protocol
+    require "#{RIB::Adapters::PATH}/#{protocol_name}"
+    RIB::Adapters.const_get(protocol_name.to_s.upcase)
   end
 
 
@@ -295,11 +295,9 @@ class RIB::Bot
 
 
   ##
-  # Load all modules in a file or a directory. At first the library's
-  # {Module Modules} are loaded from `rib/modules/` directory and
-  # then user modules - specified in {Configuration#modules_dir} -
-  # are loaded. This ensures, that the core {Module Modules} commands
-  # are preferred in case of naming collisions.
+  # Load all modules in a file or a directory. {Module Modules} are
+  # loaded from `rib/modules/` directories n `$LOAD_PATH` if their name
+  # is listed in {Configuration#modules}. 
   #
   # @return [Set<Module>] all Modules for this Bot instance's
   #   protocol
@@ -317,30 +315,8 @@ class RIB::Bot
   # @return [void]
 
   def init_server
-    adapter = get_connection_adapter(@config.protocol)
-    @connection_adapter = adapter.new(config, log_path)
-    @connection = @connection_adapter.connection
-    @connection.togglelogging
-    @connection.login
-    @connection.auth_nick @config.auth if @config.defined?(:auth)
-
-    join_channels
-
-    #@connection.setme @config.nick
-  end
-
-
-  ##
-  # Iterate through channel list and join all of them.
-  #
-  # @return [void]
-
-  def join_channels
-    @config.channel.split(/\s+|\s*,\s*/).each do |chan|
-      @connection.join_channel(chan)
-      @logger.info 'Connected to %s as %s in %s' %
-        [@config.server, @config.nick, chan]
-    end
+    adapter = get_connection_adapter
+    @connection_adapter = adapter.new(@config, log_path)
   end
 
 
@@ -361,7 +337,7 @@ class RIB::Bot
 
     @threads << Thread.new do
       begin
-        msg_handler.process(self)
+        msg_handler.process_for self
       ensure
         @threads.delete(Thread.current)
       end

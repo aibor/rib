@@ -36,7 +36,6 @@ module RIB
       qmsg:          'Bye!',
       logdir:        'log/',
       debug:         false,
-      modules_dir:   'modules',
       modules:       [:Core, :LinkTitle, :Search, :Alarm, :Fun, :Quotes,
                       :Seen, :Fact]
     }
@@ -185,26 +184,6 @@ module RIB
 
 
     ##
-    # Path to the YAML file replies.re loaded from/written to. Might be
-    # an absolute path or a relative path to the directory the main
-    # application file is stored.
-    #
-    # @return [String]
-
-    attr_accessor :replies_file
-
-
-    ##
-    # Path to the directory custom modules can be found. Might be an
-    # absolute path or a relative path to the directory the main
-    # application file is stored.
-    #
-    # @return [String]
-
-    attr_accessor :modules_dir
-
-
-    ##
     # List of {Module Modules} to load.
     #
     # @return [Array<Symbol>]
@@ -295,4 +274,6 @@ module RIB
     end
 
   end
+
 end
+

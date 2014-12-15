@@ -46,12 +46,15 @@ class RIB::Module::Fact < RIB::Module
     # @return [String, Array<String>, nil] nil if none matches
 
     def define_fact_method(name)
-      return if instance_methods(false).include?(name)
+      return if public_instance_methods(false).include?(name)
+      old_verbose = $VERBOSE
+      $VERBOSE = nil
       define_method(name) do |index = nil|
       facts_a = facts[name]
       fact = facts_a[index.to_i] if index.to_s[/\A\d+\z/] 
       fact || facts_a.sample
       end
+      $VERBOSE = old_verbose
     end
 
 
@@ -93,7 +96,7 @@ class RIB::Module::Fact < RIB::Module
 
   on_init do |bot|
     file = bot.config.facts_file
-    hash = YAML.load_file(file) if File.exists?(file)
+    hash = YAML.load_file(file) if File.exist?(file)
     @facts = hash.select(&@validator) if hash
     sanitize_facts
   end

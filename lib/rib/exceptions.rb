@@ -54,6 +54,32 @@ module RIB::Exceptions
 
 
   ##
+  # Raised if a child didn't overwrite an essential method.
+
+  class NotImplementedError < StandardError
+
+    ##
+    # @param name [Symbol] method name
+
+    def initialize(name); @name = name; end
+
+    def message
+      "Method ##{@name}' not implemented by child."
+    end
+
+  end
+
+
+  class NotInstantiatableError < StandardError
+
+    def message
+      "Tried to instantiate an abstract class."
+    end
+
+  end
+
+
+  ##
   # Raised if an Error is received during login.
 
   class LoginError < StandardError; end

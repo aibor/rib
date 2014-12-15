@@ -6,7 +6,7 @@ Simple IRC and XMPP bot framework written in Ruby.
 
 ## Requirements
 
-* Ruby (tested with 1.9.3, 2.0.0, 2.1.2)
+* Ruby (tested with 2.1, but might work with others too)
 * xmpp4r gem for XMPP connections
 
 
@@ -42,56 +42,53 @@ server, channel and admin and start it:
 
 ### Interaction
 
-RIB knows three kinds of actions.
+RIB knows two kinds of actions.
 
 #### Commands
 
-Commands can be called with preceding them with the trigger character
+Commands can be called by preceding them with the trigger character
 (tc), which defaults to `!`.
 
     !list
     !help list
 
 
-#### Responses
+#### Triggers
 
-Responses trigger, if a message matches their `trigger` attribute,
+The bot responds, if a message matches the `trigger` attribute,
 which is a regular expression. They are very similar to Commands and
 differ only in the way they are triggered.
 
 
-#### Replies
-
-Replies are just simple strings that are responded if their name is
-called. Several strings can belong to a single name. If just the name
-is given, then a random one will be picked. If a number is passed the
-reply with this number will be returned.
-
-Replies are stored in a YAML file, which can be configured with the
-`replies` configuration directive. They can be managed directly via
-this file or via the Bot's `reply` command.
-
-
 ### Writing Modules
 
-Commands and Responses are defined in Modules. RIB provides a simple
-DSL for writing these Modules. A very basic Module
-would look like this:
+Commands and Triggers are defined in RIB::Modules. These are Ruby
+classes which inherit from RIB::Module. Any public instance method
+defined in that class is a command, which can be called as mentioned
+bove. Triggers are defined by their passing a regexp and a block to the
+`trigger` method. The block will be evaluated in the instance scope, so
+any public and private methods can be called from within the block.
+The block will be passed the `MatchData` object that has been received
+on evaluating the regular expression and so it can be used to access
+capture groups.
 
-  RIB::Module.new :time do
-    desc 'Time related commands'
+A very basic Module would look like this:
 
-    command :time do
-      desc 'get the current time'
-      on_call do
+  class MyTimeModule < RIB::Module
+
+    describe 'Time related commands'
+
+    describe time: 'get the current time'
+
+    def time
         Time.new.to_s
-      end
     end
+
+    trigger(/awesome (\w*)/) { |match| "#{match[1]} is truly awesome!" }
 
   end
 
-See `lib/rib/module.rb` for available commands and the modules directory
-for more examples.
+See `lib/rib/module/` for examples.
 
 
 ## Contribution
@@ -119,3 +116,4 @@ GNU General Public License for more details.
 You should have received a copy of the GNU General Public License along
 with this program; if not, write to the Free Software Foundation, Inc.,
 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
+

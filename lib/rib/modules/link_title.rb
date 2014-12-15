@@ -39,8 +39,11 @@ class RIB::Module::LinkTitle < RIB::Module
       title = HTML.title(url)
       puts "out: #{title}"
       formattitle(title)
-    rescue RuntimeError => e
+    rescue HTML::NoTitleFoundError
+      nil
+    rescue => e
       bot.logger.error e
+      e.message
     end
   end
 

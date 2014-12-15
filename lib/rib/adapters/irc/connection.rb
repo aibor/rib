@@ -4,16 +4,16 @@ require 'socket'
 require 'openssl'
 require 'logger'
 require 'date'
-require 'rib/connection/irc/message.rb'
+require 'rib/adapters/irc/message.rb'
 
 
-class RIB::Connection::IRC
+class RIB::Adapters::IRC
 
   class Connection < RIB::Connection
 
     User = Struct.new(:user, :channels, :server, :auth)
 
-    NON_LOG_CMDS = %w(PONG WHOIS PRIVMSG NOTICE)
+    NON_LOG_CMDS = %w(PONG WHOIS PRIVMSG NOTICE QUIT)
 
     DEFAULT_OPTIONS = {
       port: 6667,
@@ -67,11 +67,7 @@ class RIB::Connection::IRC
         c.command =~ /\A(?:43[1236]|46[12]|001)\Z/
       end
 
-      if reply && reply.command == "001"
-        start_ping_thread
-      else
-        raise(RIB::LoginError, reply)
-      end
+      raise(RIB::LoginError, reply) unless reply && reply.command == "001"
     end
 
 
@@ -152,7 +148,7 @@ class RIB::Connection::IRC
         receive
       else
         irclog(msg)
-        rib_msg = IRC::Message.parse(msg)
+        rib_msg = RIB::Adapters::IRC::Message.parse(msg)
         (ctcp?(rib_msg) || pong?(rib_msg)) ? receive : rib_msg
       end
     end
@@ -178,6 +174,7 @@ class RIB::Connection::IRC
         when /\A(?:312)\Z/ then out.server = msg.params * " "
         when /\A(?:330)\Z/ then out.auth = msg.params[0]
         when /\A(?:318)\Z/ then false
+        else true
         end
       end
 
@@ -218,9 +215,51 @@ class RIB::Connection::IRC
     end
 
 
+    ##
+    # Start a thread for sending PINGs to the server. Do this until the
+    # server stops responding. This is noticed by checking the last
+    # received PONG. If it doesn't match the last sent PING, an exception
+    # is raised.
+    #
+    # @raise [LostConnectionError]
+    #
+    # @return [Thread]
+
+    def start_ping_thread
+      @ping_thread.kill if @ping_thread && @ping_thread.alive?
+      last_ping = 0
+
+      @ping_thread = Thread.new do
+        while @mutex.synchronize { @last_pong.to_i } == last_ping
+          send_message("PING #{last_ping += 1}")
+          sleep PING_INTERVAL
+        end
+        raise RIB::LostConnectionError
+      end
+    end
+
+
+    ##
+    # Kill the server ping thread.
+    #
+    # @return [void]
+
     def stop_ping_thread
       @ping_thread.kill if @ping_thread.is_a?(Thread)
       @ping_thread = nil
+    end
+
+
+    ##
+    # Close the connection to the IRC server.
+    #
+    # @param msg [String] QUIT message to send
+    #
+    # @return [void]
+
+    def logout(msg = 'Bye!')
+      stop_ping_thread
+      quit(msg)
     end
 
 
@@ -270,31 +309,6 @@ class RIB::Connection::IRC
       ssl_socket.connect
 
       ssl_socket
-    end
-
-
-    ##
-    # Start a thread for sending PINGs to the server. Do this until the
-    # server stops responding. This is noticed by checking the last
-    # received PONG. If it doesn't match the last sent PING, an exception
-    # is raised.
-    #
-    # @raise [LostConnectionError]
-    #
-    # @return [Thread]
-
-    def start_ping_thread
-      @ping_thread.kill if @ping_thread && @ping_thread.alive?
-      last_ping = 0
-
-      @ping_thread = Thread.new do
-        while @mutex.synchronize { @last_pong.to_i } == last_ping
-          send_message("PING #{last_ping += 1}")
-          sleep PING_INTERVAL
-        end
-        puts 3
-        raise RIB::LostConnectionError
-      end
     end
 
 

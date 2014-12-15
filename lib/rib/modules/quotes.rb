@@ -10,10 +10,9 @@ class RIB::Module::Quotes < RIB::Module
 
 
   on_init do
-    @quotes ||= {}
-    %i(bofh brba dexter).each do |subject|
+    @quotes ||= %i(bofh brba dexter).inject({}) do |quotes, subject|
       quotefile = File.absolute_path("../data/#{subject}quotes", __FILE__)
-      @quotes[subject] = File.readlines(quotefile).each {|l| l.strip!}
+      quotes.merge(subject => File.readlines(quotefile).each {|l| l.strip!})
     end
   end
 
@@ -42,7 +41,6 @@ class RIB::Module::Quotes < RIB::Module
   private
 
   def fetch_quote(subject, number = nil)
-    puts number.inspect
     if number && (number.is_a?(Fixnum) || number[/\A\d+\z/])
       quote = self.class.quotes[subject][number.to_i - 1]
       puts quote

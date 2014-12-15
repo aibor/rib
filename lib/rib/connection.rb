@@ -27,7 +27,7 @@ class RIB::Connection
   def initialize(log_path, hostname, *args)
     @logging = Logging.new(log_path, hostname)
 
-    @me = String.new
+    @me ||= String.new
   end
 
 
@@ -76,7 +76,8 @@ class RIB::Connection
       elsif !hostname.is_a?(String)
         raise TypeError, 'hostname is not a String'
       else
-        super(path, hostname, false, logger("#{path}#{hostname}.log"), {})
+        file_path = "#{path}#{hostname}.log"
+        super(path, hostname, false, logger(file_path), {})
       end
     end
 
@@ -108,24 +109,12 @@ class RIB::Connection
 
     def logger(file_path)
       logger = Logger.new(file_path)
+
       logger.formatter = proc do |severity, datetime, progname, message|
         "%s -- %s\n" % [datetime.strftime('%F %X'), message]
       end
-      logger
-    end
 
-  end
-
-
-  class Adapter
-
-    extend RIB::Helpers
-
-    attr_reader :connection
-
-    def self.inherited(subclass)
-      subclass.autoload :Connection,
-        "#{to_file_path(subclass.name)}/connection"
+      return logger
     end
 
   end

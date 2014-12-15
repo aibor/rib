@@ -19,7 +19,7 @@ rib = RIB::Bot.new do |bot|
   bot.debug = false
   bot.admin = 'ribmaster'
   bot.modules = [:Core, :LinkTitle, :Quotes, :Search, :Fun, :Alarm, :Fact]
-  bot.facts_file = 'examples/facts.yml'
 end
 
 rib.run
+

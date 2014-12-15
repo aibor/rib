@@ -1,7 +1,6 @@
 # coding: utf-8
 
 require 'rib'
-require 'rib/message'
 
 
 ##
@@ -37,7 +36,7 @@ class RIB::MessageHandler
   #
   # @param bot [Bot] instance to process this message for
 
-  def process(bot)
+  def process_for(bot)
     @bot = bot
 
     @msg.parse(@bot.config.tc)
@@ -92,7 +91,7 @@ class RIB::MessageHandler
     elsif moduls.one?
       call_command(moduls.first)
     else
-      "#{@msg.user}: Unknown command '#{@msg.command}'"
+      "#{@msg.user}: Unknown Command: '#{@msg.command}'"
     end
   end
 

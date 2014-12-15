@@ -13,34 +13,27 @@ require 'set'
 # ## Commands
 #
 # Commands are all public instance methods defined in a subclass of
-# {Module::Base}. Commands should have a short description which is
+# {Module}. Commands should have a short description which is
 # used for help texts. Additional helper methods may be defined, but
 # should be private.
-# See {Module::Base} for available predefined helper methods.
 #
 # ## Triggers
 #
-# Triggers are very similar to Commands, but are not called by name.
-# They are triggered, if a message matches their trigger regular
+# Triggers are called, if a message matches their trigger regular
 # expression. Definition is done by giving a regular expression and a
 # block, which shall be called, wenn a message matches the regular
 # expression. The MatchData object is passed to te block, so capture
 # groups can be used in any way Ruby allows.
 #
 # @example HTML title fetching module
-#   class LinkTitle < RIB::Module::Base
-#
-#     # describe the Module
-#     describe 'Handle automatic HTML title fetching for URLs.'
-#
+#   class LinkTitle < RIB::Module
 #
 #     # add a new config attribute and pass it a value
 #     register title: true
 #
 #
 #     # define a new command '!title' which takes one named argument
-#     describe title: 'De-/Activate automatic HTML title fetching'
-#
+#     desc 'De-/Activate automatic HTML title fetching'
 #     def title(on_off)
 #       case on_off
 #       when on
@@ -63,19 +56,6 @@ require 'set'
 #     end
 #
 #
-#     # some stuff might only work with a particular protocol
-#     protocol_only :irc do
-#
-#       desc formatting: 'A Command that only works in IRC, maybe due' +
-#         ' to formatting special characters'
-#
-#       def formatting
-#         # fancy stuff
-#       end
-#
-#     end
-#
-#
 #     private
 #
 #     # define some helper methods which can be used in on_call
@@ -86,278 +66,10 @@ require 'set'
 #
 #   end
 #
-# @see Module::Base
 
 class RIB::Module
 
-  Directory = File.expand_path("../module/*.rb", __FILE__)
-
-
-  class << self
-
-    ##
-    # If the module can only be used with specific protocols, these
-    # can be set in this attribute. If it works with all protocols,
-    # it is nil.
-    #
-    # @return [Array<Symbol>] if it works with several protocols
-    # @return [nil]           if it works with all protocols
-
-    attr_reader :protocols
-
-
-    ##
-    # Callback method, which is called when a class inherits from this
-    # class. Used to add the sublass to our loaded module list.
-    
-    def inherited(subclass)
-      loaded << subclass
-      @init_blocks = []
-      @descriptions = {}
-      @timeouts = Hash.new(5)
-      @triggers = {}
-      super
-    end
-
-
-    ##
-    # @return [Symbol] base class name of this class
-
-    def key
-      name.split(':').last.to_sym
-    end
-
-
-    ##
-    # @return [Array<Proc>] blocks that should be called on init
-
-    def init_blocks
-      @init_blocks ||= []
-    end
-
-
-    ##
-    # @return [Array<Symbol>] all available commands for this module
-
-    def commands
-      public_instance_methods(false)
-    end
-
-
-    ##
-    # @return [Hash{Symbol => String}] descriptions for module and
-    #   commands
-
-    def descriptions
-      @descriptions ||= {}
-    end
-
-
-    ##
-    # @return [Hash{Symbol => Fixnum}] timeouts for commands
-
-    def timeouts
-      @timeout ||= Hash.new(5)
-    end
-
-
-    ##
-    # @return [Hash{Regexp => Proc}] triggers and the blocks that should
-    #   be called when they match
-
-    def triggers
-      @triggers ||= {}
-    end
-
-
-    ##
-    # Check if this module responds to the command name and if this
-    # method can take the number of arguments
-    #
-    # @param command_name [Symbol] name of the command
-    # @param args_count   [Fixnum] number of arguments
-    #
-    # @return [Boolean]
-
-    def has_command_for_args?(command_name, args_count)
-      unless public_instance_methods(false).include?(command_name)
-        return false 
-      end
-
-      method = instance_method(command_name)
-      params = method.parameters.group_by(&:first)
-
-      return true if params[:rest]
-
-      args_min = params[:req].to_a.count
-      args_max = args_min + params[:opt].to_a.count
-
-      args_count.between?(args_min, args_max)
-    end
-
-
-    ##
-    # Call the {.init_blocks} for this module.
-    #
-    # @param bot [Bot] the Bot instance the modules are used for.
-    #
-    # @return [void]
-
-    def init(bot)
-      init_blocks.each do |block|
-        block.call(bot)
-      end
-    end
-
-
-    ##
-    # Load all modules in a directory.
-    #
-    # @param [String] path
-    #
-    # @return [Array<String>] found and loaded files
-
-    def load_all(path = Directory)
-      Dir[path].each { |f| load f }
-      loaded
-    end
-
-
-    ##
-    # Set that holds all subclasses of {Module::Base}, which are
-    # Bot modules.
-    #
-    # @return [Set<Object>] either the Instances or just their base class
-    #   names
-
-    def loaded
-      @loaded ||= ::Set.new
-    end
-
-
-    ##
-    # Test if the instance is limited to specific protocols and if these
-    # include one or several specific ones. This is useful for checking
-    # if a {Module} is able to handle one or several protocols.
-    #
-    # @param protocol [Symbol]
-    #
-    # @return [Boolean] self is able to handle the passed protocol?
-
-    def speaks?(protocol)
-      case @protocols
-      when Symbol then @protocols == protocol
-      when Array  then @protocols.include?(protocol)
-      when nil    then true
-      else false
-      end
-    end
-
-
-    private
-
-    ##
-    # Register a {Configuration] directive for the module.
-    #
-    # @param hash [Hash{Symbol => Object}]
-    #
-    # @return [void]
-
-    def register(hash)
-      raise TypeError, 'not a Hash' unless hash.is_a? Hash
-
-      hash.each do |config_key, default_value|
-        if config_key.respond_to?(:to_sym)
-          RIB::Configuration.register(config_key.to_sym, default_value)
-        end
-      end
-    end
-
-
-    ##
-    # Define a block that is called when {.init} is called for the
-    # module by a Bot.
-    #
-    # @yieldparam bot [Bot]
-
-    def on_init(&block)
-      init_blocks << block if init_blocks.none?(&:source_location)
-    end
-
-
-    ##
-    # If a String is passed, sets the description for the RIB::Module.
-    # If a Hash is passed, it sets descriptions for the commands with
-    # the name of the keys.
-    #
-    # @see #descriptions
-    #
-    # @param argument [String, Hash{Symbol => #to_s}]
-    #
-    # @return [void]
-
-    def describe(argument)
-      case argument
-      when String
-        descriptions[nil] = argument
-      when Hash
-        argument.each do |cmd, desc|
-          if cmd.respond_to?(:to_sym) && desc.respond_to?(:to_s)
-            descriptions[cmd.to_sym] = desc.to_s 
-          end
-        end
-      end
-    end
-
-
-    ##
-    # Set timeout for a command or a trigger. Default timeout is 5
-    # seconds.
-    #
-    # @param hash [Hash{Symbol => Fixnum}]
-    #
-    # @return [void]
-
-    def timeout(hash)
-      raise TypeError, 'not a Hash' unless hash.is_a? Hash
-
-      hash.each do |command, timeout|
-        raise TypeError, 'not a Fixnum' unless timeout.is_a?(Fixnum)
-        timeouts[command] = timeout
-      end
-    end
-
-
-    ##
-    # Define a block a bot should call if a message matches the
-    # trigger. The block is evaluated in the instance scope of the
-    # bot module it belongs to, which shall inherit from
-    # {RIB::Module::Base}.
-    #
-    # @example
-    #   trigger /\bcrap\b/ do
-    #     "#{msg.user}: oh yes, everything is crap!"
-    #   end
-    #
-    # @param regexp [Regexp] when to be invoked
-    #
-    # @yield 
-    # @yieldreturn [String, [String, String]]
-    #
-    # @raise [TypeError] if regexp is not a Regexp
-    #
-    # @return [Proc] the block
-
-    def trigger(regexp, timeout = nil, &block)
-      if regexp.is_a?(Regexp)
-        triggers[regexp] = block
-        timeouts[regexp] = timeout.to_i if timeout
-      else
-        raise TypeError, "not a Regexp: #{regexp.inspect}"
-      end
-    end
-
-  end
+  Directory = File.expand_path("../modules/*.rb", __FILE__)
 
 
   ##
@@ -398,6 +110,66 @@ class RIB::Module
       @logger.progname = self.class.name
     end
     @logger
+  end
+
+
+  ##
+  # Class singleton methods
+
+  class << self
+
+    ##
+    # Load all modules in a directory.
+    #
+    # @param [String] path
+    #
+    # @return [Array<String>] found and loaded files
+
+    def load_all(path = Directory)
+      old_verbose = $VERBOSE
+      $VERBOSE = nil
+      Dir[path].each { |f| load f }
+      $VERBOSE = old_verbose
+      loaded
+    end
+
+
+    ##
+    # Set that holds all subclasses of {Module::Base}, which are
+    # Bot modules.
+    #
+    # @return [Set<Object>] either the Instances or just their base class
+    #   names
+
+    def loaded
+      @loaded ||= ::Set.new
+    end
+
+
+    private
+
+    ##
+    # @private
+    # callback method
+    
+    def inherited(subclass)
+      loaded << subclass
+      subclass.extend(RIB::ModuleMethods)
+      super
+    end
+
+
+    ##
+    # @private
+    # callback method
+    
+    def method_added(method_name)
+      if @next_description ||= nil
+        descriptions[method_name] = @next_description
+        @next_description = nil
+      end
+    end
+
   end
 
 end
