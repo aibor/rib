@@ -17,7 +17,7 @@ class RIB::Adapters::IRC
       hash.merge(key => config.ssl[key])
     end
 
-    @connection = Connection.new(log_path, config.server, config.nick,
+    @connection = Connection.new(config.server, config.nick, log_path,
                                  {port: config.port, ssl: ssl_hash})
     @connection.login
     @connection.auth_nick(config.auth) if config.defined?(:auth)

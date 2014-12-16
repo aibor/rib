@@ -3,43 +3,48 @@
 require 'logger'
 
 
-##
-# Protocol independent object for connection handling.
-# Base class for Connection classes. All protocol
-# independent methods should live here. This means methods related
-# to logging and error handling.
-
-class RIB::Connection
+module RIB::Connection
 
   ##
-  # Handler of all logging instances.
-  #
-  # @return [Logging]
+  # This module may be included by classes that handle the connection
+  # to a server. It provides methods for conveniently log messages
+  # for server and channels seperately.
 
-  attr_reader :logging
+  module Logable
+
+    ##
+    # Handler of all logging instances.
+    #
+    # @param [String] log_path path of the log file directory
+    # @param [String] hostname hostname of the server to connect to
+    #
+    # @return [Logging]
+
+    def logging
+      @logging ||= new_logging
+    end
 
 
-  ##
-  # @param [String] log_path path of the log file directory
-  # @param [String] hostname hostname of the server to connect to
-  # @param [Array] args protocol specific arguments
+    ##
+    # Toggle logging on/off. Since Logging is disabled on connection
+    # initialization, in order to discard MOTDs and stuff, it needs
+    # to be switched on once initialization is done.
+    #
+    # @return [Boolean] logging active?
 
-  def initialize(log_path, hostname, *args)
-    @logging = Logging.new(log_path, hostname)
-
-    @me ||= String.new
-  end
+    def togglelogging
+      @logging.active ^= true
+    end
 
 
-  ##
-  # Toggle logging on/off. Since Logging is disabled on connection
-  # initialization, in order to discard MOTDs and stuff, it needs
-  # to be switched on once initialization is done.
-  #
-  # @return [Boolean] logging active?
+    private
 
-  def togglelogging
-    @logging.active ^= true
+    def new_logging
+      raise "'@log_path' not set" unless @log_path
+      raise "'@hostname' not set" unless @hostname
+      Logging.new(@log_path, @hostname)
+    end
+
   end
 
 
@@ -49,35 +54,48 @@ class RIB::Connection
   # The exact log file name is built based on the server
   # hostname and the respective channel name. All these files are
   # stored in the directory that is specified in {#path}.
-  #
-  # @attr [String] path
-  #   Path to the log file directory.
-  # @attr [String] hostname
-  #   Hostname of the server the {Bot} is connected to.
-  # @attr [Boolean] active
-  #   Current state of the instance. Is is currently logging or not?
-  # @attr [Logger] server
-  #   Logger instance for server logs.
-  # @attr [Hash{Symbol => Logger}] channels
-  #   As each channel should have its own log, all these Logger
-  #   instances are handled individually.
 
-  class Logging < Struct.new(:path, :hostname, :active, :server,
-                             :channels)
+  class Logging 
+
+    ##
+    # Current state of the instance. Is is currently logging or not?
+    #
+    # @return [Boolean]
+
+    attr_accessor :active
+
+
+    ##
+    # Logger instance for server logs.
+    #
+    # @return [Logger]
+
+    attr_reader :server
+
+
+    ##
+    # As each channel should have its own log, all these Logger
+    # instances are handled individually.
+    #
+    # @return [Hash{Symbol => Logger}]
+
+    attr_reader :channels
+
 
     ##
     # @param [String] path Path to the log file directory
     # @param [String] hostname hostname of the server
 
-
     def initialize(path, hostname)
-      if !path.is_a?(String)
+      if not path.is_a?(String)
         raise TypeError, 'path is not a String'
-      elsif !hostname.is_a?(String)
+      elsif not hostname.is_a?(String)
         raise TypeError, 'hostname is not a String'
       else
-        file_path = "#{path}#{hostname}.log"
-        super(path, hostname, false, logger(file_path), {})
+        @path     = path
+        @hostname = hostname
+        @server   = logger("#{path}#{hostname}.log")
+        @channels = {}
       end
     end
 
@@ -92,8 +110,8 @@ class RIB::Connection
     # @return [Logger]
 
     def add_channel_log(channel)
-      file_path = "#{self.path}#{self.hostname}_#{channel}.log"
-      self.channels[channel] = logger(file_path)
+      file_path = "#{@path}#{@hostname}_#{channel}.log"
+      @channels[channel] = logger(file_path)
     end
 
 
