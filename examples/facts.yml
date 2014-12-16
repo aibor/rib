@@ -6,6 +6,8 @@ arch:
 awesome:
 - http://rib.aibor.de/images/awesome.jpg
 - http://rib.aibor.de/images/awesome2.jpg
+bash:
+- http://rib.aibor.de/images/bash.png
 bye:
 - nein?
 - orrr, nö!
@@ -27,6 +29,8 @@ fail:
 - schon wieder? --___--
 fucky:
 - http://rib.aibor.de/images/fucky.jpg
+grumpy:
+- http://rib.aibor.de/images/grumpy.gif
 haha:
 - http://rib.aibor.de/images/haha.jpg
 hi:
@@ -58,10 +62,14 @@ ping:
 - mowl!
 rage:
 - "(╯°□°)╯︵ ┻━┻"
+shrug:
+- "¯\_(ツ)_/¯"
 tfp:
 - http://rib.aibor.de/images/tfp.jpg
 wayne:
 - http://rib.aibor.de/images/wayne.jpg
+worms:
+- http://rib.aibor.de/images/worms.gif
 why:
 - http://rib.aibor.de/images/why.jpg
 yolo:
