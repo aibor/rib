@@ -55,31 +55,35 @@ class RIB::Module::LinkTitle < RIB::Module
     if bot.config.protocol== :irc
       return nil if title.nil? || title.empty?
       case title
-      when /(\s+- YouTube\s*\Z)/ then
+      when /(\s+- YouTube\s*\Z)/
         "1,0You0,4Tube #{title.sub(/#{$1}/, "")}"
-      when /(\Axkcd:\s)/ then
+      when /(\Axkcd:\s)/
         "xkcd: #{title.sub(/#{$1}/, "")}"
-      when /(\son\sdeviantART\Z)/ then
+      when /(\son\sdeviantART\Z)/
         "0,10deviantART #{title.sub(/#{$1}/, "")}"
-      when /(\s+(-|–) Wikipedia((, the free encyclopedia)|)\Z)/ then
+      when /(\s+(-|–) Wikipedia((, the free encyclopedia)|)\Z)/
         "Wikipedia: #{title.sub(/#{$1}/, "")}"
-      when /(\ADer Postillon:\s)/ then
+      when /(\ADer Postillon:\s)/
         "Der Postillon: #{title.sub($1, "")}"
+      when /\A([\w\s]+) on Twitter: "(.*)"\z/
+        "#{$1}: #{$2}"
       else
         "Title: #{title}"
       end
     else
       case title
-        #when /(\s+- YouTube\s*\Z)/ then
+        #when /(\s+- YouTube\s*\Z)/
         #  "YouTube: #{title.sub(/#{$1}/, "")}"
-      when /(\Axkcd:\s)/ then
+      when /(\Axkcd:\s)/
         "xkcd: #{title.sub(/#{$1}/, "")}"
-      when /(\son\sdeviantART\Z)/ then
+      when /(\son\sdeviantART\Z)/
         "deviantART: #{title.sub(/#{$1}/, "")}"
-      when /(\s+(-|–) Wikipedia((, the free encyclopedia)|)\Z)/ then
+      when /(\s+(-|–) Wikipedia((, the free encyclopedia)|)\Z)/
         "Wikipedia: #{title.sub(/#{$1}/, "")}"
-      when /(\ADer Postillon:\s)/ then
+      when /(\ADer Postillon:\s)/
         "Der Postillon: #{title.sub($1, "")}"
+      when /\A([\w\s]+) on Twitter: "(.*)"\z/
+        "#{$1}: #{$2}"
       else
         "Title: #{title}"
       end
