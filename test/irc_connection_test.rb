@@ -70,7 +70,7 @@ class TestIRCConnection < MiniTest::Unit::TestCase
 
   def test_receive_error
     conn, tcpsocket = get_connection
-    tcpsocket.expect(:gets, "ERROR: karpoooot\r\n")
+    tcpsocket.expect(:gets, "ERROR :karpoooot\r\n")
 
     assert_raises(RIB::ReceivedError) { conn.receive }
     assert tcpsocket.verify
@@ -235,9 +235,9 @@ class TestIRCConnection < MiniTest::Unit::TestCase
     tcpsocket = Minitest::Mock.new
     conn = TCPSocket.stub :new, tcpsocket do
       RIB::Adapters::IRC::Connection.new(
-        "/tmp/",
         "irc.example.org",
-        "rib"
+        "rib",
+        "/tmp/",
       )
     end
     [conn, tcpsocket]
