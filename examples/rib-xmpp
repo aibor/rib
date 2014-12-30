@@ -4,8 +4,9 @@
 # Just copy this file over in the root dir and execute it directly or
 # with 'ruby rib-xmpp'.
 
-# add local library directory to $LOAD_PATH
-$LOAD_PATH << File.expand_path('../lib', __FILE__)
+# add local library directory to $LOAD_PATH if not used with bundler
+# or gem
+# $LOAD_PATH << File.expand_path('../lib', __FILE__)
 
 require 'rib'
 
