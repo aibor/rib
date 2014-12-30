@@ -43,7 +43,8 @@ class RIB::Module::LinkTitle < RIB::Module
       nil
     rescue => e
       bot.logger.error e
-      e.message
+      #e.message
+      nil
     end
   end
 
