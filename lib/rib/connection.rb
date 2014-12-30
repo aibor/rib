@@ -33,7 +33,7 @@ module RIB::Connection
     # @return [Boolean] logging active?
 
     def togglelogging
-      @logging.active ^= true
+      logging.active ^= true
     end
 
 
