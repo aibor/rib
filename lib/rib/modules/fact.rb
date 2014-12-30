@@ -1,6 +1,7 @@
 # coding: utf-8
 
 require 'yaml'
+require 'fileutils'
 
 
 class RIB::Module::Fact < RIB::Module
@@ -97,6 +98,7 @@ class RIB::Module::Fact < RIB::Module
 
   on_init do |bot|
     file = bot.config.facts_file
+    FileUtils.mkdir_p File.dirname(file)
     hash = YAML.load_file(file) if File.exist?(file)
     @facts = hash.select(&@validator) if hash
     sanitize_facts
@@ -200,10 +202,12 @@ class RIB::Module::Fact < RIB::Module
   def save_facts
     self.class.send(:sanitize_facts)
 
-    if File.writable?(bot.config.facts_file)
-      File.write(bot.config.facts_file, facts.to_yaml)
+    file = bot.config.facts_file
+
+    if File.writable?(file) or FileUtils.touch(file)
+      File.write(file, facts.to_yaml)
     else
-      bot.logger.warn "Couldn't save facts to file"
+      bot.logger.warn "Couldn't save facts to '#{file}'"
       false
     end
   end

@@ -1,6 +1,7 @@
 # coding: utf-8
 
 require 'logger'
+require 'fileutils'
 require 'rib'
 
 
@@ -263,8 +264,16 @@ class RIB::Bot
   # @return [String] path to log directory
 
   def log_path
-    file_path = @config.logdir[0] == '/' ? '' : File.expand_path('..', $0)
-    file_path << @config.logdir.sub(/\A\/?(.*?)\/?\z/, '/\1/')
+    path = @config.logdir[0] == '/' ? '' : File.expand_path('..', $0)
+    path << @config.logdir.sub(/\A\/?(.*?)\/?\z/, '/\1/')
+
+    FileUtils.mkdir_p path
+
+    if File.writable?(path)
+      return path
+    else
+      raise "#{path} not writable"
+    end
   end
 
 
@@ -276,7 +285,13 @@ class RIB::Bot
 
   def log_file_path
     name = "#{File.basename($0)}_#{@config.protocol}_#{@config.server}"
-    "#{log_path}#{name}.log"
+    path = "#{log_path}#{name}.log"
+
+    if not File.exist?(path) or File.writable?(path)
+      path
+    else
+      raise "#{path} not writable"
+    end
   end
 
 
