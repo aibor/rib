@@ -12,9 +12,31 @@ Simple IRC and XMPP bot framework written in Ruby.
 
 ## Usage
 
+### Installation
+
+#### Using [Bundler](http://bundler.io/):
+
+Create a Gemfile like this:
+
+    source "https://rubygems.org"
+    gem 'rib', git: 'https://github.com/aibor/rib.git'
+
+Then run:
+
+    $ bundle install
+
+#### Building Gem yourself
+
+Clone the Repository, move into the repository's root directory and run:
+
+    $ gem build rib.gemspec
+    $ gem install rib-<VERSION>.gem
+
+
 ### Configuration
 
-Take a look at the file `rib`. It is an example for the configuration of
+Take a look at the files starting with `rib-` in the directory
+`examples`. These are examples for the configuration of
 the bot and the definition of your desired triggers and responses.
 
 The mandatory options are:
@@ -76,19 +98,17 @@ A very basic Module would look like this:
 
   class MyTimeModule < RIB::Module
 
-    describe 'Time related commands'
-
-    describe time: 'get the current time'
+    desc 'get the current time'
 
     def time
-        Time.new.to_s
+      Time.new.to_s
     end
 
     trigger(/awesome (\w*)/) { |match| "#{match[1]} is truly awesome!" }
 
   end
 
-See `lib/rib/module/` for examples.
+See `lib/rib/modules/` for examples.
 
 
 ## Contribution
