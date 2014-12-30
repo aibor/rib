@@ -148,7 +148,7 @@ class RIB::Bot
 
       @threads.each(&:join)
     rescue RIB::LostConnectionError => e
-      quit rescue nil
+      disconnect rescue nil
       @logger.warn e.message
       sleep(2) && retry
     end
@@ -204,8 +204,18 @@ class RIB::Bot
   # @return [void]
 
   def quit
-    @connection_adapter.quit(@config.qmsg) if @connection_adapter
+    disconnect
     exit
+  end
+
+
+  ##
+  # Close the connection to the server.
+  #
+  # @return [void]
+
+  def disconnect
+    @connection_adapter.quit(@config.qmsg) if @connection_adapter
   end
 
 
