@@ -88,6 +88,7 @@ class RIB::Module::Fact < RIB::Module
   end
 
 
+  @facts = {}
   @validator = ->(*a) { a.flatten.all? { |e| e.is_a? String } }
 
   describe 'Simple fact replies with management tools'
