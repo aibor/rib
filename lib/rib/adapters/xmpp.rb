@@ -34,9 +34,10 @@ class RIB::Adapters::XMPP
   # @todo what a mess
 
   def run_loop
+    start = Time.now
     @muc.each do |room,muc|
       muc.on_message do |time, nick, text|
-        next if nick == @resource
+        next if nick == @resource or start > (Time.now - 5)
 
         begin
           rib_msg = RIB::Message.new(text, nick, room)
