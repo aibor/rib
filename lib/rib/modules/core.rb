@@ -64,6 +64,11 @@ class RIB::Module::Core < RIB::Module
   end
 
 
+  desc 'Print version and source'
+  def about
+    "RIB version: #{RIB::VERSION} - source: https://github.com/aibor/rib"
+  end
+
   private
 
   def print_help(mod, cmd)
