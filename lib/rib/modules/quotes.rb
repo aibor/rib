@@ -50,12 +50,16 @@ class RIB::Module::Quotes < RIB::Module
 
   desc 'Grab last post of a user and save it as quote'
   def grab(who)
-    match = bot.backlog.find { |msg| msg.user == who }
-    return "no :|" unless match
-    user_quotes do |channel_quotes|
-      id = channel_quotes.any? ? channel_quotes.last.id.next : 1
-      channel_quotes << Quote.new(id, match, msg.user)
-      "#{msg.user}: added quote ##{id}"
+    return "meh!" if msg.user == who
+
+    if match = bot.backlog.find { |m| m.user == who }
+      user_quotes do |channel_quotes|
+        id = channel_quotes.any? ? channel_quotes.last.id.next : 1
+        channel_quotes << Quote.new(id, match, msg.user)
+        "#{msg.user}: added quote ##{id}"
+      end
+    else
+      "no :|"
     end
   end
 
