@@ -72,6 +72,14 @@ class RIB::Bot
 
 
   ##
+  # Backlog with 1000 last lines.
+  #
+  # @return [Backlog]
+
+  attr_reader :backlog
+
+
+  ##
   # Create a new Bot instance. Configuration can be done via a passed
   # block directly or later on.
   #
@@ -101,6 +109,7 @@ class RIB::Bot
     @config   = RIB::Configuration.new
     @threads  = []
     @modules  = RIB::ModuleSet.new([])
+    @backlog  = RIB::Backlog.new(1000)
 
     configure(&block) if block_given?
   end
@@ -144,6 +153,7 @@ class RIB::Bot
       init_server
 
       @connection_adapter.run_loop do |handler|
+        @backlog << handler.msg
         process_msg handler
       end
 
@@ -162,7 +172,7 @@ class RIB::Bot
 
   ##
   # Output a message to a target (a user or channel). This calls the
-  # #say method of the loaded {Connection::Adapter}.
+  # #say method of the loaded connection adapter.
   #
   # @param text   [String] message to send, if multiline, then each
   #   line will be sent separately.
@@ -241,14 +251,14 @@ class RIB::Bot
 
   ##
   # Depending on the protocol the Bot instance has configured, the
-  # appropriate {Connection::Adapter} has to be loaded for connection
+  # appropriate connection adapter has to be loaded for connection
   # handling. The class name has to be te protocol name upcase and
   # has to be stored in a file with its name downcase with '.rb'
   # extension. Otherwise an exception is raised.
   #
   # @raise [LoadError] if file cannot be loaded
   #
-  # @return[Object] a {Connection::Adapter} subclass
+  # @return[Object] a connection adapter
 
   def get_connection_adapter
     protocol_name = @config.protocol
