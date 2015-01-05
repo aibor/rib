@@ -4,11 +4,14 @@ require 'rib'
 
 
 ##
-# IRC connection handling module.
+# IRC connection handling adapter.
 
 class RIB::Adapters::IRC
 
   include RIB::Adaptable
+
+
+  autoload :Connection, 'rib/adapters/irc/connection'
 
 
   def initialize(config, log_path)
