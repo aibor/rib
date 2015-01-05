@@ -211,10 +211,9 @@ module RIB::ModuleMethods
 
 
   ##
-  # Define a block a bot should call if a message matches the
-  # trigger. The block is evaluated in the instance scope of the
-  # bot module it belongs to, which shall inherit from
-  # {RIB::Module::Base}.
+  # Define a block a bot should call if a message matches the trigger.
+  # The block is evaluated in the instance scope of the bot module it
+  # belongs to, which shall inherit from {RIB::Module}.
   #
   # @example
   #   trigger /\bcrap\b/ do
