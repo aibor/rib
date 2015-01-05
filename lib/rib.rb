@@ -9,6 +9,7 @@ module RIB
   end
 
   autoload :Bot,              'rib/bot'
+  autoload :Backlog,          'rib/backlog'
   autoload :Exceptions,       'rib/exceptions'
   autoload :NameConvertable,  'rib/name_convertable'
   autoload :Configuration,    'rib/configuration'
