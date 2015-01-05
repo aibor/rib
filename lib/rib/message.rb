@@ -6,7 +6,7 @@ require 'rib/message_handler'
 
 class RIB::Message 
 
-  attr_reader :text, :user, :source, :module, :command, :arguments
+  attr_reader :text, :user, :source, :time, :module, :command, :arguments
 
   ##
   #   @param text   [String] text of the message
@@ -17,6 +17,7 @@ class RIB::Message
   def initialize(text, user, source)
     @text, @user, @source = text, user, source
     @module = @command = @arguments = nil
+    @time = Time.now
   end
 
 
