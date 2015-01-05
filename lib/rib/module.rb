@@ -114,6 +114,14 @@ class RIB::Module
 
 
   ##
+  # Check if the requesting user is the admin.
+
+  def authorized?
+    msg.user == bot.config.admin
+  end
+
+
+  ##
   # Class singleton methods
 
   class << self
@@ -135,11 +143,10 @@ class RIB::Module
 
 
     ##
-    # Set that holds all subclasses of {Module::Base}, which are
-    # Bot modules.
+    # Set that holds all subclasses of {Module}, which are Bot modules.
     #
-    # @return [Set<Object>] either the Instances or just their base class
-    #   names
+    # @return [Set<Object>] either the Instances or just their base
+    #   class names
 
     def loaded
       @loaded ||= ::Set.new
