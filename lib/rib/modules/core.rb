@@ -98,10 +98,5 @@ class RIB::Module::Core < RIB::Module
     return out
   end
 
-
-  def authorized?
-    msg.user == bot.config.admin
-  end
-
 end
 

@@ -50,6 +50,7 @@ class RIB::Module::Fact < RIB::Module
       return if public_instance_methods(false).include?(name)
       old_verbose = $VERBOSE
       $VERBOSE = nil
+      desc self.name
       define_method(name) do |index = nil|
       facts_a = facts[name]
       fact = facts_a[index.to_i] if index.to_s[/\A\d+\z/] 
@@ -92,9 +93,9 @@ class RIB::Module::Fact < RIB::Module
   @facts = {}
   @validator = ->(*a) { a.flatten.all? { |e| e.is_a? String } }
 
-  describe 'Simple fact replies with management tools'
 
   register facts_file: 'data/facts.yml'
+
 
   on_init do |bot|
     file = bot.config.facts_file
@@ -105,7 +106,7 @@ class RIB::Module::Fact < RIB::Module
   end
 
 
-  describe facts: <<-EOS
+  desc <<-EOS
     Manage facts. Without fact_name, show all facts. With fact_name and
     without command, shows the fact's values array. Pass an arbitrary
     string with "add" or an index number with "del" (starts with 0)

@@ -5,10 +5,7 @@ require 'resolv'
 
 class RIB::Module::Search < RIB::Module
 
-  describe 'Search the web'
-
-
-  describe google: 'Search on Google for the passes string'
+  desc 'Search on Google for the passes string'
 
   def google(*args)
     format gsearch(:google, args)
@@ -17,7 +14,7 @@ class RIB::Module::Search < RIB::Module
   alias :g :google
 
 
-  describe wikipedia: 'Search on Wikipedia using the DNS API'
+  desc 'Search on Wikipedia using the DNS API'
 
   def wikipedia(*args)
     #dnsrequest(args.join('_') + ".wp.dg.cx",
@@ -28,8 +25,8 @@ class RIB::Module::Search < RIB::Module
   alias :w :wikipedia
 
 
-  describe duckduckgo: 'Search on DuckDuckGo. Jumps to first search
-    result, unless bang syntax is used.'
+  desc "Search on DuckDuckGo. Jumps to first search
+    result, unless bang syntax is used. Try '!ddg !bang'"
 
   def duckduckgo(*args)
     redir_page = ::HTML.fetch(gsearch(:ddg, args), 20)
