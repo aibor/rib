@@ -91,7 +91,8 @@ class RIB::MessageHandler
     elsif moduls.one?
       call_command(moduls.first)
     else
-      "#{@msg.user}: Unknown Command: '#{@msg.command}'"
+      "#{@msg.user}: Unknown Command or wrong number of arguments." +
+        " Try '#{@bot.config.tc}help #{@msg.command}'."
     end
   end
 
