@@ -53,7 +53,7 @@ module RIB::Connection
   # channel messages. These are splitted in individual files.
   # The exact log file name is built based on the server
   # hostname and the respective channel name. All these files are
-  # stored in the directory that is specified in {#path}.
+  # stored in the directory that is specified in `@path`.
 
   class Logging 
 
@@ -110,8 +110,13 @@ module RIB::Connection
     # @return [Logger]
 
     def add_channel_log(channel)
-      file_path = "#{@path}#{@hostname}_#{channel}.log"
+      file_path = self.class.channel_file_path(@path, @hostname, channel)
       @channels[channel] = logger(file_path)
+    end
+
+
+    def self.channel_file_path(path, hostname, channel)
+      "#{path}#{hostname}_#{channel}.log"
     end
 
 
