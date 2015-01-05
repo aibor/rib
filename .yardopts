@@ -9,6 +9,7 @@
 --type-name-tag protocol:"Protocol specific behaviour"
 --tag protocol_only:"Only used by these protocols"
 --exclude 'lib\/rib\/modules\/.*\.rb'
+--exclude 'lib\/rib\/adapters\/.*\.rb'
 lib/rib.rb
 lib/rib/**/*.rb
 lib/html/**/*.rb
