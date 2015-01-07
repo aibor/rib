@@ -18,9 +18,9 @@ Gem::Specification.new do |spec|
   spec.test_files    = spec.files.grep(%r{^test/})
   spec.require_paths = ["lib"]
 
-  spec.add_development_dependency "rake", "~> 10.0"
-  spec.add_development_dependency "yard", "~> 0.8"
+  spec.add_development_dependency "rake"
+  spec.add_development_dependency "yard"
 
-  spec.add_runtime_dependency "xmpp4r", "~> 0.5"
+  spec.add_runtime_dependency "xmpp4r"
 end
 

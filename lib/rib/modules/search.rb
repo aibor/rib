@@ -1,12 +1,12 @@
 # coding: utf-8
 
 require 'resolv'
+require 'json'
 
 
 class RIB::Module::Search < RIB::Module
 
   desc 'Search on Google for the passes string'
-
   def google(*args)
     format gsearch(:google, args)
   end
@@ -14,12 +14,17 @@ class RIB::Module::Search < RIB::Module
   alias :g :google
 
 
-  desc 'Search on Wikipedia using the DNS API'
+  register wiki_lang: :en
 
+
+  #desc 'Search on Wikipedia using the DNS API'
+  desc 'Search on Wikipedia using the Wikipedia API'
   def wikipedia(*args)
     #dnsrequest(args.join('_') + ".wp.dg.cx",
     #           %w(208.67.220.220 208.67.222.222 8.8.8.8)).join
-    format gsearch(:google, ['site:wikipedia.org'] + args)
+    #format gsearch(:google, ['site:wikipedia.org'] + args)
+    res = wikipedia_api(args, 1, bot.config.wiki_lang)
+    "#{msg.user}: #{res[2].first} - #{res[3].first}" if res.last.any?
   end
 
   alias :w :wikipedia
@@ -27,7 +32,6 @@ class RIB::Module::Search < RIB::Module
 
   desc "Search on DuckDuckGo. Jumps to first search
     result, unless bang syntax is used. Try '!ddg !bang'"
-
   def duckduckgo(*args)
     redir_page = ::HTML.fetch(gsearch(:ddg, args), 20)
     url = redir_page.body[/=(http[^']*)'/, 1] 
@@ -65,6 +69,15 @@ class RIB::Module::Search < RIB::Module
     end
 
     url
+  end
+
+
+  WikiApiURL = 'https://%s.wikipedia.org/w/api.php?action=opensearch' +
+    '&search=%s&format=json&redirects=return&limit=%d'
+
+  def wikipedia_api(keys, limit = 1, lang = :en)
+    url = URI.escape(WikiApiURL % [lang, keys.join('+'), limit])
+    ::JSON.parse ::Net::HTTP.get(URI(url))
   end
 
 
