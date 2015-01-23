@@ -10,6 +10,15 @@ require 'rib'
 
 class RIB::MessageHandler
 
+  Messages = {
+    wrong_args: "%s: Wrong number of arguments. Try '%chelp %s'.",
+    no_module: "%s: Unknown Module: '%s'",
+    no_command: "%s: No appropriate command found for module '%s'.",
+    ambigous_command: 
+    "%s: Ambigious command. Modules: '%s'. Use '%sModulname#%s'"
+  }
+
+
   ##
   # The handled {Message}.
   #
@@ -61,15 +70,16 @@ class RIB::MessageHandler
   # @return [nil] if nothing should be responded
 
   def process_module
-    if modul = @bot.modules.find_module(@msg.module)
-      if modul.has_command_for_args?(@msg.command, @msg.arguments.count)
+    if not modul = @bot.modules.find_module(@msg.module)
+      Messages[:no_module] % [@msg.user, @msg.module]
+    elsif modul.has_command?(@msg.command)
+      if modul.command_takes_args?(@msg.command, @msg.arguments.count)
         call_command(modul)
       else
-        "%s: No appropriate command found for module '%s'." %
-          [@msg.user, modul]
+        Messages[:wrong_args] % [@msg.user, @bot.config.tc, @msg.command]
       end
     else
-      "#{@msg.user}: Unknown Module: '#{@msg.module}'"
+      Messages[:no_command] % [@msg.user, modul]
     end
   end
 
@@ -83,16 +93,21 @@ class RIB::MessageHandler
   # @return [nil] if nothing should be responded
 
   def process_command
-    moduls = @bot.modules.responding_modules(@msg.command, @msg.arguments)
+    moduls = @bot.modules.select_responding(@msg.command)
 
-    if moduls.count > 1
-      "%s: Ambigious command. Modules: '%s'. Use '%sModulname#%s'" %
-        [@msg.user, moduls.map(&:key) * ', ', @bot.config.tc, @msg.command]
-    elsif moduls.one?
-      call_command(moduls.first)
+    return if moduls.empty?
+
+    mods = moduls.select do |mod|
+      mod.command_takes_args?(@msg.command, @msg.arguments.count)
+    end
+
+    if mods.count > 1
+      Messages[:ambigous_command] %
+        [@msg.user, mods.map(&:key) * ', ', @bot.config.tc, @msg.command]
+    elsif mods.one?
+      call_command(mods.first)
     else
-      "#{@msg.user}: Unknown Command or wrong number of arguments." +
-        " Try '#{@bot.config.tc}help #{@msg.command}'."
+      Messages[:wrong_args] % [@msg.user, @bot.config.tc, @msg.command]
     end
   end
 

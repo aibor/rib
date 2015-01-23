@@ -69,25 +69,52 @@ module RIB::ModuleMethods
   # Check if this module responds to the command name and if this
   # method can take the number of arguments
   #
-  # @param command_name [Symbol] name of the command
-  # @param args_count   [Fixnum] number of arguments
+  # @param cmd_name   [Symbol] name of the command
+  # @param args_count [Fixnum] number of arguments
   #
   # @return [Boolean]
 
-  def has_command_for_args?(command_name, args_count)
-    unless public_instance_methods(false).include?(command_name)
-      return false 
-    end
+  def has_command_for_args?(cmd_name, args_count)
+    has_command?(cmd_name) && command_takes_args?(cmd_name, args_count)
+  end
 
-    method = instance_method(command_name)
+
+  ##
+  # Check if the module has a command.
+  #
+  # @param name [Symbol]
+  #
+  # @return [Boolean]
+
+  def has_command?(name)
+    public_instance_methods(false).include?(name.to_sym)
+  end
+
+
+  ##
+  # Check if the command takes the number of arguments.
+  #
+  # @params cmd_name   [Symbol]
+  # @params args_count [Fixnum]
+  #
+  # @return [Boolean]
+
+  def command_takes_args?(cmd_name, args_count)
+    method = instance_method(cmd_name)
     params = method.parameters.group_by(&:first)
-
-    return true if params[:rest]
 
     args_min = params[:req].to_a.count
     args_max = args_min + params[:opt].to_a.count
 
-    args_count.between?(args_min, args_max)
+    if args_count < args_min
+      false
+    elsif params[:rest]
+      true
+    elsif args_count > args_max
+      false
+    else
+      true
+    end
   end
 
 

@@ -33,17 +33,15 @@ class RIB::ModuleSet < ::Set
 
 
   ##
-  # Find all modules, that respond to a given command name and allow
-  # the given number of arguments.
+  # Find all modules, that respond to a given command name.
   #
   # @param cmd_name [Symbol]
-  # @param args [Array<String>]
   #
   # @return [Array<Class>]
 
-  def responding_modules(cmd_name, args)
+  def select_responding(cmd_name)
     @hash.select do |modul, state|
-      state && modul.has_command_for_args?(cmd_name, args.count)
+      state && modul.has_command?(cmd_name)
     end.keys
   end
 
