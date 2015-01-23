@@ -5,7 +5,7 @@ require 'minitest/pride'
 require 'rib/message_handler'
 require 'rib/message'
 
-class MessageHandlerTest < MiniTest::Unit::TestCase
+class MessageHandlerTest < MiniTest::Test
 
   def setup
     @bot = RIB::Bot.new do |bot|

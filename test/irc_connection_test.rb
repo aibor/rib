@@ -13,7 +13,7 @@ $VERBOSE = nil
 $VERBOSE = old_verbose
 
 
-class TestIRCConnection < MiniTest::Unit::TestCase
+class TestIRCConnection < MiniTest::Test
 
  # parallelize_me!
   make_my_diffs_pretty!

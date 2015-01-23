@@ -11,7 +11,7 @@ require 'rib/bot'
 #$VERBOSE = old_verbose
 
 
-class TestBot < MiniTest::Unit::TestCase
+class TestBot < MiniTest::Test
 
   def setup
     @bot = RIB::Bot.new do |bot|

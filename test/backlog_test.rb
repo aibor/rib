@@ -4,7 +4,7 @@ require 'minitest/autorun'
 require 'minitest/pride'
 require 'rib/backlog'
 
-class BacklogTest < MiniTest::Unit::TestCase
+class BacklogTest < MiniTest::Test
 
   def test_create
     backlog = RIB::Backlog.new(42)
