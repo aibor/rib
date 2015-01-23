@@ -24,7 +24,7 @@ class RIB::Module::Search < RIB::Module
     #           %w(208.67.220.220 208.67.222.222 8.8.8.8)).join
     #format gsearch(:google, ['site:wikipedia.org'] + args)
     res = wikipedia_api(args, 1, bot.config.wiki_lang)
-    "#{msg.user}: #{res[2].first} - #{res[3].first}" if res.last.any?
+    "#{res[2].first} - #{res[3].first}" if res.last.any?
   end
 
   alias :w :wikipedia
