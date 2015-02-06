@@ -11,8 +11,8 @@ class RIB::Module::Fun < RIB::Module
 
   desc 'What the hell is wrong with her/him?'
 
-  def blame(who)
-    "dafuq #{who} oO"
+  def blame(*who)
+    "dafuq #{who * ' '} oO"
   end
 
 

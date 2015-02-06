@@ -72,9 +72,9 @@ class RIB::MessageHandler
   def process_module
     if not modul = @bot.modules.find_module(@msg.module)
       Messages[:no_module] % [@msg.user, @msg.module]
-    elsif modul.has_command?(@msg.command)
-      if modul.command_takes_args?(@msg.command, @msg.arguments.count)
-        call_command(modul)
+    elsif command = modul.find_command(@msg.command)
+      if command.takes_args?(@msg.arguments.count)
+        call_command(command)
       else
         Messages[:wrong_args] % [@msg.user, @bot.config.tc, @msg.command]
       end
@@ -93,19 +93,18 @@ class RIB::MessageHandler
   # @return [nil] if nothing should be responded
 
   def process_command
-    moduls = @bot.modules.select_responding(@msg.command)
+    commands = @bot.modules.find_all_commands(@msg.command)
 
-    return if moduls.empty?
+    return if commands.empty?
 
-    mods = moduls.select do |mod|
-      mod.command_takes_args?(@msg.command, @msg.arguments.count)
-    end
+    commands = commands.select { |c| c.takes_args?(@msg.arguments.count) }
 
-    if mods.count > 1
+    if commands.count > 1
+      modules = commands.map { |c| c.modul.key } * ', '
       Messages[:ambigous_command] %
-        [@msg.user, mods.map(&:key) * ', ', @bot.config.tc, @msg.command]
-    elsif mods.one?
-      call_command(mods.first)
+        [@msg.user, modules, @bot.config.tc, @msg.command]
+    elsif commands.one?
+      call_command(commands.first)
     else
       Messages[:wrong_args] % [@msg.user, @bot.config.tc, @msg.command]
     end
@@ -126,7 +125,7 @@ class RIB::MessageHandler
     triggered = @bot.modules.matching_triggers(@msg.text)
 
     triggered.each do |modul, trigger_block_array|
-      obj = module_instance(modul)
+      obj = modul.new(@bot, @msg)
       trigger_block_array.each do |block, match|
         timeout = modul.timeouts[match.regexp]
         call_with_timeout(timeout) do
@@ -169,9 +168,9 @@ class RIB::MessageHandler
   # @return [Array(String, String)] text and target to reply to
   # @return [nil] if nothing should be responded
 
-  def call_command(modul)
-    call_with_timeout(modul.timeouts[@msg.command]) do
-      module_instance(modul).send(@msg.command, *@msg.arguments)
+  def call_command(command)
+    call_with_timeout(command.timeout) do
+      command.call(@bot, @msg)
     end
   end
 
@@ -189,19 +188,6 @@ class RIB::MessageHandler
       @bot.logger.debug "say: '#{line}' to '#{target}'"
       @say ? @say.call(line, target) : @bot.say(line, target)
     end
-  end
-
-
-  ##
-  # Create an instance of a {Module} which can be used for further
-  # message processing.
-  #
-  # @param modul [Class] a RIB::Module
-  #
-  # @return [Object] instance of the passed Class
-
-  def module_instance(modul)
-    modul.new(@bot, @msg)
   end
 
 end

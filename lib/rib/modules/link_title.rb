@@ -66,7 +66,7 @@ class RIB::Module::LinkTitle < RIB::Module
         "Wikipedia: #{title.sub(/#{$1}/, "")}"
       when /(\ADer Postillon:\s)/
         "Der Postillon: #{title.sub($1, "")}"
-      when /\A([\w\s]+) (?:on|auf) Twitter: "(.*)"\z/
+      when /\A([^:]+) (?:on|auf) Twitter: "(.*)"\z/
         "#{$1}: #{$2}"
       else
         "Title: #{title}"
@@ -83,7 +83,7 @@ class RIB::Module::LinkTitle < RIB::Module
         "Wikipedia: #{title.sub(/#{$1}/, "")}"
       when /(\ADer Postillon:\s)/
         "Der Postillon: #{title.sub($1, "")}"
-      when /\A([\w\s]+) (?:on|auf) Twitter: "(.*)"\z/
+      when /\A([^:]+) (?:on|auf) Twitter: "(.*)"\z/
         "#{$1}: #{$2}"
       else
         "Title: #{title}"

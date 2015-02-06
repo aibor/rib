@@ -30,26 +30,24 @@ class RIB::Module::Core < RIB::Module
 
   desc 'List all available Modules or Commands for a specific Module'
   def list(modul = nil)
-    if modul
-      mod = bot.modules.find_module(modul)
-      mod ? "Module commands: #{mod.commands * ', '}" : 'Unknown module'
-    else
+    if not modul
       "Available Modules: #{bot.modules.map { |m| m.key } * ', '}"
+    elsif mod = bot.modules.find_module(modul)
+      "Module commands: #{mod.commands.map(&:name) * ', '}"
+    else
+      'Unknown module'
     end
   end
 
 
   desc 'Print short help text for a command'
   def help(cmd = nil)
-    if cmd
-      modul = bot.modules.find { |m| m.commands.include?(cmd.to_sym) }
-      if modul
-        print_help(modul, cmd)
-      else
-        "Unknown command '#{cmd}'. Try '#{bot.config.tc}list'."
-      end
-    else
+    if not cmd
       print_help(self.class, 'help')
+    elsif modul = bot.modules.find { |m| m.has_command?(cmd.to_sym) }
+      print_help(modul, cmd)
+    else
+      "Unknown command '#{cmd}'. Try '#{bot.config.tc}list'."
     end
   end
 

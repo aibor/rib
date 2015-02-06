@@ -46,6 +46,14 @@ class RIB::ModuleSet < ::Set
   end
 
 
+  def find_all_commands(cmd_name)
+    @hash.inject([]) do |array, (modul, state)|
+      cmd = modul.find_command(cmd_name)
+      cmd ? array.push(cmd) : array
+    end
+  end
+
+
   ##
   # Find a module woth the given name
   #

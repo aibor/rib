@@ -14,14 +14,12 @@ module RIB
   autoload :NameConvertable,  'rib/name_convertable'
   autoload :Configuration,    'rib/configuration'
   autoload :Module,           'rib/module'
-  autoload :ModuleMethods,    'rib/module_methods'
   autoload :ModuleSet,        'rib/module_set'
   autoload :MessageHandler,   'rib/message_handler'
   autoload :Message,          'rib/message'
   autoload :Connection,       'rib/connection'
   autoload :Adaptable,        'rib/adaptable'
   autoload :Command,          'rib/command'
-  autoload :Trigger,          'rib/trigger'
   autoload :VERSION,          'rib/version'
 
   include Exceptions
