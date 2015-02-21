@@ -139,7 +139,8 @@ class RIB::Module::Quotes < RIB::Module
 
 
   def format(q)
-    "Quote ##{q.id} added by #{q.by} at #{q.when.ctime}: #{q.msg.text}"
+    "Quote ##{q.id} added by #{q.by} at #{q.when.ctime}: " +
+    "<#{q.msg.user}> #{q.msg.text}"
   end
 
 end
