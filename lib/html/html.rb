@@ -69,7 +69,7 @@ module HTML
 
   def title(url)
     raise NoPageFoundError unless resp = fetch(url, 20)
-    enc = resp.body =~ /charset=([-\w]+)/ ? $1 : 'utf-8'
+    enc = resp.body[/charset="?([-\w]+)/i, 1] || 'utf-8'
     raise NoTitleFoundError unless resp.body =~ TitleRegex
     unentit($1, enc).gsub(/(\r|\n)/, " ").gsub(/(\s{2,})/, " ")
   end
