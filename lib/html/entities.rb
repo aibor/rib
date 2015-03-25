@@ -2,7 +2,7 @@
 
 module HTML
 
-  ENTITIES = {
+  Entities = {
     "nbsp"     => 160,		#	 
     "iexcl"    => 161,		#	¡
     "cent"     => 162,		#	¢
@@ -256,4 +256,6 @@ module HTML
     "rsaquo"   => 8250,		#	›
     "euro"     => 8364,		#	€
   }
+
 end
+
