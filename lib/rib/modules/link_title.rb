@@ -14,7 +14,7 @@ class RIB::Module::LinkTitle < RIB::Module
   describe html_title: 'Get the HTML title if a URL is received'
 
 
-  trigger(/(http[s]?:\/\/[-?&+%=_.~a-zA-Z0-9\/:]+)/) do |match|
+  trigger(/(http[s]?:\/\/[-?&+%=_.,~a-zA-Z0-9\/:]+)/) do |match|
     html_title(match[1])
   end
 
