@@ -22,8 +22,8 @@ module HTML
 
   module_function
 
-  def unentit(string, enc = DefaultEncoding)
-    string.encode!(DefaultEncoding, enc)
+  def unentit(string, enc = nil)
+    string.encode!(DefaultEncoding, enc || DefaultEncoding)
     string.gsub(/&(.*?);/) do
       if not ent = $1
         '&;'
