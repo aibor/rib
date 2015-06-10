@@ -257,7 +257,7 @@ module RIB
     # @param [Object] value value to assign to the attribute
 
     def set_attribute(name, value)
-      send("#{name}=", value)
+      send("#{name}=", value.respond_to?(:dup) ? value.dup : value)
     end
 
 
@@ -269,7 +269,7 @@ module RIB
     def default
       Defaults.each do |key, value|
         register(key) unless respond_to?(key)
-        set_attribute(key, value.dup)
+        set_attribute(key, value)
       end
     end
 
