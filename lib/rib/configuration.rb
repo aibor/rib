@@ -257,7 +257,7 @@ module RIB
     # @param [Object] value value to assign to the attribute
 
     def set_attribute(name, value)
-      send("#{name}=", value.respond_to?(:dup) ? value.dup : value)
+      send "#{name}=", (value.dup rescue value)
     end
 
 
