@@ -269,7 +269,7 @@ module RIB
     def default
       Defaults.each do |key, value|
         register(key) unless respond_to?(key)
-        set_attribute(key, value)
+        set_attribute(key, value.dup)
       end
     end
 
