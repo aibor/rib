@@ -9,8 +9,9 @@ class RIB::Module::FasterThanBastelfreak < RIB::Module
 
   describe 'Benchmark the given URL against bastelfreaks blog'
   def ftb(url)
+    url.sub!(/\A(https?:\/\/)?/, 'https://')
     uri = URI("#{BASE_URL}#{url}")
-    "%s reached a FTB™ Score of %s" % [uri.hostname, get_score uri]
+    "%s reached a FTB™ Score of %s" % [uri.hostname, get_score(uri)]
   end
 
   private
