@@ -15,7 +15,7 @@ class RIB::Module::LinkTitle < RIB::Module
 
 
   trigger(/(http[s]?:\/\/[-?&+%=_.,~a-zA-Z0-9\/:]+)/) do |match|
-    html_title(match[1])
+    html_title(match[1]) if bot.config.title
   end
 
 
@@ -33,7 +33,6 @@ class RIB::Module::LinkTitle < RIB::Module
 
 
   def html_title(url)
-    return unless bot.config.title
     begin
       puts "url: #{url}"
       title = HTML.title(url)
