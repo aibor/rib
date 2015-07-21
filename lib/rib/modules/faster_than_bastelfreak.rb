@@ -10,7 +10,8 @@ class RIB::Module::FasterThanBastelfreak < RIB::Module
   timeout ftb: 10
 
   def ftb url
-    response = req URI(url)
+    uri = URI(url)
+    response = req uri
     score = parse_score response.body
 
     "#{uri.hostname} reached a FTB™ Score of #{score}"
