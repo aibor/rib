@@ -37,7 +37,7 @@ module RIB
       logdir:        'log/',
       debug:         false,
       modules:       [:Core, :LinkTitle, :Search, :Alarm, :Fun, :Quotes,
-                      :Seen, :Fact]
+                      :Seen, :Fact, :FasterThanBastelfreak]
     }
 
 
