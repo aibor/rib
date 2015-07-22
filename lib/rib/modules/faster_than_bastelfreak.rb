@@ -3,7 +3,7 @@ require'net/http'
 
 class RIB::Module::FasterThanBastelfreak < RIB::Module
 
-  BASE_URL = 'https://flipez.de/ftb/api?q='
+  BASE_URL = 'https://flipez.de/ftb/test.json?q='
 
   timeout ftb: 10
 
@@ -16,10 +16,18 @@ class RIB::Module::FasterThanBastelfreak < RIB::Module
 
   private
 
-  def get_score(uri)
+  def get_json uri
     response  = Net::HTTP.get_response uri
     result    = JSON.parse(response.body)
-    result['test']['result']
+  end
+  
+  def get_score uri
+    result = get_json uri
+    if result.has_key?('error')
+      result['error']
+    else
+      result['test']['result']
+    end
   end
 end
 
