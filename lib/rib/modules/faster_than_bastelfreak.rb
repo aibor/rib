@@ -23,11 +23,7 @@ class RIB::Module::FasterThanBastelfreak < RIB::Module
   
   def get_score uri
     result = get_json uri
-    if result.has_key?('error')
-      result['error']
-    else
-      result['test']['result']
-    end
+    result['error'] ||result['test']['result']
   end
 end
 
