@@ -9,6 +9,6 @@ class RIB::Module::WhatTheCommit < RIB::Module
     uri = URI(URL)
     response = Net::HTTP.get_response uri
 
-    response.body
+    response.body.chomp
   end
 end
