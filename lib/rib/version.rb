@@ -1,3 +1,3 @@
 module RIB
-  VERSION = "25"
+  VERSION = "26"
 end
