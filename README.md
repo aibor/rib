@@ -48,6 +48,9 @@ additionally for XMPP connections:
 * jid       (JID for the bot to authticate as)
 * auth      (password for the JID)
 
+Add `bot.ssl.use = true` to your config in order to use SSL when connecting
+to a server.
+
 All other options are optional and have more or less sane defaults.
 However, you might want to add some module names to the `modules`
 configuration directive, as the bot won't do much without any modules
