@@ -23,7 +23,7 @@ class RIB::Module::Quotes < RIB::Module
 
 
   on_init do
-    @quotes ||= %i(bofh brba dexter).inject({}) do |quotes, subject|
+    @quotes ||= %i(bofh brba dexter inst).inject({}) do |quotes, subject|
       quotefile = File.absolute_path("../data/#{subject}quotes", __FILE__)
       quotes.merge(subject => File.readlines(quotefile).each {|l| l.strip!})
     end
@@ -39,6 +39,11 @@ class RIB::Module::Quotes < RIB::Module
   desc 'Print a quote from Dexter'
   def dexter(number = nil)
     get_quote(:dexter, number)
+  end
+
+  desc 'Print a quote from Interstellar'
+  def inst(number = nil)
+    get_quote(:inst, number)
   end
 
 
