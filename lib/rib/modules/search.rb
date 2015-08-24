@@ -54,7 +54,7 @@ class RIB::Module::Search < RIB::Module
     url = case site
           when :ddg
             keys.first.gsub!(/^[^!]/, '\\\\\&')
-            'https://duckduckgo.com/?q=%s' % keys.join('+')
+            'https://duckduckgo.com/html?q=%s' % keys.join('+')
           when :google
             "https://www.google.com/search?hl=de&btnI=1&q=" +
               "#{keys * '+'}&ie=utf-8&oe=utf-8&pws=0"
