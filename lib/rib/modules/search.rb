@@ -33,9 +33,7 @@ class RIB::Module::Search < RIB::Module
   desc "Search on DuckDuckGo. Jumps to first search
     result, unless bang syntax is used. Try '!ddg !bang'"
   def duckduckgo(*args)
-    redir_page = ::HTML.fetch(gsearch(:ddg, args), 20)
-    url = redir_page.body[/=(http[^']*)'/, 1] 
-    format(::URI.unescape(url)) if url
+    format gsearch(:ddg, args)
   end
 
   alias :ddg :duckduckgo
