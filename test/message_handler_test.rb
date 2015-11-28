@@ -4,16 +4,17 @@ require 'minitest/autorun'
 require 'minitest/pride'
 require 'rib/message_handler'
 require 'rib/message'
+require File.expand_path('../mock/module_mock.rb', __FILE__)
+
 
 class MessageHandlerTest < MiniTest::Test
 
   def setup
-    @bot = RIB::Bot.new do |bot|
-      bot.protocol  = :irc
-      bot.server    = 'irc.example.org'
-      bot.port      = 6667
-      bot.channel   = '#test'
-      bot.modules   = [:Core, :Fact]
+    @bot = RIB::Bot.new(:irc) do |bot|
+      bot.connection.server  = 'irc.example.org'
+      bot.connection.port    = 6667
+      bot.connection.channel = '#test'
+      bot.modules   = ModuleMock
       bot.logdir    = '/tmp/log'
     end
     @bot.instance_variable_set(:@logger, Logger.new('/dev/null'))

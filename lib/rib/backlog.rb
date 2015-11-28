@@ -26,6 +26,7 @@ class RIB::Backlog
     @num      = num
     @backlog  = Array.new
     @mutex    = Mutex.new
+    @current = nil
   end
 
 
@@ -77,8 +78,11 @@ class RIB::Backlog
 
   def add_to_backlog(msg)
     @mutex.synchronize do
-      @backlog.pop while size >= @num
-      @backlog.unshift(msg)
+      if @current
+        @backlog.pop while size >= @num
+        @backlog.unshift(@current)
+      end
+      @current = msg
     end
   end
 

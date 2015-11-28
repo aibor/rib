@@ -10,16 +10,14 @@
 
 require 'rib'
 
-rib = RIB::Bot.new do |bot|
-  bot.protocol = :xmpp
-  bot.server = 'muc.xmpp.example.com'
-  bot.channel = 'bottest'
-  bot.jid = 'rib@xmpp.example.com'
-  bot.auth = 'aBcDeFgHiJkLmNoPqRsTuVwXyZ'
+rib = RIB::Bot.new(:xmpp) do |bot|
+  bot.connection.server = 'muc.xmpp.example.com'
+  bot.connection.muc = 'bottest'
+  bot.connection.jid = 'rib@xmpp.example.com'
+  bot.connection.password = 'aBcDeFgHiJkLmNoPqRsTuVwXyZ'
   bot.qmsg = 'See you later, shitlords!'
   bot.debug = false
   bot.admin = 'ribmaster'
-  bot.modules = [:Core, :LinkTitle, :Quotes, :Search, :Fun, :Alarm, :Fact]
 end
 
 rib.run

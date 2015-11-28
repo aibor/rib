@@ -16,16 +16,16 @@ class RIB::Adapters::XMPP
   def initialize(config, log_path)
     ::Jabber::debug = true if config.debug
 
-    @hostname = config.server
-    @resource = config.nick
+    @hostname = config.server || config.jid.split('@').last
+    @resource = config.resource
     @log_path = log_path
     jid = ::Jabber::JID.new(config.jid + "/" + @resource)
     @client = ::Jabber::Client.new(jid)
     @muc = {}
 
-    login config.auth
-    config.channel.split(/\s+|\s*,\s*/).each do |chan|
-      join_channel(chan)
+    login config.password
+    config.muc.split(/\s+|\s*,\s*/).each do |muc|
+      join_muc(muc)
     end
   end
 
@@ -68,10 +68,10 @@ class RIB::Adapters::XMPP
 
   private
 
-  def join_channel(channel)
-    mucjid = ::Jabber::JID.new "#{channel}@#{@hostname}/#{@resource}"
-    @muc[channel.to_sym] = ::Jabber::MUC::SimpleMUCClient.new @client
-    @muc[channel.to_sym].join mucjid
+  def join_muc(muc)
+    mucjid = ::Jabber::JID.new "#{muc}@#{@hostname}/#{@resource}"
+    @muc[muc.to_sym] = ::Jabber::MUC::SimpleMUCClient.new @client
+    @muc[muc.to_sym].join mucjid
     add_ping_cb
   end
 

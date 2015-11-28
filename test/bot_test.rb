@@ -5,6 +5,7 @@
 require 'minitest/autorun'
 require 'minitest/pride'
 require 'rib/bot'
+require File.expand_path('../mock/module_mock.rb', __FILE__)
 
 #old_verbose = $VERBOSE
 #$VERBOSE = nil
@@ -14,12 +15,11 @@ require 'rib/bot'
 class TestBot < MiniTest::Test
 
   def setup
-    @bot = RIB::Bot.new do |bot|
-      bot.protocol  = :irc
-      bot.server    = 'irc.example.org'
-      bot.port      = 6667
-      bot.channel   = '#test'
-      bot.modules   = [:Core, :Fact]
+    @bot = RIB::Bot.new(:irc) do |bot|
+      bot.connection.server    = 'irc.example.org'
+      bot.connection.port      = 6667
+      bot.connection.channel   = '#test'
+      bot.modules   = ModuleMock
       bot.logdir    = '/tmp/log'
     end
     @bot.instance_variable_set(:@logger, Logger.new('/dev/null'))
@@ -28,7 +28,7 @@ class TestBot < MiniTest::Test
 
   def test_construct
     assert_instance_of(RIB::Configuration, @bot.config)
-    assert_equal(RIB::ModuleSet.new([]), @bot.modules)
+    assert_equal(RIB::ModuleSet.new({}), @bot.modules)
     assert RIB::Module.loaded.any?
     assert RIB::Module.loaded.all? { |m| m.superclass == RIB::Module }
   end
@@ -52,9 +52,11 @@ class TestBot < MiniTest::Test
 
 
   def test_reload_modules
-    assert_empty @bot.modules
+    assert_operator 2, :<, @bot.modules.count
     @bot.reload_modules
     assert @bot.modules.all? { |m| m.superclass == RIB::Module }
+    assert_equal 2, @bot.modules.count
+
   end
 
 

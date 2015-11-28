@@ -94,11 +94,11 @@ class RIB::Module::Fact < RIB::Module
   @validator = ->(*a) { a.flatten.all? { |e| e.is_a? String } }
 
 
-  register facts_file: 'data/facts.yml'
+  defaults facts_file: 'data/facts.yml'
 
 
   on_init do |bot|
-    file = bot.config.facts_file
+    file = bot.config.modules[key].facts_file
     FileUtils.mkdir_p File.dirname(file)
     hash = YAML.load_file(file) if File.exist?(file)
     @facts = hash.select(&@validator) if hash
@@ -203,7 +203,7 @@ class RIB::Module::Fact < RIB::Module
   def save_facts
     self.class.send(:sanitize_facts)
 
-    file = bot.config.facts_file
+    file = config.facts_file
 
     if File.writable?(file) or FileUtils.touch(file)
       File.write(file, facts.to_yaml)

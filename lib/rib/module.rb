@@ -121,6 +121,11 @@ class RIB::Module
   end
 
 
+  def config
+    bot.config.modules[self.class.key]
+  end
+
+
   ##
   # Class singleton methods
 
@@ -311,25 +316,16 @@ class RIB::Module
     end
 
 
-    private
-
-    ##
-    # Register a {Configuration] directive for the module.
-    #
-    # @param hash [Hash{Symbol => Object}]
-    #
-    # @return [void]
-
-    def register(hash)
+    def defaults(hash = nil)
+      @defaults ||= nil
+      return @defaults unless hash
       raise TypeError, 'not a Hash' unless hash.is_a? Hash
-
-      hash.each do |config_key, default_value|
-        if config_key.respond_to?(:to_sym)
-          RIB::Configuration.register(config_key.to_sym, default_value)
-        end
-      end
+      @defaults = Struct.new(*hash.keys).
+        new(*hash.values)
     end
 
+
+    private
 
     ##
     # Define a block that is called when {.init} is called for the

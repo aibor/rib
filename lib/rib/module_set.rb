@@ -21,11 +21,11 @@ class RIB::ModuleSet < ::Set
   # @param module_names [Array<Symbol>]
   # @param protocol [Symbol]
 
-  def initialize(module_names, protocol = nil)
+  def initialize(module_configs, protocol = nil)
     @protocol = protocol
 
-    modules = RIB::Module.loaded.select do |modul|
-      module_names.include?(modul.key) && modul.speaks?(protocol)
+    modules = RIB::Module.loaded.reject do |modul|
+      false == module_configs[modul.key] or not modul.speaks?(protocol)
     end
 
     super(modules)
@@ -47,7 +47,7 @@ class RIB::ModuleSet < ::Set
 
 
   def find_all_commands(cmd_name)
-    @hash.inject([]) do |array, (modul, state)|
+    @hash.inject([]) do |array, (modul, *)|
       cmd = modul.find_command(cmd_name)
       cmd ? array.push(cmd) : array
     end

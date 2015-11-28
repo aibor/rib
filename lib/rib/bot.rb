@@ -22,8 +22,7 @@ Thread.abort_on_exception = true
 # @example Basic Bot configuration
 #   require 'rib'
 #
-#   rib = RIB::Bot.new do |bot|
-#     bot.protocol  = :irc
+#   rib = RIB::Bot.new(:irc) do |bot|
 #     bot.server    = 'irc.quakenet.org'
 #     bot.port      = 6667
 #     bot.channel   = '#rib'
@@ -79,21 +78,21 @@ class RIB::Bot
   attr_reader :backlog
 
 
+  attr_reader :protocol
+
   ##
   # Create a new Bot instance. Configuration can be done via a passed
   # block directly or later on.
   #
   # @example with block
-  #   rib = RIB::Bot.new do |bot|
-  #     bot.protocol  = :irc
+  #   rib = RIB::Bot.new(:irc) do |bot|
   #     bot.server    = 'irc.freenode.net'
   #     # ...
   #   end
   #
   # @example without block
-  #   rib = RIB::Bot.new
+  #   rib = RIB::Bot.new(:irc)
   #
-  #   rib.config.protocol  = :irc
   #   rib.config.server    = 'irc.freenode.net'
   #   # ...
   #
@@ -101,16 +100,14 @@ class RIB::Bot
   #
   # @yieldparam config [Configuration]
 
-  def initialize(&block)
-    RIB::Module.load_all
-
-    @logger = @startime = @connection_adapter = nil
-
-    @config   = RIB::Configuration.new
-    @threads  = []
-    @modules  = RIB::ModuleSet.new([])
-    @backlog  = RIB::Backlog.new(1000)
-
+  def initialize(protocol = :irc, &block)
+    @protocol = protocol
+    @connection_adapter = get_connection_adapter
+    @logger = @startime = @connection = nil
+    @threads = []
+    @backlog = RIB::Backlog.new(1000)
+    @config = RIB::Configuration.new @connection_adapter
+    load_modules
     configure(&block) if block_given?
   end
 
@@ -147,12 +144,12 @@ class RIB::Bot
     @starttime = Time.new
 
     set_signals
-    load_modules
+    init_modules
 
     begin
       init_server
 
-      @connection_adapter.run_loop do |handler|
+      @connection.run_loop do |handler|
         @backlog << handler.msg
         process_msg handler
       end
@@ -181,11 +178,11 @@ class RIB::Bot
   # @return [nil]
 
   def say(text, target)
-    return unless text || @connection_adapter
+    return unless text || @connection
     text.split('\n').each do |line|
       next if line.empty?
       @logger.debug "say '#{line}' to '#{target}'" if @logger
-      @connection_adapter.say line, target
+      @connection.say line, target
     end
   end
 
@@ -201,7 +198,7 @@ class RIB::Bot
   # @return [FalseClass] if an exception was raised
 
   def reload_modules
-    load_modules
+    init_modules
   rescue => e
     @logger.error "Exception catched while reloading modules: "
     @logger.error e
@@ -226,7 +223,7 @@ class RIB::Bot
   # @return [void]
 
   def disconnect
-    @connection_adapter.quit(@config.qmsg) if @connection_adapter
+    @connection.quit(@config.qmsg) if @connection
   end
 
 
@@ -261,9 +258,8 @@ class RIB::Bot
   # @return[Object] a connection adapter
 
   def get_connection_adapter
-    protocol_name = @config.protocol
-    require "#{RIB::Adapters::PATH}/#{protocol_name}"
-    RIB::Adapters.const_get(protocol_name.to_s.upcase)
+    require "#{RIB::Adapters::PATH}/#{@protocol}"
+    RIB::Adapters.const_get(@protocol.to_s.upcase)
   end
 
 
@@ -294,7 +290,7 @@ class RIB::Bot
   # @return [String] path of the log file
 
   def log_file_path
-    name = "#{File.basename($0)}_#{@config.protocol}_#{@config.server}"
+    name = "#{File.basename($0)}_#{@protocol}_#{@config.connection.server}"
     path = "#{log_path}#{name}.log"
 
     if not File.exist?(path) or File.writable?(path)
@@ -338,8 +334,27 @@ class RIB::Bot
   #   protocol
 
   def load_modules
-    RIB::Module.load_all
-    @modules = RIB::ModuleSet.new(@config.modules, @config.protocol)
+    mods = RIB::Module.load_all
+    @config.modules = mods.inject({}) do |hash,mod|
+      new_config = mod.defaults
+      old_config = @config.modules[mod.key]
+      if false == old_config
+        hash.merge mod.key => false
+      else
+        if Struct === old_config
+          old_config.each do |k,v|
+            new_config[k] = v if new_config.members.include?(k)
+          end
+        end
+        hash.merge mod.key => new_config
+      end
+    end
+    @modules = RIB::ModuleSet.new(@config.modules, @protocol)
+  end
+
+
+  def init_modules
+    load_modules
     @modules.each { |modul| modul.init(self) }
   end
 
@@ -350,8 +365,7 @@ class RIB::Bot
   # @return [void]
 
   def init_server
-    adapter = get_connection_adapter
-    @connection_adapter = adapter.new(@config, log_path)
+    @connection = @connection_adapter.new(@config.connection, log_path)
   end
 
 

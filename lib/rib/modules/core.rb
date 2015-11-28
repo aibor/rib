@@ -17,7 +17,7 @@ class RIB::Module::Core < RIB::Module
     time << diff.modulo(3600)/60
     time << diff.modulo(60)
 
-    case bot.config.protocol
+    case bot.protocol
     when :irc
       "Uptime: #{'%3dd %02d:%02d:%02d' % time}   " +
         "Started: #{bot.starttime.strftime("%d.%m.%Y %T %Z")}"

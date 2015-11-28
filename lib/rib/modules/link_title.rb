@@ -8,14 +8,14 @@ class RIB::Module::LinkTitle < RIB::Module
   describe 'HTML title parser for URLs'
 
 
-  register title: true
+  defaults title: true
 
 
   describe html_title: 'Get the HTML title if a URL is received'
 
 
   trigger(/(http[s]?:\/\/[-?&+%=_.,~a-zA-Z0-9\/:]+)/) do |match|
-    html_title(match[1]) if bot.config.title
+    html_title(match[1]) if config.title
   end
 
 
@@ -23,10 +23,10 @@ class RIB::Module::LinkTitle < RIB::Module
 
   def title(on_off)
     if %w(on true 1).include? on_off
-      bot.config.title = true
+      config.title = true
       "will try to parse HTML titles"
     elsif %w(off false 0).include? on_off
-      bot.config.title = false
+      config.title = false
       "will not try to parse HTML titles"
     end
   end
@@ -52,7 +52,7 @@ class RIB::Module::LinkTitle < RIB::Module
 
   def formattitle(title)
     return nil if title.nil? || title.empty?
-    if bot.config.protocol== :irc
+    if bot.protocol== :irc
       return nil if title.nil? || title.empty?
       case title
       when /(\s+- YouTube\s*\Z)/

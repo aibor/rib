@@ -75,8 +75,12 @@ module HTML
 
 
   def title(url)
-    raise NoPageFoundError unless resp = fetch(url, 20)
-    raise NoTitleFoundError unless title = resp.body[Regex::Title, 1]
+    unless resp = fetch(url, 20)
+      raise NoPageFoundError
+    end
+    unless resp.body and title = resp.body[Regex::Title, 1]
+      raise NoTitleFoundError
+    end
     unentit(title, resp.body[Regex::Charset, 1]).split.join(' ')
   end
 

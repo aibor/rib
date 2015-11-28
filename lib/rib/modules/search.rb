@@ -14,7 +14,7 @@ class RIB::Module::Search < RIB::Module
   alias :g :google
 
 
-  register wiki_lang: :en
+  defaults wiki_lang: :en
 
 
   #desc 'Search on Wikipedia using the DNS API'

@@ -12,6 +12,7 @@ class RIB::Adapters::IRC
 
 
   autoload :Connection, 'rib/adapters/irc/connection'
+  autoload :Configuration, 'rib/adapters/irc/configuration'
 
 
   def initialize(config, log_path)
@@ -23,7 +24,7 @@ class RIB::Adapters::IRC
     @connection = Connection.new(config.server, config.nick, log_path,
                                  {port: config.port, ssl: ssl_hash})
     @connection.login
-    @connection.auth_nick(config.auth) if config.defined?(:auth)
+    @connection.auth_nick(config.auth) if config.auth
     @connection.togglelogging
     config.channel.split(/\s+|\s*,\s*/).each do |chan|
       @connection.join_channel(chan)

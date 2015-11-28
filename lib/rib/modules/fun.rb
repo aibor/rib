@@ -38,6 +38,14 @@ class RIB::Module::Fun < RIB::Module
     "ACTION #{weighted_array(hash).sample}"
   end
 
+  trigger(%r{\As/(.*?)/(.*?)/(g)?\Z}) do |match|
+    line = bot.backlog.find { |m| m.user == msg.user }
+    if line
+      method = match[3] ? :gsub : :sub
+      "#{msg.user}: #{line.text.send(method, match[1], match[2])}"
+    end
+  end
+
 
   trigger(/\A((?:ACTION|\/me)\s+salutes)\Z/) do |match|
     "#{match[1]}\nI am Dave ! Yognaught and I have the balls!"

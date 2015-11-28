@@ -10,7 +10,7 @@ class RIB::Module::Quotes < RIB::Module
   end
 
 
-  register quotes_file: 'data/quotes.pstore'
+  defaults quotes_file: 'data/quotes.pstore'
 
 
   Quote = Struct.new(:id, :msg, :by, :when) do
@@ -112,15 +112,15 @@ class RIB::Module::Quotes < RIB::Module
 
   def get_quote(subject, number = nil)
     res = fetch_quote(subject, number)
-    res.sub!(/\A([^:]+:)/, '\1') if bot.config.protocol == :irc
+    res.sub!(/\A([^:]+:)/, '\1') if bot.protocol == :irc
     res
   end
 
 
   def user_quotes
-    @user_quotes ||= ::PStore.new(bot.config.quotes_file)
+    @user_quotes ||= ::PStore.new(config.quotes_file)
     @user_quotes.transaction do
-      server_arr = @user_quotes[bot.config.server] ||= {}
+      server_arr = @user_quotes[bot.config.connection.server] ||= {}
       yield(server_arr[msg.source] ||= [])
     end
   end

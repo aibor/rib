@@ -10,15 +10,13 @@
 
 require 'rib'
 
-rib = RIB::Bot.new do |bot|
-  bot.protocol = :irc
-  bot.server = 'irc.quakenet.org'
-  bot.port = 6667
-  bot.channel = '#rib'
+rib = RIB::Bot.new(:irc) do |bot|
+  bot.connection.server = 'irc.quakenet.org'
+  bot.connection.port = 6667
+  bot.connection.channel = '#rib'
   bot.qmsg = 'See you later, shitlords!'
   bot.debug = false
   bot.admin = 'ribmaster'
-  bot.modules = [:Core, :LinkTitle, :Quotes, :Search, :Fun, :Alarm, :Fact]
 end
 
 rib.run

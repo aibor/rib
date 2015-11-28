@@ -7,7 +7,7 @@ class RIB::Module::Seen < RIB::Module
 
   desc 'Show when users were seen last and what were their last words'
   def seen(who)
-    return unless bot.config.protocol == :irc
+    return unless bot.protocol == :irc
 
     case who
     when nil, ''  then "#{msg.user}: What? Try '!help seen'."
@@ -22,7 +22,7 @@ class RIB::Module::Seen < RIB::Module
   def find_last_line(who)
     logfile = RIB::Connection::Logging.channel_file_path(
       bot.send(:log_path),
-      bot.config.server,
+      bot.config.connection.server,
       msg.source
     )
 
