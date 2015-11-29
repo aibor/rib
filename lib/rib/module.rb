@@ -115,11 +115,18 @@ class RIB::Module
 
   ##
   # Check if the requesting user is the admin.
+  #
+  # @return [Boolean]
 
   def authorized?
     msg.user == bot.config.admin
   end
 
+
+  ##
+  # Get config for this module.
+  #
+  # @return [Struct]
 
   def config
     bot.config.modules[self.class.key]
@@ -316,12 +323,20 @@ class RIB::Module
     end
 
 
+    ##
+    # Set or get configuration defaults. These are added to the bot
+    # configuration for the module, overriden by the user's
+    # configuration.
+    #
+    # @param hash [Hash]
+    #
+    # @return [Struct]
+
     def defaults(hash = nil)
       @defaults ||= nil
       return @defaults unless hash
       raise TypeError, 'not a Hash' unless hash.is_a? Hash
-      @defaults = Struct.new(*hash.keys).
-        new(*hash.values)
+      @defaults = Struct.new(*hash.keys).new(*hash.values)
     end
 
 

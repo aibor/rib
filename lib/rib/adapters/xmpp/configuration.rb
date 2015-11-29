@@ -8,16 +8,16 @@
 
 class RIB::Adapters::XMPP::Configuration
 
-  include RIB::Configuration
-
   ##
   # Default values for a new instance.
 
-  Defaults.merge! port: 5222,
-    resource: 'rib'
-    jid: 'rib' + rand(999).to_s + '@jabber.org',
-    channel: '#rib',
-    password: 'seCreT'
+  def initialize 
+    @port = 5222
+    @resource = 'rib'
+    @jid = 'rib' + rand(999).to_s + '@jabber.org'
+    @channel = '#rib'
+    @password = 'seCreT'
+  end
 
 
   ##

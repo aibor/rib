@@ -12,9 +12,10 @@ class RIB::Adapters::XMPP
   include RIB::Adaptable
   include RIB::Connection::Logable
 
+  autoload :Configuration, 'rib/adapters/xmpp/configuration'
 
-  def initialize(config, log_path)
-    ::Jabber::debug = true if config.debug
+  def initialize(config, log_path, debug = false)
+    ::Jabber::debug = true if debug
 
     @hostname = config.server || config.jid.split('@').last
     @resource = config.resource

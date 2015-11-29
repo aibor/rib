@@ -15,7 +15,7 @@ class RIB::Adapters::IRC
   autoload :Configuration, 'rib/adapters/irc/configuration'
 
 
-  def initialize(config, log_path)
+  def initialize(config, log_path, debug = false)
     # ruby1.9.3 - no to_h for Structs
     ssl_hash = config.ssl.members.inject({}) do |hash, key|
       hash.merge(key => config.ssl[key])

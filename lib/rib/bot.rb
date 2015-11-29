@@ -23,11 +23,12 @@ Thread.abort_on_exception = true
 #   require 'rib'
 #
 #   rib = RIB::Bot.new(:irc) do |bot|
-#     bot.server    = 'irc.quakenet.org'
-#     bot.port      = 6667
-#     bot.channel   = '#rib'
-#     bot.admin     = 'ribmaster'
-#     bot.modules   = [:Core, :Fun]
+#     bot.connection.server  = 'irc.quakenet.org'
+#     bot.connection.port    = 6667
+#     bot.connection.channel = '#rib'
+#     bot.admin   = 'ribmaster'
+#     bot.modules[:Fun] = false
+#     bot.modules[:LinkTitle].title = false
 #   end
 #
 #   rib.run
@@ -78,7 +79,13 @@ class RIB::Bot
   attr_reader :backlog
 
 
+  ##
+  # Protocol that is used for the connection.
+  #
+  # @return [Symbol]
+
   attr_reader :protocol
+
 
   ##
   # Create a new Bot instance. Configuration can be done via a passed
@@ -86,14 +93,14 @@ class RIB::Bot
   #
   # @example with block
   #   rib = RIB::Bot.new(:irc) do |bot|
-  #     bot.server    = 'irc.freenode.net'
+  #     bot.connection.server    = 'irc.freenode.net'
   #     # ...
   #   end
   #
   # @example without block
   #   rib = RIB::Bot.new(:irc)
   #
-  #   rib.config.server    = 'irc.freenode.net'
+  #   rib.config.connection.server    = 'irc.freenode.net'
   #   # ...
   #
   # @see #configure
@@ -116,11 +123,10 @@ class RIB::Bot
   # Configure the Bot instance via a block, if it isn't running yet.
   #
   # @example
-  #   rib = RIB::Bot.new
+  #   rib = RIB::Bot.new :irc
   #
   #   rib.configure do |bot|
-  #     bot.protocol  = :irc
-  #     bot.server    = 'irc.freenode.net'
+  #     bot.connection.server    = 'irc.freenode.net'
   #     # ...
   #   end
   #
@@ -328,7 +334,8 @@ class RIB::Bot
   ##
   # Load all modules in a file or a directory. {Module Modules} are
   # loaded from `rib/modules/` directories n `$LOAD_PATH` if their name
-  # is listed in {Configuration#modules}. 
+  # is not listed in {Configuration#modules} with the value `false`. It
+  # sets `@modules`.
   #
   # @return [Set<Module>] all Modules for this Bot instance's
   #   protocol
@@ -353,6 +360,12 @@ class RIB::Bot
   end
 
 
+  ##
+  # Loads modules and initializes them calling `init` on each.
+  #
+  # @return [Set<Module>] all Modules for this Bot instance's
+  #   protocol
+
   def init_modules
     load_modules
     @modules.each { |modul| modul.init(self) }
@@ -365,7 +378,8 @@ class RIB::Bot
   # @return [void]
 
   def init_server
-    @connection = @connection_adapter.new(@config.connection, log_path)
+    @connection = @connection_adapter.new @config.connection,
+      log_path, @config.debug
   end
 
 
