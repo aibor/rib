@@ -15,6 +15,8 @@ class BacklogTest < MiniTest::Test
   def test_add
     backlog = RIB::Backlog.new
     backlog.add(RIB::Message.new('test', 'me', '#test'))
+    assert_equal 0, backlog.size
+    backlog.add(RIB::Message.new('test2', 'me', '#test'))
     assert_equal 1, backlog.size
     assert_raises(TypeError) { backlog.add('M00') }
   end
