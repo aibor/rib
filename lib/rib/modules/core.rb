@@ -67,6 +67,22 @@ class RIB::Module::Core < RIB::Module
     "RIB version: #{RIB::VERSION} - source: https://github.com/aibor/rib"
   end
 
+
+  desc 'Run a command for another user'
+  def give(user, *command)
+    new_msg = msg.dup
+    new_msg.text.replace command.join(" ")
+    lines = []
+    handler = RIB::MessageHandler.new(new_msg) do |line, target|
+      lines << "#{user}: #{line.sub(/^#{msg.user}: /, '')}"
+    end
+    handler.process_for! bot
+    lines
+  rescue RIB::CommandError => e
+    e.message
+  end
+
+
   private
 
   def print_help(mod, cmd)
