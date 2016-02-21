@@ -13,7 +13,7 @@ require 'rib'
 rib = RIB::Bot.new(:irc) do |bot|
   bot.connection.server = 'irc.quakenet.org'
   bot.connection.port = 6667
-  bot.connection.channel = '#rib'
+  bot.connection.channels = ['#rib']
   bot.qmsg = 'See you later, shitlords!'
   bot.debug = false
   bot.admin = 'ribmaster'

@@ -111,14 +111,14 @@ class RIB::Adapters::IRC::Connection
   # Join a channel and add a Logger for this channel to the logging
   # object.
   #
-  # @param channel [String] name of the channel to join
+  # @param channel [Channel] channel to join
   #
   # @raise [ChannelJoinError]
   #
   # @return [Boolean]
 
   def join_channel(channel)
-    join channel
+    join channel.name
 
     reply = receive_until do |c|
       c.command =~ /\A(?:461|47[13456]|40[35]|332|353)\Z/
@@ -128,7 +128,7 @@ class RIB::Adapters::IRC::Connection
       raise RIB::ChannelJoinError, reply.data
     end
 
-    !!logging.add_channel_log(channel)
+   channel.log ? !!logging.add_channel_log(channel.name) : true
   end
 
 

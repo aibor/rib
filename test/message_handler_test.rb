@@ -11,9 +11,9 @@ class MessageHandlerTest < MiniTest::Test
 
   def setup
     @bot = RIB::Bot.new(:irc) do |bot|
-      bot.connection.server  = 'irc.example.org'
-      bot.connection.port    = 6667
-      bot.connection.channel = '#test'
+      bot.connection.server   = 'irc.example.org'
+      bot.connection.port     = 6667
+      bot.connection.channels = ['#test']
       bot.modules   = ModuleMock
       bot.logdir    = '/tmp/log'
     end

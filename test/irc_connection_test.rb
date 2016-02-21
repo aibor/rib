@@ -168,19 +168,23 @@ class TestIRCConnection < MiniTest::Test
   end
 
 
-  def test_join_channel
+  def test_join_channel(log: true)
     conn, tcpsocket = get_connection
     log_mock = MiniTest::Mock.new
     conn.instance_variable_set(:@logging, log_mock)
-    log_mock.expect(:server, nil)
-    log_mock.expect(:server, nil)
-    log_mock.expect(:add_channel_log, true, ['#test'])
+    2.times { log_mock.expect(:server, nil) }
+    log_mock.expect(:add_channel_log, true, ['#test']) if log
     tcpsocket.expect(:print, nil, ["JOIN #test\r\n"])
     tcpsocket.expect(:gets, ":localhost 332\r\n")
 
-    assert conn.join_channel('#test')
+    assert conn.join_channel(test_channel('#test', log: log))
     assert tcpsocket.verify
     assert log_mock.verify
+  end
+
+
+  def test_join_channel_without_log
+    test_join_channel(log: false)
   end
 
 
@@ -189,7 +193,9 @@ class TestIRCConnection < MiniTest::Test
     tcpsocket.expect(:print, nil, ["JOIN #test\r\n"])
     tcpsocket.expect(:gets, ":localhost 461\r\n")
 
-    assert_raises(RIB::ChannelJoinError) { conn.join_channel('#test') }
+    assert_raises(RIB::ChannelJoinError) do
+      conn.join_channel(test_channel('#test'))
+    end
     assert tcpsocket.verify
   end
 
@@ -243,4 +249,7 @@ class TestIRCConnection < MiniTest::Test
     [conn, tcpsocket]
   end
 
+  def test_channel(name, log: true)
+    RIB::Adapters::IRC::Configuration::Channel.new(name, log)
+  end
 end

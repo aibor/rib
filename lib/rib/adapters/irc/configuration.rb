@@ -19,6 +19,9 @@ class RIB::Adapters::IRC::Configuration
   SSL = Struct.new(:use, :verify, :ca_path, :client_cert)
 
 
+  Channel = Struct.new(:name, :log)
+
+
   ##
   # Default values for a new instance.
 
@@ -27,7 +30,14 @@ class RIB::Adapters::IRC::Configuration
     @port = 6667
     @ssl = SSL.new( false, false, '/etc/ssl/certs', '' )
     @nick = 'rib' + rand(999).to_s
-    @channel = '#rib'
+    @channels = Hash.new do |hash, key|
+      unless key.respond_to? :to_s
+        msg = "#{key.class} can not be converted to string"
+        raise TypeError.new(msg)
+      end
+      name = key.to_s
+      hash[name]= Channel.new name, false
+    end
   end
 
 
@@ -80,11 +90,35 @@ class RIB::Adapters::IRC::Configuration
 
 
   ##
-  # Space separated string list of channels to join.
+  # List of channels to join.
   #
-  # @return [String]
+  # @return [Hash(Symbol => Channel)]
 
-  attr_accessor :channel
+  attr_reader :channels
+
+
+  ##
+  # Customized setter for @channels attribute
+  #
+  # @params channel_list [Array(Symbol)]
+  # @params channel_defs [Hash(Symbol => Object]
+  #
+  # @return [Hash(Symbol => Channel)]
+
+  def channels=(*channel_list, **channel_defs)
+    @channels.clear
+
+    channel_list.each { |channel| @channels[channel] }
+    channel_defs.each do |channel, definition|
+      unless definition.is_a? Hash
+        msg = "definition for channel '#{name}' must be a Hash"
+        raise TypeError.new(msg)
+      end
+      definition.each { |k,v| @channels[channel][k] = v }
+    end
+
+    @channels
+  end
 
 end
 

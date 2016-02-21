@@ -26,9 +26,7 @@ class RIB::Adapters::IRC
     @connection.login
     @connection.auth_nick(config.auth) if config.auth
     @connection.togglelogging
-    config.channel.split(/\s+|\s*,\s*/).each do |chan|
-      @connection.join_channel(chan)
-    end
+    config.channels.each { |name, chan| @connection.join_channel(chan) }
     @connection.setme(config.nick)
   end
 
