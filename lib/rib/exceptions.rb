@@ -110,5 +110,12 @@ module RIB::Exceptions
 
   class ReceivedError < Error; end
 
+
+  ##
+  # Raised if an invalid comamnd is called or a known command is called
+  # improperly.
+
+  class CommandError < Error; end
+
 end
 

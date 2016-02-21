@@ -45,7 +45,7 @@ class RIB::MessageHandler
   #
   # @param bot [Bot] instance to process this message for
 
-  def process_for(bot)
+  def process_for!(bot)
     @bot = bot
 
     @msg.parse(@bot.config.tc)
@@ -60,6 +60,13 @@ class RIB::MessageHandler
   end
 
 
+  def process_for(bot)
+    process_for!(bot)
+  rescue RIB::CommandError => e
+    say e.message
+  end
+
+
   private
 
   ##
@@ -71,15 +78,15 @@ class RIB::MessageHandler
 
   def process_module
     if not modul = @bot.modules.find_module(@msg.module)
-      Messages[:no_module] % [@msg.user, @msg.module]
+      command_error :no_module, @msg.user, @msg.module
     elsif command = modul.find_command(@msg.command)
       if command.takes_args?(@msg.arguments.count)
         call_command(command)
       else
-        Messages[:wrong_args] % [@msg.user, @bot.config.tc, @msg.command]
+        command_error :wrong_args, @msg.user, @bot.config.tc, @msg.command
       end
     else
-      Messages[:no_command] % [@msg.user, modul]
+      command_error :no_command, @msg.user, modul
     end
   end
 
@@ -97,16 +104,18 @@ class RIB::MessageHandler
 
     return if commands.empty?
 
-    commands = commands.select { |c| c.takes_args?(@msg.arguments.count) }
+    commands = commands.select do |c|
+      c.takes_args?(@msg.arguments.count)
+    end
 
     if commands.count > 1
       modules = commands.map { |c| c.modul.key } * ', '
-      Messages[:ambigous_command] %
-        [@msg.user, modules, @bot.config.tc, @msg.command]
+      command_error :ambigous_command, @msg.user, modules,
+        @bot.config.tc, @msg.command
     elsif commands.one?
       call_command(commands.first)
     else
-      Messages[:wrong_args] % [@msg.user, @bot.config.tc, @msg.command]
+      command_error :wrong_args, @msg.user, @bot.config.tc, @msg.command
     end
   end
 
@@ -188,6 +197,10 @@ class RIB::MessageHandler
       @bot.logger.debug "say: '#{line}' to '#{target}'"
       @say ? @say.call(line, target) : @bot.say(line, target)
     end
+  end
+
+  def command_error(message, *args)
+    raise RIB::CommandError.new(Messages[message] % args)
   end
 
 end
