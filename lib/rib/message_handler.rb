@@ -1,6 +1,6 @@
 # coding: utf-8
 
-require 'rib'
+require 'timeout'
 
 
 ##
@@ -146,7 +146,7 @@ class RIB::MessageHandler
   # @return [Object] retun value of the passed block
 
   def call_with_timeout(timeout, &block)
-    timeout(timeout, &block)
+    Timeout.timeout(timeout, &block)
   rescue Timeout::Error
     @bot.logger.warn "message processing took too long: '#{@msg.text}'."
     nil
