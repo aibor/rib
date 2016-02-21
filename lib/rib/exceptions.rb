@@ -2,10 +2,12 @@
 
 module RIB::Exceptions
 
+  class Error < ::StandardError; end
+
   ##
   # Raised if an duplicate object is requested to be added to a list.
 
-  class DuplicateError < StandardError
+  class DuplicateError < Error
 
     def initialize(name); @name = name end
 
@@ -44,7 +46,7 @@ module RIB::Exceptions
   ##
   # Raised if connection to the server is lost.
 
-  class LostConnectionError < StandardError
+  class LostConnectionError < Error
 
     def message
       "Lost connection. Reconnecting in 2 seconds."
@@ -56,7 +58,7 @@ module RIB::Exceptions
   ##
   # Raised if a child didn't overwrite an essential method.
 
-  class NotImplementedError < StandardError
+  class NotImplementedError < Error
 
     ##
     # @param name [Symbol] method name
@@ -70,7 +72,7 @@ module RIB::Exceptions
   end
 
 
-  class NotInstantiatableError < StandardError
+  class NotInstantiatableError < Error
 
     def message
       "Tried to instantiate an abstract class."
@@ -82,31 +84,31 @@ module RIB::Exceptions
   ##
   # Raised if an Error is received during login.
 
-  class LoginError < StandardError; end
+  class LoginError < Error; end
 
 
   ##
   # Raised if Authentication fails.
 
-  class AuthError < StandardError; end
+  class AuthError < Error; end
 
 
   ##
   # Raised if a channel couldn't be joined.
 
-  class ChannelJoinError < StandardError; end
+  class ChannelJoinError < Error; end
 
 
   ##
   # Raised if a malformed message is received.
 
-  class MalformedMessageError < StandardError; end
+  class MalformedMessageError < Error; end
 
 
   ##
   # Raised if an Error is received from the server.
 
-  class ReceivedError < StandardError; end
+  class ReceivedError < Error; end
 
 end
 
