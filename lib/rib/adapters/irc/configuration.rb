@@ -108,7 +108,7 @@ class RIB::Adapters::IRC::Configuration
   def channels=(*channel_list, **channel_defs)
     @channels.clear
 
-    channel_list.each { |channel| @channels[channel] }
+    channel_list.flatten.each { |channel| @channels[channel] }
     channel_defs.each do |channel, definition|
       unless definition.is_a? Hash
         msg = "definition for channel '#{name}' must be a Hash"
